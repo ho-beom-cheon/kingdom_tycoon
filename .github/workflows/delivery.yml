@@ -1,0 +1,90 @@
+name: release-delivery
+
+# Delivery creates downloadable evidence and build artifacts. It does not
+# deploy to production, upload to Google Play, or access operational secrets.
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      release_name:
+        description: Optional artifact name; defaults to the selected ref
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-delivery-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  package:
+    name: Validate and package release candidate
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      # Toolchains are installed only when their corresponding source contract
+      # exists. Missing modules remain visible as SKIPPED in the shared script.
+      - name: Detect repository layout
+        id: layout
+        shell: bash
+        run: |
+          if [[ -f scripts/validate_content.py || -f tycoon_v1_0_pro_codex_handoff/scripts/validate_content.py ]]; then
+            echo "has_content=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_content=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          if [[ -f gradlew || -f server-api/gradlew ]]; then
+            echo "has_server=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_server=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up Python 3.12
+        if: steps.layout.outputs.has_content == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up Java 25
+        if: steps.layout.outputs.has_server == 'true'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+
+      - name: Resolve artifact name
+        id: release
+        shell: bash
+        env:
+          REQUESTED_RELEASE_NAME: ${{ inputs.release_name }}
+        run: |
+          release_name="${REQUESTED_RELEASE_NAME:-$GITHUB_REF_NAME}"
+          safe_name="$(printf '%s' "$release_name" | tr -cs 'A-Za-z0-9._-' '-')"
+          safe_name="${safe_name#-}"
+          safe_name="${safe_name%-}"
+          [[ -n "$safe_name" ]] || safe_name="delivery-${GITHUB_RUN_NUMBER}"
+          echo "name=$safe_name" >> "$GITHUB_OUTPUT"
+
+      - name: Validate and collect delivery bundle
+        shell: bash
+        env:
+          RELEASE_NAME: ${{ steps.release.outputs.name }}
+          DELIVERY_DIR: ${{ runner.temp }}/kingdom-tycoon-delivery
+        run: scripts/ci/run-delivery.sh
+
+      - name: Upload checksummed delivery bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: kingdom-tycoon-${{ steps.release.outputs.name }}
+          path: ${{ runner.temp }}/kingdom-tycoon-delivery
+          if-no-files-found: error
+          retention-days: 30
