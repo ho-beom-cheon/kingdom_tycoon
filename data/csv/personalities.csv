@@ -1,0 +1,7 @@
+﻿personality_id,name_ko,buy_threshold_multiplier,risk_tolerance,return_hp_threshold,preferred_behavior,description,status
+PERSONALITY_PRACTICAL,실용주의,1.0,1.0,0.3,BALANCED,가격과 성능을 균형 있게 판단한다.,TUNABLE
+PERSONALITY_FRUGAL,절약가,1.2,0.9,0.35,SAVE_GOLD,큰 개선이 있을 때만 장비를 구매한다.,TUNABLE
+PERSONALITY_GEARHEAD,장비광,0.82,1.0,0.3,BUY_EQUIPMENT,작은 개선에도 장비 구매를 선호한다.,TUNABLE
+PERSONALITY_BRAVE,용감함,1.0,1.18,0.22,HIGH_RISK_REGION,위험한 지역과 강한 적을 선호한다.,TUNABLE
+PERSONALITY_CAUTIOUS,신중함,1.05,0.82,0.42,SAFE_REGION,생존 가능성이 높은 지역과 이른 귀환을 선호한다.,TUNABLE
+PERSONALITY_COLLECTOR,수집벽,1.0,0.95,0.32,RARE_MATERIAL_REGION,희귀 재료가 있는 지역을 선호한다.,TUNABLE

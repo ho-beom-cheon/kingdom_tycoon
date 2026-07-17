@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TycoonSave",
+  "type": "object",
+  "required": [
+    "saveVersion",
+    "contentVersion",
+    "profile",
+    "kingdom",
+    "mercenaries",
+    "facilities",
+    "inventory",
+    "regions",
+    "lastSaveUtc"
+  ],
+  "properties": {
+    "saveVersion": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "contentVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "profile": {
+      "type": "object"
+    },
+    "kingdom": {
+      "type": "object"
+    },
+    "mercenaries": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "facilities": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "inventory": {
+      "type": "object"
+    },
+    "regions": {
+      "type": "object"
+    },
+    "recruitmentMockState": {
+      "type": "object"
+    },
+    "tutorial": {
+      "type": "object"
+    },
+    "settings": {
+      "type": "object"
+    },
+    "lastSaveUtc": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "checksum": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

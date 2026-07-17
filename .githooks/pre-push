@@ -53,27 +53,30 @@ printf '[%s] Pipeline started (branch: %s, remote: %s).\n' \
   "$hook_name" "$branch_name" "$remote_name"
 
 start_step 1 2 "Validate content data"
-validator=""
-for candidate in \
-  "scripts/validate_content.py" \
-  "tycoon_v1_0_pro_codex_handoff/scripts/validate_content.py"
-do
-  if [ -f "$candidate" ]; then
-    validator="$candidate"
-    break
-  fi
-done
-
-[ -n "$validator" ] || fail "Content validator not found."
+validator="scripts/validate_content.py"
+[ -f "$validator" ] || fail "Tracked content validator not found: ${validator}"
 command -v python >/dev/null 2>&1 || fail "Python is not available on PATH."
 printf '[%s] Validator: %s\n' "$hook_name" "$validator"
 PYTHONUNBUFFERED=1 python -u "$validator"
 finish_step
 
 start_step 2 2 "Run server tests"
-if [ -f "server-api/gradlew" ]; then
+gradle_dir=""
+if [ -f "gradlew" ]; then
+  gradle_dir="."
+elif [ -f "server-api/gradlew" ]; then
+  gradle_dir="server-api"
+fi
+
+if [ -n "$gradle_dir" ]; then
+  if ! command -v java >/dev/null 2>&1 \
+    && [ ! -x "${JAVA_HOME:-}/bin/java" ] \
+    && [ ! -x "${JAVA_HOME:-}/bin/java.exe" ]; then
+    fail "Java is required when a Gradle Wrapper is present."
+  fi
   (
-    cd server-api
+    cd "$gradle_dir"
+    chmod +x gradlew
     ./gradlew test
   )
   finish_step

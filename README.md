@@ -1,7 +1,60 @@
-# kingdom_tycoon
+# Kingdom Tycoon
 
-## 개발 자동화
+폐허가 된 왕국을 재건하고 자율적으로 생활하는 용병들이 몬스터를 사냥해
+얻은 재료로 장비를 만드는 모바일 가로형 2D 픽셀아트 타이쿤 프로젝트다.
 
-- [CI/CD 운영 가이드](docs/ci-cd.md)
-- 로컬 Git Hook 설정: `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\setup-git-hooks.ps1`
-- 중앙 CI 로컬 재현: `scripts/ci/run-ci.sh`
+## 현재 단계
+
+- 완료: [P00 기준선 분석](docs/reports/P00_BASELINE_REPORT.md)
+- 완료: [P01 저장소 기반](docs/reports/P01_REPOSITORY_FOUNDATION_REPORT.md)
+- 다음: `P02_UNITY_FOUNDATION` (Unity 6.3 LTS 정확한 패치 설치 후 시작)
+
+한 Phase의 구현과 검증이 끝나기 전에는 다음 Phase로 이동하지 않는다.
+
+## 구현 계약
+
+문서 충돌 시 다음 순서를 적용한다.
+
+1. [AGENTS.md](AGENTS.md)
+2. [결정 등록부](docs/02_DECISION_REGISTER.md)
+3. [1.0 범위](docs/04_V1_SCOPE.md)
+4. 개별 시스템 문서
+5. `data/`의 `TUNABLE` 초기값
+6. `phases/`의 단계별 지시
+
+전체 문서는 [마스터 인덱스](docs/00_MASTER_INDEX.md)에서 확인한다.
+
+## 저장소 구조
+
+```text
+docs/       제품·시스템·기술 설계와 Phase 보고서
+data/       CSV 원본, JSON Schema, UI token, OpenAPI 초안
+phases/     P00~P17 단계별 구현 계약
+prompts/    검토·구현·회귀·릴리스용 Codex 프롬프트
+scripts/    콘텐츠 검증, Git Hook 설정, CI 재현 스크립트
+```
+
+`client-unity/`, `server-api/`, `infra/`는 해당 Phase와 설계 승인을 거쳐
+추가한다. 로컬의 실험 코드나 인계 ZIP을 이 구조와 중복해 커밋하지 않는다.
+
+## 로컬 검증
+
+Git Hook을 저장소 관리 버전으로 설정한다.
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\setup-git-hooks.ps1
+```
+
+콘텐츠 데이터를 직접 검증한다.
+
+```powershell
+python .\scripts\validate_content.py
+```
+
+Git Bash에서 중앙 CI 계약을 재현한다.
+
+```bash
+scripts/ci/run-ci.sh
+```
+
+자동화 동작과 Delivery 경계는 [CI/CD 운영 가이드](docs/ci-cd.md)를 참고한다.

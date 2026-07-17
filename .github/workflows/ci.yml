@@ -32,7 +32,7 @@ jobs:
         id: layout
         shell: bash
         run: |
-          if [[ -f scripts/validate_content.py || -f tycoon_v1_0_pro_codex_handoff/scripts/validate_content.py ]]; then
+          if [[ -f scripts/validate_content.py ]]; then
             echo "has_content=true" >> "$GITHUB_OUTPUT"
           else
             echo "has_content=false" >> "$GITHUB_OUTPUT"

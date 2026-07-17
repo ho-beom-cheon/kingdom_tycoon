@@ -1,0 +1,5 @@
+﻿profession_id,name_ko,facility_id,work_unit,primary_effect,status
+NPC_MERCHANT,상점 주인,FAC_STORE,TRANSACTION,판매 속도·고가 상품 취급,CONFIRMED
+NPC_BLACKSMITH,대장장이,FAC_BLACKSMITH,CRAFT_SECOND,장비 품질·재료 효율,CONFIRMED
+NPC_ALCHEMIST,연금술사,FAC_ALCHEMY,CRAFT_SECOND,포션 품질·재료 효율,CONFIRMED
+NPC_HEALER,치료사,FAC_INFIRMARY,HEALING,치료 속도·상태 이상,CONFIRMED

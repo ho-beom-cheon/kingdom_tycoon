@@ -1,0 +1,54 @@
+# 마스터 인덱스
+
+## 제품·범위
+
+- `01_STATUS_LEGEND.md`: 상태 표기와 변경 통제
+- `02_DECISION_REGISTER.md`: 확정·보류·거부 결정
+- `03_PRODUCT_VISION.md`: 게임 비전과 차별점
+- `04_V1_SCOPE.md`: 1.0 포함·제외 범위
+- `05_CORE_LOOP_AND_PROGRESS.md`: 전체 플레이 루프
+
+## 게임 시스템
+
+- `06_MERCENARY_SYSTEM.md`
+- `07_CLASSES_SKILLS_COMBAT_AI.md`
+- `08_GRADE_RANK_PROMOTION.md`
+- `09_RECRUITMENT_GACHA.md`
+- `10_KINGDOM_FACILITIES_NPCS.md`
+- `11_REGIONS_MONSTERS_RAIDS.md`
+- `12_ITEMS_MATERIALS_EQUIPMENT.md`
+- `13_CRAFT_ENHANCE_REFINE.md`
+- `14_ECONOMY_MARKET.md`
+
+## 화면·경험
+
+- `15_UI_UX_DESIGN_SYSTEM.md`
+- `16_UI_SCREEN_FLOWS.md`
+- `17_TUTORIAL_ONBOARDING.md`
+- `18_SAVE_OFFLINE_PROGRESS.md`
+- `19_BALANCE_BASELINE.md`
+
+## 개발·운영
+
+- `20_UNITY_ARCHITECTURE.md`
+- `21_SERVER_API_POSTGRES.md`
+- `22_GIT_CI_CD.md`
+- `23_TEST_QA.md`
+- `24_PERFORMANCE_TARGETS.md`
+- `25_SECURITY_ANTI_CHEAT.md`
+- `26_ASSET_AUDIO_LICENSE_BUDGET.md`
+- `27_OPERATIONS_LATER.md`
+- `28_POST_V1_BACKLOG.md`
+- `29_RISK_SCOPE_REDUCTION.md`
+- `30_GLOSSARY.md`
+- `31_DEFINITION_OF_DONE.md`
+- `32_TECH_VERSION_SOURCES.md`
+- `33_OPEN_DECISIONS.md`
+
+## 구현 데이터
+
+`data/csv/README.md`에 각 표의 목적과 권한을 기록했다. CSV 값은 초기 기준이며 `TUNABLE`이다.
+
+## 단계별 구현
+
+`phases/P00`부터 `P17`까지 순서대로 진행한다. 한 Phase를 완료·검증하기 전 다음 Phase로 이동하지 않는다.
