@@ -6,8 +6,8 @@
 ## 현재 단계
 
 - 완료: [P00 기준선 분석](docs/reports/P00_BASELINE_REPORT.md)
-- 진행: `P01_REPOSITORY_FOUNDATION`
-- 다음: `P02_UNITY_FOUNDATION`
+- 완료: [P01 저장소 기반](docs/reports/P01_REPOSITORY_FOUNDATION_REPORT.md)
+- 다음: `P02_UNITY_FOUNDATION` (Unity 6.3 LTS 정확한 패치 설치 후 시작)
 
 한 Phase의 구현과 검증이 끝나기 전에는 다음 Phase로 이동하지 않는다.
 
