@@ -18,7 +18,7 @@ P01은 저장소 기반을 정리하는 단계이므로 다음 조건을 지키�
 3. 미추적 `server-api/`, Gradle Wrapper, `infra/`는 채택 결정 전까지 보존하되 P01 변경에 섞지 않는다.
 4. P01에서 깨끗한 clone에서도 동작하도록 콘텐츠 검증기, `.gitignore`, `.gitattributes`, Hook, CI 경로를 일치시킨다.
 
-JDK 25 부재는 서버 후보 검증과 P16 진입을 막지만, 서버 후보를 격리하면 P01 자체를 막지는 않는다. Unity 6.3 LTS 정확한 패치 선택과 프로젝트 생성은 P02 진입 전에 필요하다.
+JDK 25는 분석 도중 workspace-local `.tools/`에 추가되어 명시적 `JAVA_HOME`으로 서버 후보 테스트를 통과했다. 다만 기본 `JAVA_HOME`은 여전히 JDK 17이고 `.tools/`는 Git에 포함되지 않으므로 깨끗한 개발 환경에서의 재현 절차가 필요하다. 이 문제는 서버 후보를 격리하면 P01 자체를 막지는 않는다. Unity 6.3 LTS 정확한 패치 선택과 프로젝트 생성은 P02 진입 전에 필요하다.
 
 ## 2. 분석 범위와 명세 우선순위
 
@@ -157,12 +157,12 @@ Unity 공식 지원 문서는 Unity 6.3을 현재 LTS로 설명하고 2027년 12
 - Spring Boot Actuator/JDBC/Validation/Flyway/PostgreSQL/Testcontainers 의존성 선언
 - `/api/v1` context path
 - 환경 변수 기반 DB 사용자·비밀번호 설정
+- Testcontainers 통합 테스트 소스 4개
+- JUnit XML 기준 테스트 10개, 실패·오류·건너뜀 0개
 
 다음은 존재하지 않거나 확인되지 않았다.
 
-- `src/test` 테스트 소스
 - `@RestController`, `@Controller`, HTTP mapping
-- 실행된 Flyway/Testcontainers 검증 결과
 - OpenAPI 구현과 Controller 간 계약 테스트
 - Git 이력과 코드 출처
 
@@ -177,7 +177,7 @@ Migration 번호 `V006`, `V010`, `V014`가 비어 있다. Flyway가 연속 번�
 | Gradle | Wrapper | 9.2.1 | 구조 일치 |
 | PostgreSQL | 18.x, 기준 18.4 | Compose `postgres:18.4` | 일치 |
 | DB 변경 | Flyway 전용 | Flyway SQL 존재 | 구조 일치, 실행 미검증 |
-| 테스트 | JUnit 5 + Testcontainers | 의존성만 있고 테스트 없음 | 미충족 |
+| 테스트 | JUnit 5 + Testcontainers | 통합 테스트 4개 클래스·10개 테스트 통과 | 후보 내부 적합, Git 미채택 |
 
 공식 기준도 Spring Boot 4.1.0, PostgreSQL 18.4, Java 25의 사용 가능성을 확인했다. Gradle 공식 호환표는 Java 25 toolchain과 실행을 Gradle 9.1 이상에서 지원한다.
 
@@ -195,11 +195,14 @@ Migration 번호 `V006`, `V010`, `V014`가 비어 있다. Flyway가 연속 번�
 ./gradlew.bat --no-daemon :server-api:test
 → 실패: Java 25 toolchain을 찾을 수 없고 자동 다운로드 저장소가 설정되지 않음
 
+JAVA_HOME=.tools/jdk25-extracted/jdk-25.0.3+9 ./gradlew.bat --no-daemon :server-api:test
+→ 성공: 4 actionable tasks, JUnit XML 기준 10 tests, failures=0, errors=0, skipped=0
+
 docker compose -f infra/docker-compose.local.yml config --quiet
 → 성공
 ```
 
-Docker Engine과 Compose는 실행 가능하지만, 데이터베이스 컨테이너 기동과 Flyway 적용은 P00에서 수행하지 않았다. JDK 25가 없어 서버 애플리케이션 검증으로 이어갈 수 없었고, 후보 서버 자체가 아직 Git에 채택되지 않았기 때문이다.
+Docker Engine과 Compose는 실행 가능하다. 이 P00 작업에서는 영속 로컬 데이터베이스를 직접 기동하거나 Flyway를 적용하지 않았지만, 분석 중 동시에 생성된 DB 구현 보고서는 별도 작업 흐름에서 로컬 DB와 Testcontainers 검증을 완료했다고 기록한다. JDK 25는 `.tools/`의 로컬 설치를 명시해 서버 테스트를 재현했다. 후보 서버 자체와 JDK 설치 절차는 아직 Git에 채택되지 않았다.
 
 ### 6.4 보안 설정 관찰
 
@@ -352,10 +355,10 @@ OpenAPI 초안에는 6개 경로와 7개 operation이 있으나 response schema�
 | GAP-01 | 설계 패키지가 Git에 없음 | 새 clone에서 구현 계약 소실 | P01 필수 |
 | GAP-02 | validator가 Git에 없음 | Hook이 깨끗한 clone에서 실패 | P01 필수 |
 | GAP-03 | 서버 후보가 P16보다 앞서 존재 | Phase 순서·검증 이력 불명 | 채택 결정 필요 |
-| GAP-04 | JDK 17만 설치 | Java 25 서버 테스트 실패 | P16 전 필수 |
+| GAP-04 | 기본 JDK 17, JDK 25는 미추적 `.tools/`에만 존재 | 깨끗한 환경에서 서버 테스트 재현 불가 | P16 전 설치 절차 필수 |
 | GAP-05 | Unity 6.4만 설치, 프로젝트 없음 | Unity 6.3 고정 불가 | P02 전 필수 |
 | GAP-06 | Git ignore/attributes/LFS 불완전 | Unity·대용량·줄바꿈 위험 | P01 필수 |
-| GAP-07 | 서버 테스트와 Controller 없음 | P16 완료 조건 미충족 | 서버 채택 시 보완 |
+| GAP-07 | 서버 통합 테스트는 통과했지만 Controller 없음 | P16 API 완료 조건 미충족 | 서버 채택 시 보완 |
 | GAP-08 | Save schema가 얕음 | P03 구현을 추측하게 됨 | 추가 설계 필요 |
 | GAP-09 | API security/error/schema 없음 | P16 구현을 추측하게 됨 | 추가 설계 필요 |
 | GAP-10 | 일부 CSV field domain 불명 | importer·validator 분기 불명 | 추가 설계 필요 |
@@ -393,6 +396,8 @@ OpenAPI 초안에는 6개 경로와 7개 operation이 있으나 response schema�
 
 요청 설계 내용:
 
+- `TYCOON_DB_INTERFACE_DESIGN_v1.0.md` 원문과 저장소 내 권위 경로
+- 기존 P00~P17 로드맵보다 DB P0를 우선한 변경 승인 기록
 - 코드 생성·작성 배경과 신뢰 가능한 기준
 - 채택 대상 package·Migration 목록
 - 기존 Phase 순서와 병합 전략
@@ -459,12 +464,13 @@ P16 전에 다음을 포함한 상세 설계서가 필요하다.
 | JSON Schema 2개 compile | 통과 |
 | OpenAPI 권장 lint | 실패: 14 errors, 9 warnings |
 | Gradle Wrapper 실행 | 통과: 9.2.1/JVM 17 |
-| 서버 test | 환경 실패: JDK 25 없음 |
+| 서버 test, 기본 `JAVA_HOME` | 실패: JDK 17에서 Java 25 toolchain을 찾지 못함 |
+| 서버 test, workspace-local JDK 25 명시 | 통과: 10 tests, 실패·오류·건너뜀 0 |
 | Docker Compose config | 통과 |
 | Unity 설정·테스트 | 미실행: 프로젝트 없음 |
 | 고신뢰 비밀값 패턴 | 발견 없음 |
 
-OpenAPI와 서버 후보 실패는 숨기지 않는다. 추적된 애플리케이션 테스트가 실패한 것은 아니지만, 후보 구현을 채택하기 위한 검증은 아직 완료되지 않았다.
+OpenAPI lint 실패와 기본 JDK 환경의 재현 실패는 숨기지 않는다. 서버 후보의 현재 Testcontainers 테스트는 workspace-local JDK 25에서 통과했지만, 후보 구현과 도구 설치가 Git에 채택되지 않아 깨끗한 clone 검증은 아직 완료되지 않았다.
 
 ## 14. 데이터·Save·API·성능 영향
 
@@ -531,3 +537,28 @@ P01 시작 전 다음 두 가지를 승인받아야 한다.
 2. 미추적 서버·Gradle·infra 후보는 보존하되 P01에서 제외하고, UR-01 결정 후 별도 이슈로 감사한다.
 
 Save·콘텐츠·API 상세 설계서는 각각 P03/P16 이전에 필요하다. 전달받기 전에는 해당 구현을 추측해 시작하지 않는다.
+
+## 17. 분석 중 동시 변경 보정
+
+첫 P00 커밋 직후인 2026-07-17 10:24 KST에 이 작업이 생성하지 않은 다음 변경이 작업 트리에 나타났다.
+
+```text
+README.md 수정
+docs/P0_DB_IMPLEMENTATION_REPORT.md 추가
+server-api/src/test/** 추가
+server-api/build.gradle 수정
+server-api 소스·테스트 결과 갱신
+```
+
+이 변경들은 별도 작업 흐름의 결과로 간주해 수정·stage·commit하지 않았다. P00 보고서는 읽기 전용으로 다시 확인한 최신 증거만 반영했다.
+
+추가 확인 결과:
+
+- `.tools/jdk25-extracted/jdk-25.0.3+9`가 존재한다.
+- 해당 JDK를 명시하면 서버 Testcontainers 테스트 10개가 통과한다.
+- 새 DB 보고서는 로컬 PostgreSQL 18.4와 Flyway 17개 성공을 주장한다.
+- 실제 source migration 파일은 versioned 14개와 repeatable 2개로 16개이므로, DB 보고서의 `17개` 산정 기준을 확인해야 한다.
+- DB 보고서의 기준 문서 `TYCOON_DB_INTERFACE_DESIGN_v1.0.md`는 현재 workspace와 설계 패키지에서 찾을 수 없다.
+- DB 보고서는 기존 P16 순서보다 DB P0를 우선한 최신 요청이 있었다고 기록하지만, 그 변경 통제 결정과 원문 설계가 현재 Git에 없다.
+
+따라서 UR-01은 단순 코드 채택 문제가 아니라 **설계 권위와 Phase 순서 변경 승인 문제**다. `TYCOON_DB_INTERFACE_DESIGN_v1.0.md` 원문, 기존 핸드오프 문서와의 우선순위, DB P0를 공식 선행 단계로 채택할지에 대한 상세 설계·결정 기록을 전달받기 전에는 이 서버를 기준 구현으로 확정하지 않는다.
