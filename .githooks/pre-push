@@ -1,9 +1,58 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -Eeuo pipefail
+
+hook_name="pre-push"
+pipeline_started=$SECONDS
+step_started=$SECONDS
+current_step="initialization"
+
+fail() {
+  local message="$1"
+  printf '\n[%s] FAILED at "%s" after %ss: %s\n' \
+    "$hook_name" "$current_step" "$((SECONDS - pipeline_started))" "$message" >&2
+  exit 1
+}
+
+handle_error() {
+  local exit_code=$?
+  printf '\n[%s] FAILED at "%s" after %ss (exit code %s).\n' \
+    "$hook_name" "$current_step" "$((SECONDS - pipeline_started))" "$exit_code" >&2
+  exit "$exit_code"
+}
+
+start_step() {
+  local number="$1"
+  local total="$2"
+  local description="$3"
+  current_step="$description"
+  step_started=$SECONDS
+  printf '\n[%s %s/%s] %s...\n' "$hook_name" "$number" "$total" "$description"
+}
+
+finish_step() {
+  printf '[%s] OK: %s (%ss)\n' \
+    "$hook_name" "$current_step" "$((SECONDS - step_started))"
+}
+
+skip_step() {
+  local reason="$1"
+  printf '[%s] SKIPPED: %s (%s)\n' "$hook_name" "$current_step" "$reason"
+}
+
+trap handle_error ERR
 
 repo_root="$(git rev-parse --show-toplevel)"
 cd "$repo_root"
 
+branch_name="$(git branch --show-current)"
+if [ -z "$branch_name" ]; then
+  branch_name="detached HEAD"
+fi
+remote_name="${1:-manual run}"
+printf '[%s] Pipeline started (branch: %s, remote: %s).\n' \
+  "$hook_name" "$branch_name" "$remote_name"
+
+start_step 1 2 "Validate content data"
 validator=""
 for candidate in \
   "scripts/validate_content.py" \
@@ -15,20 +64,22 @@ do
   fi
 done
 
-if [ -z "$validator" ]; then
-  echo "Content validator not found."
-  exit 1
-fi
+[ -n "$validator" ] || fail "Content validator not found."
+command -v python >/dev/null 2>&1 || fail "Python is not available on PATH."
+printf '[%s] Validator: %s\n' "$hook_name" "$validator"
+PYTHONUNBUFFERED=1 python -u "$validator"
+finish_step
 
-python "$validator"
-
+start_step 2 2 "Run server tests"
 if [ -f "server-api/gradlew" ]; then
   (
     cd server-api
     ./gradlew test
   )
+  finish_step
 else
-  echo "Server Gradle Wrapper not found; server tests skipped."
+  skip_step "Server Gradle Wrapper not found"
 fi
 
-echo "pre-push checks passed."
+printf '\n[%s] Pipeline passed in %ss.\n' \
+  "$hook_name" "$((SECONDS - pipeline_started))"

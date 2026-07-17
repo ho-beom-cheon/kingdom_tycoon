@@ -1,9 +1,54 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -Eeuo pipefail
+
+hook_name="pre-commit"
+pipeline_started=$SECONDS
+step_started=$SECONDS
+current_step="initialization"
+
+fail() {
+  local message="$1"
+  printf '\n[%s] FAILED at "%s" after %ss: %s\n' \
+    "$hook_name" "$current_step" "$((SECONDS - pipeline_started))" "$message" >&2
+  exit 1
+}
+
+handle_error() {
+  local exit_code=$?
+  printf '\n[%s] FAILED at "%s" after %ss (exit code %s).\n' \
+    "$hook_name" "$current_step" "$((SECONDS - pipeline_started))" "$exit_code" >&2
+  exit "$exit_code"
+}
+
+start_step() {
+  local number="$1"
+  local total="$2"
+  local description="$3"
+  current_step="$description"
+  step_started=$SECONDS
+  printf '\n[%s %s/%s] %s...\n' "$hook_name" "$number" "$total" "$description"
+}
+
+finish_step() {
+  printf '[%s] OK: %s (%ss)\n' \
+    "$hook_name" "$current_step" "$((SECONDS - step_started))"
+}
+
+trap handle_error ERR
 
 repo_root="$(git rev-parse --show-toplevel)"
 cd "$repo_root"
 
+branch_name="$(git branch --show-current)"
+if [ -z "$branch_name" ]; then
+  branch_name="detached HEAD"
+fi
+
+mapfile -t staged_files < <(git diff --cached --name-only --diff-filter=ACMR)
+printf '[%s] Pipeline started (branch: %s, staged files: %s).\n' \
+  "$hook_name" "$branch_name" "${#staged_files[@]}"
+
+start_step 1 3 "Validate content data"
 validator=""
 for candidate in \
   "scripts/validate_content.py" \
@@ -15,12 +60,11 @@ do
   fi
 done
 
-if [ -z "$validator" ]; then
-  echo "Content validator not found."
-  exit 1
-fi
-
-python "$validator"
+[ -n "$validator" ] || fail "Content validator not found."
+command -v python >/dev/null 2>&1 || fail "Python is not available on PATH."
+printf '[%s] Validator: %s\n' "$hook_name" "$validator"
+PYTHONUNBUFFERED=1 python -u "$validator"
+finish_step
 
 is_forbidden_path() {
   local file="$1"
@@ -48,24 +92,30 @@ is_forbidden_path() {
   return 1
 }
 
-while IFS= read -r file; do
-  [ -z "$file" ] && continue
-
+start_step 2 3 "Check forbidden staged paths"
+for file in "${staged_files[@]}"; do
   if is_forbidden_path "$file"; then
-    echo "Forbidden staged file: $file"
-    exit 1
+    fail "Forbidden staged file: $file"
   fi
+done
+finish_step
 
+start_step 3 3 "Check Unity Asset meta files"
+unity_asset_count=0
+for file in "${staged_files[@]}"; do
   case "$file" in
     *.meta)
       continue
       ;;
   esac
 
-  if [[ "$file" == client-unity/Assets/* ]] && [ -f "$file" ] && [ ! -f "${file}.meta" ]; then
-    echo "Missing Unity meta file: ${file}.meta"
-    exit 1
+  if [[ "$file" == client-unity/Assets/* ]] && [ -f "$file" ]; then
+    unity_asset_count=$((unity_asset_count + 1))
+    [ -f "${file}.meta" ] || fail "Missing Unity meta file: ${file}.meta"
   fi
-done < <(git diff --cached --name-only --diff-filter=ACMR)
+done
+printf '[%s] Unity Assets checked: %s\n' "$hook_name" "$unity_asset_count"
+finish_step
 
-echo "pre-commit checks passed."
+printf '\n[%s] Pipeline passed in %ss.\n' \
+  "$hook_name" "$((SECONDS - pipeline_started))"
