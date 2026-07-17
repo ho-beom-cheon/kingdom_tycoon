@@ -1,0 +1,34 @@
+spring:
+  application:
+    name: kingdom-tycoon-server
+  datasource:
+    url: ${TYCOON_DB_URL:jdbc:postgresql://localhost:${TYCOON_DB_PORT:5432}/tycoon_local}
+    username: ${TYCOON_APP_USER:tycoon_app}
+    password: ${TYCOON_APP_PASSWORD}
+    hikari:
+      transaction-isolation: TRANSACTION_READ_COMMITTED
+  flyway:
+    enabled: true
+    url: ${TYCOON_DB_URL:jdbc:postgresql://localhost:${TYCOON_DB_PORT:5432}/tycoon_local}
+    user: ${TYCOON_MIGRATOR_USER:tycoon_migrator}
+    password: ${TYCOON_MIGRATOR_PASSWORD}
+    schemas: audit,game,master,ops,billing
+    default-schema: audit
+    table: flyway_schema_history
+    create-schemas: true
+    validate-migration-naming: true
+    out-of-order: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,flyway
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+server:
+  servlet:
+    context-path: /api/v1
