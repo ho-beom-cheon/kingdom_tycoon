@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(git rev-parse --show-toplevel)"
+cd "$repo_root"
+
+validator=""
+for candidate in \
+  "scripts/validate_content.py" \
+  "tycoon_v1_0_pro_codex_handoff/scripts/validate_content.py"
+do
+  if [ -f "$candidate" ]; then
+    validator="$candidate"
+    break
+  fi
+done
+
+if [ -z "$validator" ]; then
+  echo "Content validator not found."
+  exit 1
+fi
+
+python "$validator"
+
+is_forbidden_path() {
+  local file="$1"
+
+  case "$file" in
+    Library/*|*/Library/*|Temp/*|*/Temp/*|Logs/*|*/Logs/*|Build/*|*/Build/*|Builds/*|*/Builds/*)
+      return 0
+      ;;
+    .idea/*|*/.idea/*|.vscode/*|*/.vscode/*|.vs/*|*/.vs/*)
+      return 0
+      ;;
+    *.jks|*.keystore|service-account*.json|*/service-account*.json)
+      return 0
+      ;;
+    .env|*/.env|.env.*|*/.env.*)
+      case "$file" in
+        .env.example|*/.env.example)
+          return 1
+          ;;
+      esac
+      return 0
+      ;;
+  esac
+
+  return 1
+}
+
+while IFS= read -r file; do
+  [ -z "$file" ] && continue
+
+  if is_forbidden_path "$file"; then
+    echo "Forbidden staged file: $file"
+    exit 1
+  fi
+
+  case "$file" in
+    *.meta)
+      continue
+      ;;
+  esac
+
+  if [[ "$file" == client-unity/Assets/* ]] && [ -f "$file" ] && [ ! -f "${file}.meta" ]; then
+    echo "Missing Unity meta file: ${file}.meta"
+    exit 1
+  fi
+done < <(git diff --cached --name-only --diff-filter=ACMR)
+
+echo "pre-commit checks passed."

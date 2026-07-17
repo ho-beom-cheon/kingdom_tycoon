@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(git rev-parse --show-toplevel)"
+cd "$repo_root"
+
+validator=""
+for candidate in \
+  "scripts/validate_content.py" \
+  "tycoon_v1_0_pro_codex_handoff/scripts/validate_content.py"
+do
+  if [ -f "$candidate" ]; then
+    validator="$candidate"
+    break
+  fi
+done
+
+if [ -z "$validator" ]; then
+  echo "Content validator not found."
+  exit 1
+fi
+
+python "$validator"
+
+if [ -f "server-api/gradlew" ]; then
+  (
+    cd server-api
+    ./gradlew test
+  )
+else
+  echo "Server Gradle Wrapper not found; server tests skipped."
+fi
+
+echo "pre-push checks passed."
