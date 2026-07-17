@@ -7,6 +7,7 @@
 
 - 완료: [P00 기준선 분석](docs/reports/P00_BASELINE_REPORT.md)
 - 완료: [P01 저장소 기반](docs/reports/P01_REPOSITORY_FOUNDATION_REPORT.md)
+- 병행 진행: [DB P0 설계 채택·감사](docs/reports/P0_DB_IMPLEMENTATION_REPORT.md)
 - 다음: `P02_UNITY_FOUNDATION` (Unity 6.3 LTS 정확한 패치 설치 후 시작)
 
 한 Phase의 구현과 검증이 끝나기 전에는 다음 Phase로 이동하지 않는다.
@@ -32,10 +33,13 @@ data/       CSV 원본, JSON Schema, UI token, OpenAPI 초안
 phases/     P00~P17 단계별 구현 계약
 prompts/    검토·구현·회귀·릴리스용 Codex 프롬프트
 scripts/    콘텐츠 검증, Git Hook 설정, CI 재현 스크립트
+server-api/ Java 25·Spring Boot 4.1 서버 모듈
+infra/      PostgreSQL 18.4 로컬 개발 환경
 ```
 
-`client-unity/`, `server-api/`, `infra/`는 해당 Phase와 설계 승인을 거쳐
-추가한다. 로컬의 실험 코드나 인계 ZIP을 이 구조와 중복해 커밋하지 않는다.
+`client-unity/`는 P02에서 추가한다. 서버·DB 기준은
+[DB 인터페이스 설계서](docs/design/TYCOON_DB_INTERFACE_DESIGN_v1.0.md)를
+따른다. 로컬의 실험 코드나 인계 ZIP을 이 구조와 중복해 커밋하지 않는다.
 
 ## 로컬 검증
 
@@ -58,3 +62,20 @@ scripts/ci/run-ci.sh
 ```
 
 자동화 동작과 Delivery 경계는 [CI/CD 운영 가이드](docs/ci-cd.md)를 참고한다.
+
+### 서버 테스트
+
+Java 25와 Docker Engine이 필요하다. Testcontainers가 빈 PostgreSQL 18.4에
+Flyway를 적용한 뒤 통합 테스트를 실행한다.
+
+```powershell
+.\gradlew.bat --no-daemon :server-api:cleanTest :server-api:test
+```
+
+로컬 PostgreSQL 설정은 실제 비밀번호를 Git에 넣지 않고 예제 파일을
+복사해 사용한다.
+
+```powershell
+Copy-Item .\infra\.env.example .\infra\.env.local
+docker compose --env-file .\infra\.env.local -f .\infra\docker-compose.local.yml up -d
+```
