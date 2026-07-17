@@ -1,0 +1,46 @@
+{
+  "referenceResolution": {
+    "width": 1920,
+    "height": 1080,
+    "match": 0.5
+  },
+  "touchTargetMinPx": 64,
+  "colors": {
+    "bgPrimary": "#181512",
+    "panelDark": "#29221C",
+    "panelLight": "#E6D2AA",
+    "accentGold": "#D3A349",
+    "success": "#66875B",
+    "warning": "#C28A3C",
+    "danger": "#A54D48",
+    "magic": "#636FA6",
+    "textPrimary": "#F2E8D5",
+    "textSecondary": "#B9A993",
+    "gradeC": "#8A8A8A",
+    "gradeB": "#5F9B62",
+    "gradeA": "#4E78B8",
+    "gradeS": "#8464B8",
+    "gradeSS": "#D3A349"
+  },
+  "fontSizes": {
+    "caption": 14,
+    "body": 16,
+    "button": 17,
+    "listTitle": 20,
+    "screenTitle": 28,
+    "reward": 36
+  },
+  "spacing": {
+    "xs": 4,
+    "sm": 8,
+    "md": 16,
+    "lg": 24,
+    "xl": 32
+  },
+  "motion": {
+    "toastSeconds": 2.5,
+    "drawerSeconds": 0.18,
+    "modalSeconds": 0.16,
+    "rewardSkippable": true
+  }
+}

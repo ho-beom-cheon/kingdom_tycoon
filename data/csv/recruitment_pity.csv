@@ -1,0 +1,4 @@
+﻿pity_id,pool_category,trigger_count,guaranteed_grade,reset_on_grade_or_higher,carry_over,status
+PITY_S_PLUS,SPECIAL,10,GRADE_S,GRADE_S,1,TUNABLE
+PITY_SS,SPECIAL,80,GRADE_SS,GRADE_SS,1,TUNABLE
+PITY_RATEUP_JOB,SPECIAL_RATEUP,2,,,0,TUNABLE

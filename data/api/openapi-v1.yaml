@@ -1,0 +1,70 @@
+openapi: 3.1.0
+info:
+  title: Tycoon Backend API
+  version: 0.1.0
+servers:
+  - url: http://localhost:8080/api/v1
+paths:
+  /health:
+    get:
+      operationId: getHealth
+      responses:
+        '200':
+          description: OK
+  /wallet:
+    get:
+      operationId: getWallet
+      responses:
+        '200':
+          description: Wallet snapshot
+  /recruitments/state:
+    get:
+      operationId: getRecruitmentState
+      responses:
+        '200':
+          description: Pool and pity state
+  /recruitments/special:
+    post:
+      operationId: recruitSpecial
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [poolId, paymentType, count]
+              properties:
+                poolId: { type: string }
+                paymentType: { type: string, enum: [TICKET, FREE_PREMIUM, PAID_PREMIUM] }
+                count: { type: integer, enum: [1, 10] }
+      responses:
+        '200': { description: Recruitment result }
+  /cloud-save:
+    get:
+      operationId: getCloudSave
+      responses:
+        '200': { description: Cloud save }
+    put:
+      operationId: putCloudSave
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Saved }
+  /rewards/claim:
+    post:
+      operationId: claimReward
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Claimed }

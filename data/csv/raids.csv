@@ -1,0 +1,3 @@
+﻿raid_id,name_ko,boss_monster_id,min_rank_id,party_min,party_max,unlock_condition,first_clear_reward,time_limit_sec,repeat_difficulties,status
+RAID_HYDRA,역병 히드라,BOSS_HYDRA,RANK_ELITE,6,8,REGION_R04_PROGRESS_100,UNLOCK_REGION_R05,300,NORMAL|HARD|CORRUPTED,TUNABLE
+RAID_DRAGON,잿빛 고룡,BOSS_DRAGON,RANK_HERO,6,8,KINGDOM_5,V1_ENDING_AND_VARIANTS,360,NORMAL|HARD|CORRUPTED,TUNABLE

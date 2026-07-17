@@ -1,0 +1,6 @@
+﻿grade_id,display_name,base_stat_multiplier,growth_multiplier,initial_trait_count,promotion_cost_multiplier,tavern_eligible,special_pool_eligible,ui_color,status
+GRADE_C,C,1.0,1.0,1,1.0,1,0,#8A8A8A,CONFIRMED
+GRADE_B,B,1.04,1.02,1,1.1,1,0,#5F9B62,CONFIRMED
+GRADE_A,A,1.08,1.04,2,1.25,1,1,#4E78B8,CONFIRMED
+GRADE_S,S,1.13,1.07,2,1.5,0,1,#8464B8,CONFIRMED
+GRADE_SS,SS,1.18,1.1,3,1.8,0,1,#D3A349,CONFIRMED
