@@ -44,6 +44,8 @@
 - `31_DEFINITION_OF_DONE.md`
 - `32_TECH_VERSION_SOURCES.md`
 - `33_OPEN_DECISIONS.md`
+- `design/TYCOON_DB_INTERFACE_DESIGN_v1.0.md`: 서버 DB 스키마, 권한,
+  트랜잭션, Flyway, 운영 콘텐츠 배포 상세 기준선
 
 ## 구현 데이터
 

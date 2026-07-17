@@ -23,6 +23,12 @@
 - Unity를 사용한다.
 - Git을 사용한다.
 - PostgreSQL을 사용한다.
+- 서버·DB 구현은 `docs/design/TYCOON_DB_INTERFACE_DESIGN_v1.0.md`를
+  상세 기준선으로 사용한다.
+- DB 작업은 해당 문서의 P0/P1/P2 트랙으로 나누어 검증하며, Unity 중심의
+  P02~P15 순서를 임의로 완료 처리하지 않는다.
+- DB P0 후보는 이슈 #10에서 감사·보강 후 채택하고, P1/P2는 별도 이슈와
+  새 Flyway migration으로 진행한다.
 - IntelliJ IDEA를 서버 개발 도구로 사용한다.
 - 초기 에셋은 무료 중심, 유료 총예산은 200,000원 이하.
 - 서버 배포 등 운영 항목은 개발 완료 후 하나씩 결정한다.
