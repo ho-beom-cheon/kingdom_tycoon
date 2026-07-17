@@ -1,0 +1,73 @@
+name: repository-ci
+
+# CI is intentionally limited to validation and tests. Production deployment,
+# credentials, and Unity licensing remain separate approval-gated work.
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: repository-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Repository validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      # Detect optional modules before installing toolchains. This keeps an
+      # early repository shell fast while making skipped work explicit.
+      - name: Detect repository layout
+        id: layout
+        shell: bash
+        run: |
+          if [[ -f scripts/validate_content.py || -f tycoon_v1_0_pro_codex_handoff/scripts/validate_content.py ]]; then
+            echo "has_content=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_content=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          if [[ -f gradlew || -f server-api/gradlew ]]; then
+            echo "has_server=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_server=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up Python 3.12
+        if: steps.layout.outputs.has_content == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up Java 25
+        if: steps.layout.outputs.has_server == 'true'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+
+      # The same script is executable locally, so CI behavior does not live
+      # only inside YAML that developers cannot reproduce.
+      - name: Run repository CI contract
+        shell: bash
+        run: scripts/ci/run-ci.sh
+
+      - name: Upload server test reports
+        if: always() && steps.layout.outputs.has_server == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-test-results-${{ github.run_id }}
+          path: "**/build/test-results/test/*.xml"
+          if-no-files-found: warn
+          retention-days: 14
