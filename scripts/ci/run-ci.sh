@@ -122,10 +122,24 @@ if [ -f "$project_version" ]; then
   [ -d "${unity_root}/Assets" ] || fail "${unity_root}/Assets is missing"
   [ -f "${unity_root}/Packages/manifest.json" ] || fail "Unity package manifest is missing"
 
+  grep -q '^m_EditorVersion: 6000\.3\.20f1$' "$project_version" \
+    || fail "Unity Editor must be pinned to 6000.3.20f1"
+  grep -q '^m_EditorVersionWithRevision: 6000\.3\.20f1 (c9ba695d4f07)$' "$project_version" \
+    || fail "Unity Editor revision must be pinned to c9ba695d4f07"
+
   editor_settings="${unity_root}/ProjectSettings/EditorSettings.asset"
   [ -f "$editor_settings" ] || fail "Unity EditorSettings.asset is missing"
-  grep -q 'm_ExternalVersionControlSupport: Visible Meta Files' "$editor_settings" \
-    || fail "Unity Version Control must be Visible Meta Files"
+
+  version_control_settings="${unity_root}/ProjectSettings/VersionControlSettings.asset"
+  if grep -q 'm_ExternalVersionControlSupport: Visible Meta Files' "$editor_settings"; then
+    :
+  elif [ -f "$version_control_settings" ] \
+    && grep -q 'm_Mode: Visible Meta Files' "$version_control_settings"; then
+    :
+  else
+    fail "Unity Version Control must be Visible Meta Files"
+  fi
+
   grep -Eq 'm_(Asset)?SerializationMode: 2' "$editor_settings" \
     || fail "Unity Asset Serialization must be Force Text"
 
