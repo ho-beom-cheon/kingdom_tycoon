@@ -82,18 +82,9 @@ done
 finish_step "repository-managed hooks parsed successfully"
 
 start_step 2 4 "Content data validation"
-validator=""
-for candidate in \
-  "scripts/validate_content.py" \
-  "tycoon_v1_0_pro_codex_handoff/scripts/validate_content.py"
-do
-  if [ -f "$candidate" ]; then
-    validator="$candidate"
-    break
-  fi
-done
+validator="scripts/validate_content.py"
 
-if [ -n "$validator" ]; then
+if [ -f "$validator" ]; then
   command -v python >/dev/null 2>&1 || fail "Python is required for ${validator}"
   printf '[%s] Validator: %s\n' "$pipeline_name" "$validator"
   PYTHONUNBUFFERED=1 python -u "$validator"

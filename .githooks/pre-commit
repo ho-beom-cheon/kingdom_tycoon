@@ -49,18 +49,8 @@ printf '[%s] Pipeline started (branch: %s, staged files: %s).\n' \
   "$hook_name" "$branch_name" "${#staged_files[@]}"
 
 start_step 1 3 "Validate content data"
-validator=""
-for candidate in \
-  "scripts/validate_content.py" \
-  "tycoon_v1_0_pro_codex_handoff/scripts/validate_content.py"
-do
-  if [ -f "$candidate" ]; then
-    validator="$candidate"
-    break
-  fi
-done
-
-[ -n "$validator" ] || fail "Content validator not found."
+validator="scripts/validate_content.py"
+[ -f "$validator" ] || fail "Tracked content validator not found: ${validator}"
 command -v python >/dev/null 2>&1 || fail "Python is not available on PATH."
 printf '[%s] Validator: %s\n' "$hook_name" "$validator"
 PYTHONUNBUFFERED=1 python -u "$validator"

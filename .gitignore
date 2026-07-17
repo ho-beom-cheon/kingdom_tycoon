@@ -1,0 +1,51 @@
+# Unity generated content
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+[Mm]emoryCaptures/
+[Rr]ecordings/
+
+# IDE and editor-local files
+.idea/
+.vscode/
+.vs/
+*.csproj
+*.sln
+*.user
+*.iml
+
+# Java and Gradle generated content
+.gradle/
+**/build/
+out/
+hs_err_pid*
+
+# Local tools and delivery output
+.tools/
+.delivery/
+coverage/
+
+# Secrets and signing material
+.env
+.env.*
+!.env.example
+*.jks
+*.keystore
+*.p12
+*.pfx
+*.pem
+*.key
+service-account*.json
+local.properties
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# Local handoff package copies are replaced by the tracked root structure.
+/tycoon_v1_0_pro_codex_handoff/
+/tycoon_v1_0_pro_codex_handoff.zip
