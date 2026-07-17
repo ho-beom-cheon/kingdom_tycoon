@@ -1,0 +1,27 @@
+services:
+  postgres:
+    image: postgres:18.4
+    container_name: tycoon-postgres-local
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: tycoon_local
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${TYCOON_POSTGRES_ADMIN_PASSWORD:?set TYCOON_POSTGRES_ADMIN_PASSWORD}
+      TYCOON_MIGRATOR_PASSWORD: ${TYCOON_MIGRATOR_PASSWORD:?set TYCOON_MIGRATOR_PASSWORD}
+      TYCOON_APP_PASSWORD: ${TYCOON_APP_PASSWORD:?set TYCOON_APP_PASSWORD}
+      TYCOON_OPS_PASSWORD: ${TYCOON_OPS_PASSWORD:?set TYCOON_OPS_PASSWORD}
+      TYCOON_READONLY_PASSWORD: ${TYCOON_READONLY_PASSWORD:?set TYCOON_READONLY_PASSWORD}
+      TZ: UTC
+    ports:
+      - "${TYCOON_DB_PORT:-5432}:5432"
+    volumes:
+      - tycoon_postgres_data:/var/lib/postgresql
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d tycoon_local"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  tycoon_postgres_data:
