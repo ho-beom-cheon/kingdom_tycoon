@@ -1,0 +1,158 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+# This script is the shared CI contract. GitHub Actions calls it, and developers
+# can run the same checks locally without having to reproduce workflow internals.
+pipeline_name="repository-ci"
+pipeline_started=$SECONDS
+step_started=$SECONDS
+current_step="initialization"
+
+append_summary() {
+  if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
+    printf '%s\n' "$1" >> "$GITHUB_STEP_SUMMARY"
+  fi
+}
+
+record_result() {
+  local component="$1"
+  local result="$2"
+  local detail="$3"
+  printf '[%s] %s: %s — %s\n' "$pipeline_name" "$result" "$component" "$detail"
+  append_summary "- **${component}**: ${result} — ${detail}"
+}
+
+fail() {
+  local message="$1"
+  record_result "$current_step" "FAILED" "$message"
+  printf '[%s] Pipeline failed after %ss.\n' \
+    "$pipeline_name" "$((SECONDS - pipeline_started))" >&2
+  exit 1
+}
+
+handle_error() {
+  local exit_code=$?
+  record_result "$current_step" "FAILED" "command exited with code ${exit_code}"
+  printf '[%s] Pipeline failed after %ss.\n' \
+    "$pipeline_name" "$((SECONDS - pipeline_started))" >&2
+  exit "$exit_code"
+}
+
+start_step() {
+  local number="$1"
+  local total="$2"
+  local description="$3"
+  current_step="$description"
+  step_started=$SECONDS
+  printf '\n[%s %s/%s] %s...\n' "$pipeline_name" "$number" "$total" "$description"
+}
+
+finish_step() {
+  local detail="$1"
+  record_result "$current_step" "PASSED" "${detail}; $((SECONDS - step_started))s"
+}
+
+skip_step() {
+  local reason="$1"
+  record_result "$current_step" "SKIPPED" "$reason"
+}
+
+trap handle_error ERR
+
+repo_root="$(git rev-parse --show-toplevel)"
+cd "$repo_root"
+
+branch_name="$(git branch --show-current)"
+if [ -z "$branch_name" ]; then
+  branch_name="${GITHUB_REF_NAME:-detached HEAD}"
+fi
+
+printf '[%s] Pipeline started (branch: %s, commit: %s).\n' \
+  "$pipeline_name" "$branch_name" "$(git rev-parse --short HEAD)"
+append_summary "## Repository CI summary"
+append_summary ""
+append_summary "Commit: \`$(git rev-parse --short HEAD)\`"
+append_summary ""
+
+start_step 1 4 "Git Hook syntax"
+for hook in .githooks/pre-commit .githooks/pre-push; do
+  [ -f "$hook" ] || fail "required hook is missing: ${hook}"
+  bash -n "$hook"
+done
+finish_step "repository-managed hooks parsed successfully"
+
+start_step 2 4 "Content data validation"
+validator=""
+for candidate in \
+  "scripts/validate_content.py" \
+  "tycoon_v1_0_pro_codex_handoff/scripts/validate_content.py"
+do
+  if [ -f "$candidate" ]; then
+    validator="$candidate"
+    break
+  fi
+done
+
+if [ -n "$validator" ]; then
+  command -v python >/dev/null 2>&1 || fail "Python is required for ${validator}"
+  printf '[%s] Validator: %s\n' "$pipeline_name" "$validator"
+  PYTHONUNBUFFERED=1 python -u "$validator"
+  finish_step "${validator} completed"
+else
+  skip_step "content validator is not present on this branch"
+fi
+
+start_step 3 4 "Server clean test"
+gradle_dir=""
+if [ -f "gradlew" ]; then
+  gradle_dir="."
+elif [ -f "server-api/gradlew" ]; then
+  gradle_dir="server-api"
+fi
+
+if [ -n "$gradle_dir" ]; then
+  command -v java >/dev/null 2>&1 || fail "Java is required when a Gradle Wrapper is present"
+  read -r -a server_tasks <<< "${SERVER_TASK:-clean test}"
+  (
+    cd "$gradle_dir"
+    chmod +x gradlew
+    ./gradlew "${server_tasks[@]}"
+  )
+  finish_step "Gradle task '${SERVER_TASK:-clean test}' completed in ${gradle_dir}"
+else
+  skip_step "Gradle Wrapper is not present; server build files are not treated as runnable"
+fi
+
+start_step 4 4 "Unity project policy"
+unity_root="client-unity"
+project_version="${unity_root}/ProjectSettings/ProjectVersion.txt"
+
+if [ -f "$project_version" ]; then
+  [ -d "${unity_root}/Assets" ] || fail "${unity_root}/Assets is missing"
+  [ -f "${unity_root}/Packages/manifest.json" ] || fail "Unity package manifest is missing"
+
+  editor_settings="${unity_root}/ProjectSettings/EditorSettings.asset"
+  [ -f "$editor_settings" ] || fail "Unity EditorSettings.asset is missing"
+  grep -q 'm_ExternalVersionControlSupport: Visible Meta Files' "$editor_settings" \
+    || fail "Unity Version Control must be Visible Meta Files"
+  grep -Eq 'm_(Asset)?SerializationMode: 2' "$editor_settings" \
+    || fail "Unity Asset Serialization must be Force Text"
+
+  missing_meta=0
+  while IFS= read -r -d '' asset; do
+    if [ ! -f "${asset}.meta" ]; then
+      printf '[%s] Missing Unity meta: %s.meta\n' "$pipeline_name" "$asset" >&2
+      missing_meta=$((missing_meta + 1))
+    fi
+  done < <(find "${unity_root}/Assets" -mindepth 1 ! -name '*.meta' -print0)
+
+  [ "$missing_meta" -eq 0 ] || fail "${missing_meta} Unity Asset paths are missing .meta files"
+  finish_step "Unity structure, serialization policy, and Asset metadata are valid"
+else
+  skip_step "Unity project is not present; licensed EditMode/PlayMode execution remains deferred"
+fi
+
+append_summary ""
+append_summary "Total duration: $((SECONDS - pipeline_started))s"
+printf '\n[%s] Pipeline passed in %ss.\n' \
+  "$pipeline_name" "$((SECONDS - pipeline_started))"
