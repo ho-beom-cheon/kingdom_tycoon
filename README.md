@@ -9,8 +9,8 @@
 - 완료: [P01 저장소 기반](docs/reports/P01_REPOSITORY_FOUNDATION_REPORT.md)
 - 완료: [DB P0 설계 채택·감사](docs/reports/P0_DB_IMPLEMENTATION_REPORT.md)
 - 완료: [P02 Unity 기반](docs/reports/P02_UNITY_FOUNDATION_REPORT.md)
-- 진행 중: [P03 콘텐츠 파이프라인·Save](docs/reports/P03_CONTENT_SAVE_REPORT.md)
-- UNRESOLVED: canonical gameplay data 8개 묶음의 실제 row 값 확정 필요
+- 완료: [P03 콘텐츠 파이프라인·Save](docs/reports/P03_CONTENT_SAVE_REPORT.md)
+- 다음: [P04 왕국·시설](phases/P04_KINGDOM_FACILITIES.md)
 
 한 Phase의 구현과 검증이 끝나기 전에는 다음 Phase로 이동하지 않는다.
 
@@ -55,13 +55,16 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\setup-git-hooks.ps
 콘텐츠 데이터를 직접 검증한다.
 
 ```powershell
+python .\scripts\generate_canonical_content.py --check
 python .\scripts\validate_content.py
 ```
 
-이 명령은 생성된 Save schema 두 사본의 drift도 함께 검사한다. schema를 변경한 경우 먼저
-다음 generator를 실행한다.
+첫 명령은 최종 P03 설계와 `StreamingAssets/Content` 60-table package의 byte drift를 검사한다.
+두 번째 명령은 기존 콘텐츠와 생성된 Save schema 두 사본을 검사한다. 생성물이 변경된 경우 먼저
+해당 generator를 실행한다.
 
 ```powershell
+python .\scripts\generate_canonical_content.py
 python .\scripts\generate_save_schema.py
 ```
 
@@ -88,9 +91,8 @@ Unity `6000.3.20f1`에서 EditMode와 PlayMode를 각각 실행한다. `<UNITY_E
   -testResults .\client-unity\Logs\playmode-results.xml
 ```
 
-P02 결과는 [Unity 기반 구현 보고서](docs/reports/P02_UNITY_FOUNDATION_REPORT.md), P03 결과와
-남은 데이터 계약은 [콘텐츠 파이프라인·Save 구현 보고서](docs/reports/P03_CONTENT_SAVE_REPORT.md)에
-기록한다.
+P02 결과는 [Unity 기반 구현 보고서](docs/reports/P02_UNITY_FOUNDATION_REPORT.md), P03 완료 결과는
+[콘텐츠 파이프라인·Save 구현 보고서](docs/reports/P03_CONTENT_SAVE_REPORT.md)에 기록한다.
 
 ### 서버 테스트
 
