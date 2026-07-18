@@ -57,10 +57,12 @@ validator="scripts/validate_content.py"
 canonical_generator="scripts/generate_canonical_content.py"
 p04_generator="scripts/generate_p04_content.py"
 p05_generator="scripts/generate_p05_content.py"
+p06_generator="scripts/generate_p06_content.py"
 [ -f "$validator" ] || fail "Tracked content validator not found: ${validator}"
 [ -f "$canonical_generator" ] || fail "Canonical content generator not found: ${canonical_generator}"
 [ -f "$p04_generator" ] || fail "P04 content generator not found: ${p04_generator}"
 [ -f "$p05_generator" ] || fail "P05 content generator not found: ${p05_generator}"
+[ -f "$p06_generator" ] || fail "P06 content generator not found: ${p06_generator}"
 command -v python >/dev/null 2>&1 || fail "Python is not available on PATH."
 printf '[%s] Canonical package: %s --check\n' "$hook_name" "$canonical_generator"
 PYTHONUNBUFFERED=1 python -u "$canonical_generator" --check
@@ -68,6 +70,8 @@ printf '[%s] P04 package: %s --check\n' "$hook_name" "$p04_generator"
 PYTHONUNBUFFERED=1 python -u "$p04_generator" --check
 printf '[%s] P05 package: %s --check\n' "$hook_name" "$p05_generator"
 PYTHONUNBUFFERED=1 python -u "$p05_generator" --check
+printf '[%s] P06 package: %s --check\n' "$hook_name" "$p06_generator"
+PYTHONUNBUFFERED=1 python -u "$p06_generator" --check
 printf '[%s] Validator: %s\n' "$hook_name" "$validator"
 PYTHONUNBUFFERED=1 python -u "$validator"
 finish_step
