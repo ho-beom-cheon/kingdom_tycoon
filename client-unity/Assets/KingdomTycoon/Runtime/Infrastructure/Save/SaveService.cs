@@ -7,13 +7,20 @@ namespace KingdomTycoon.Infrastructure.Save
     {
         private readonly string persistentDataPath;
         private readonly string schemaJson;
+        private readonly string content5SchemaJson;
 
         public SaveService(string persistentDataPath, string schemaJson)
+            : this(persistentDataPath, schemaJson, null)
+        {
+        }
+
+        public SaveService(string persistentDataPath, string schemaJson, string content5SchemaJson)
         {
             this.persistentDataPath = string.IsNullOrWhiteSpace(persistentDataPath)
                 ? throw new ArgumentException("Persistent data path is required.", nameof(persistentDataPath))
                 : persistentDataPath;
             this.schemaJson = schemaJson ?? throw new ArgumentNullException(nameof(schemaJson));
+            this.content5SchemaJson = content5SchemaJson;
         }
 
         public int InitializationOrder => 30;
@@ -28,7 +35,9 @@ namespace KingdomTycoon.Infrastructure.Save
 
         public void Initialize(ServiceRegistry services)
         {
-            Validator = new SaveDocumentValidator(schemaJson);
+            Validator = content5SchemaJson == null
+                ? new SaveDocumentValidator(schemaJson)
+                : new SaveDocumentValidator(schemaJson, content5SchemaJson);
             Migrations = new SaveMigrationRegistry(1);
             Repository = new AtomicSaveRepository(persistentDataPath, Validator);
         }

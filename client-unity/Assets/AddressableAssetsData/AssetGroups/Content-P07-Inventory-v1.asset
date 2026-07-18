@@ -1,0 +1,185 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bbb281ee3bf0b054c82ac2347e9e782c, type: 3}
+  m_Name: Content-P07-Inventory-v1
+  m_EditorClassIdentifier: Unity.Addressables.Editor::UnityEditor.AddressableAssets.Settings.AddressableAssetGroup
+  m_GroupName: Content-P07-Inventory-v1
+  m_GUID: f0f27169d83e76a4bb0239a00b04b4b7
+  m_SerializeEntries:
+  - m_GUID: 05cee71c83f10854595fdfec6940cc94
+    m_Address: P07/Items/PROMOTION
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P07-Inventory
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 0b1bbc06795c637439d93eee655a90ab
+    m_Address: P07/Slots/HELMET
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P07-Inventory
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 217a08cb8b31c2e4fbd5a9360761bcf2
+    m_Address: P07/Tier/2
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P07-Inventory
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 2aa1d871db58ed249b2f312490129c9a
+    m_Address: P07/Tier/5
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P07-Inventory
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 3a1d2d01eda8e6c4ab718597b517086a
+    m_Address: P07/Slots/WEAPON
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P07-Inventory
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 48c196cc21439ba4292d8e7687f54df8
+    m_Address: P07/Items/CRAFT
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P07-Inventory
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 56af4d520c23b6f4a9445a776679c759
+    m_Address: P07/Slots/ARMOR
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P07-Inventory
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 5b324cce8f135bc46a86408175b017e9
+    m_Address: P07/Items/RELIC
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P07-Inventory
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 5f80a26b9258bf643889c07172ac2d0e
+    m_Address: P07/Tier/3
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P07-Inventory
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 6cd10c3e5d884c640b13fbbaeee78d6d
+    m_Address: P07/Items/MONSTER
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P07-Inventory
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 71d9455d90ede404b9fde379db860f9c
+    m_Address: P07/Quality/QUALITY_COMMON
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P07-Inventory
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 7a969f49b40686b4f92c73791c3fcf30
+    m_Address: P07/State/ERROR
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P07-Inventory
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 877ccee646b1c6c46b6d5e70aa55353b
+    m_Address: P07/Slots/ACCESSORY
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P07-Inventory
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: a0b2f47ed2b741c46b08a152ea8d0a7b
+    m_Address: P07/Quality/QUALITY_FINE
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P07-Inventory
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: a36d833b43cfa644c8fbe010f43d27f0
+    m_Address: P07/Items/REFINE
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P07-Inventory
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: b291a5501368d6b489e92e9f9cbc0f1a
+    m_Address: P07/Items/ENHANCE
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P07-Inventory
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: bfb7fac0b41dc1445b34c1353191cf92
+    m_Address: P07/Quality/QUALITY_RELIC
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P07-Inventory
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: c00b51a72d2b73148b6886e180c88a03
+    m_Address: P07/Quality/QUALITY_RARE
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P07-Inventory
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: c5e5d307e1b99e146bd0a6ea3d57e802
+    m_Address: P07/Items/MAGIC
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P07-Inventory
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: cf19f2411b26be14b9f69c5bdd2f31fd
+    m_Address: P07/Quality/QUALITY_LEGACY
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P07-Inventory
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: d67a9285af785f34dbc50730ea041b43
+    m_Address: P07/Items/ORE
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P07-Inventory
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: e56ee284c00d2fa49b607c60516284b7
+    m_Address: P07/State/LOCKED
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P07-Inventory
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: e8e6d00d3edc7734aa47c29aa68b013a
+    m_Address: P07/Items/ALCHEMY
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P07-Inventory
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: ee2a599039d23cc42bccce9c50f19e45
+    m_Address: P07/Tier/1
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P07-Inventory
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: f2cdaba1543f24b4cab6b7778accf105
+    m_Address: P07/State/EMPTY
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P07-Inventory
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: fd37934b972745141b6ccfda870091f5
+    m_Address: P07/Items/BOSS
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P07-Inventory
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: fed43a04ac396fd4c912d51f1e1147c0
+    m_Address: P07/Tier/4
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P07-Inventory
+    FlaggedDuringContentUpdateRestriction: 0
+  m_ReadOnly: 0
+  m_Settings: {fileID: 11400000, guid: 50a16fd5bbff422489f2854e28312161, type: 2}
+  m_SchemaSet:
+    m_Schemas:
+    - {fileID: 11400000, guid: 060e1ca4b43c3ab4992b4b6fe531c284, type: 2}
+    - {fileID: 11400000, guid: 8ebf03c70292ec148b1b20f8df7aa5ba, type: 2}

@@ -71,6 +71,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: e789da9aad0c23446981aeb3d93c40ed, type: 2}
   - {fileID: 11400000, guid: ee04ea7f85b296e4b857f5b8ed5535bf, type: 2}
   - {fileID: 11400000, guid: f58eac6a9da3b36449ea88245dfb7b6f, type: 2}
+  - {fileID: 11400000, guid: 0e0ea1e25090f094eb66afbb792d4d69, type: 2}
   m_BuildSettings:
     m_LogResourceManagerExceptions: 1
     m_ContentDirectoryBuildPath: Temp/com.unity.addressables/ContentDirectories
@@ -117,6 +118,7 @@ MonoBehaviour:
     - P03-Placeholder
     - P04-Kingdom
     - P06-Combat
+    - P07-Inventory
   m_SchemaTemplates: []
   m_GroupTemplateObjects:
   - {fileID: 11400000, guid: 26f94d93cbbe37e468cc99f5c15ec58e, type: 2}

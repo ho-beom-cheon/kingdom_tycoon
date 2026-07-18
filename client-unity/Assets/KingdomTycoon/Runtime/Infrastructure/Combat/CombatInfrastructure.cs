@@ -5,9 +5,11 @@ using System.Linq;
 using KingdomTycoon.Application.Abstractions;
 using KingdomTycoon.Application.Combat;
 using KingdomTycoon.Domain.Combat;
+using KingdomTycoon.Domain.Inventory;
 using KingdomTycoon.Infrastructure.Content;
 using KingdomTycoon.Infrastructure.Content.Migrations;
 using KingdomTycoon.Infrastructure.Facilities;
+using KingdomTycoon.Infrastructure.Inventory;
 using KingdomTycoon.Infrastructure.Save;
 using KingdomTycoon.Services;
 using Newtonsoft.Json.Linq;
@@ -75,8 +77,9 @@ namespace KingdomTycoon.Infrastructure.Combat
         public CanonicalCombatCatalog(ContentCatalog catalog)
         {
             if (catalog == null) throw new ArgumentNullException(nameof(catalog));
-            if (catalog.ContentVersion != CompileTimeActiveContentVersionProvider.P06ContentVersion)
+            if (catalog.ContentVersion is not (CompileTimeActiveContentVersionProvider.P06ContentVersion or CompileTimeActiveContentVersionProvider.P07ContentVersion))
                 throw new CombatDomainException("P06_CONTENT_VERSION_UNSUPPORTED");
+            ContentVersion = catalog.ContentVersion;
             jobs = catalog.GetTable("combat_job_profiles.csv").Rows.Where(Enabled).Select(row => new CombatJobProfile(row)).ToDictionary(value => value.JobId, StringComparer.Ordinal);
             monsters = catalog.GetTable("monsters.csv").Rows.Where(Enabled).Select(row => new MonsterCombatProfile(row)).ToDictionary(value => value.MonsterId, StringComparer.Ordinal);
             encounters = catalog.GetTable("region_encounter_profiles.csv").Rows.Where(Enabled).Select(row => new EncounterCombatProfile(row))
@@ -89,6 +92,7 @@ namespace KingdomTycoon.Infrastructure.Combat
         }
 
         public IReadOnlyList<AutonomyRule> AutonomyRules { get; }
+        public string ContentVersion { get; }
         public CombatJobProfile Job(string id) => jobs.TryGetValue(id, out CombatJobProfile value) ? value : throw new CombatDomainException("P06_CONTENT_MISSING");
         public MonsterCombatProfile Monster(string id) => monsters.TryGetValue(id, out MonsterCombatProfile value) ? value : throw new CombatDomainException("P06_CONTENT_MISSING");
         public (EncounterCombatProfile Profile, int WaveSize) SelectEncounter(string regionId, CombatSplitMix64 random)
@@ -121,6 +125,7 @@ namespace KingdomTycoon.Infrastructure.Combat
         private SaveService save;
         private ContentCatalogService content;
         private FacilityGameService game;
+        private InventoryGameService inventory;
         private CanonicalCombatCatalog catalog;
         private RuntimeSession session;
         private RecallHuntResult lastTerminalResult;
@@ -137,6 +142,8 @@ namespace KingdomTycoon.Infrastructure.Combat
             save = services.Get<SaveService>();
             content = services.Get<ContentCatalogService>();
             game = services.Get<FacilityGameService>();
+            try { inventory = services.Get<InventoryGameService>(); }
+            catch (InvalidOperationException) { inventory = null; }
         }
 
         public void Bootstrap()
@@ -150,7 +157,7 @@ namespace KingdomTycoon.Infrastructure.Combat
                 current = new P05ToP06ContentMigration(clock).Apply(current);
                 needsWrite = true;
             }
-            else if (current.Value<string>("contentVersion") != CompileTimeActiveContentVersionProvider.P06ContentVersion)
+            else if (current.Value<string>("contentVersion") is not (CompileTimeActiveContentVersionProvider.P06ContentVersion or CompileTimeActiveContentVersionProvider.P07ContentVersion))
             {
                 throw new CombatDomainException("P06_CONTENT_VERSION_UNSUPPORTED");
             }
@@ -260,7 +267,7 @@ namespace KingdomTycoon.Infrastructure.Combat
 
         public void Shutdown()
         {
-            SnapshotChanged = null; HuntSettled = null; session = null; catalog = null; game = null; content = null; save = null; IsBootstrapped = false;
+            SnapshotChanged = null; HuntSettled = null; session = null; catalog = null; inventory = null; game = null; content = null; save = null; IsBootstrapped = false;
         }
 
         private RuntimeSession NewSession(Guid huntId, string regionId, string[] party, IReadOnlyDictionary<string, JObject> mercenaries)
@@ -272,7 +279,7 @@ namespace KingdomTycoon.Infrastructure.Combat
 
         private HuntSimulation BuildEncounter(RuntimeSession runtime)
         {
-            ulong seed = CombatDeterminism.EncounterSeed(CompileTimeActiveContentVersionProvider.P06ContentVersion, game.ActiveProfileId, runtime.HuntOperationId.ToString("D"), runtime.EncounterIndex);
+            ulong seed = CombatDeterminism.EncounterSeed(catalog.ContentVersion, game.ActiveProfileId, runtime.HuntOperationId.ToString("D"), runtime.EncounterIndex);
             var random = new CombatSplitMix64(seed);
             (EncounterCombatProfile profile, int waveSize) = catalog.SelectEncounter(runtime.RegionId, random);
             MonsterCombatProfile monster = catalog.Monster(profile.MonsterId);
@@ -281,7 +288,16 @@ namespace KingdomTycoon.Infrastructure.Combat
             {
                 string id = runtime.Party[index];
                 CombatJobProfile job = catalog.Job(runtime.JobIds[id]);
-                simulation.Add(new Combatant($"{runtime.HuntOperationId:D}:{runtime.EncounterIndex:0000}:P:{index:000}", CombatTeam.Party, job.MaxHp, job.Attack, job.Defense, job.RangeMilli, job.AttackSpeedMilli, index * 700, 0, job.MoveSpeedMilli));
+                var equipment = new EquipmentStatBlock();
+                if (inventory?.IsBootstrapped == true)
+                {
+                    JObject document = game.Snapshot();
+                    JObject mercenary = document["payload"]!["mercenaries"]!.Children<JObject>().Single(value => value.Value<string>("instanceId") == id);
+                    equipment = inventory.EquipmentModifier(document, mercenary);
+                }
+                simulation.Add(new Combatant($"{runtime.HuntOperationId:D}:{runtime.EncounterIndex:0000}:P:{index:000}", CombatTeam.Party,
+                    checked(job.MaxHp + equipment.MaxHp), checked(job.Attack + equipment.Attack), checked(job.Defense + equipment.Defense),
+                    job.RangeMilli, job.AttackSpeedMilli, index * 700, 0, checked(job.MoveSpeedMilli + equipment.MoveSpeed)));
             }
             for (int index = 0; index < waveSize; index++)
                 simulation.Add(new Combatant($"{runtime.HuntOperationId:D}:{runtime.EncounterIndex:0000}:M:{index:000}", CombatTeam.Hostile, monster.MaxHp, monster.Attack, monster.Defense, 1500, 900, 2500 + index * 700, 0, 3000));
@@ -312,12 +328,24 @@ namespace KingdomTycoon.Infrastructure.Combat
                 if (completed.KillCount > 0) value["records"]!["huntCount"] = value["records"]!.Value<long>("huntCount") + 1;
                 contribution.Add(contributionDelta); gold.Add(goldDelta);
             }
-            string digest = Rfc8785Canonicalizer.ComputeSha256(new JObject
+            InventorySettlementMutation loot = inventory?.IsBootstrapped == true
+                ? inventory.ApplyTerminalLoot(draft, completed.HuntOperationId, completed.KillCount, completed.Party)
+                : new InventorySettlementMutation();
+            var terminalDigest = new JObject
             {
                 ["operationId"] = completed.HuntOperationId.ToString("D"), ["revisionBefore"] = before, ["revisionAfter"] = before + 1,
                 ["terminalState"] = "IDLE_TOWN", ["killCountDelta"] = completed.KillCount, ["huntCountDeltaPerPartyMember"] = completed.KillCount > 0 ? 1 : 0,
                 ["contributionDelta"] = new JArray(contribution), ["personalGoldDelta"] = new JArray(gold), ["rewardJournalCount"] = 1, ["replayed"] = false
-            });
+            };
+            if (inventory?.IsBootstrapped == true)
+            {
+                terminalDigest["retainedItems"] = loot.RetainedItems;
+                terminalDigest["retainedEquipment"] = loot.RetainedEquipment;
+                terminalDigest["equipmentInstanceId"] = loot.EquipmentInstanceId == null
+                    ? JValue.CreateNull()
+                    : new JValue(loot.EquipmentInstanceId);
+            }
+            string digest = Rfc8785Canonicalizer.ComputeSha256(terminalDigest);
             AppendJournal(draft, completed.HuntOperationId, requestHash, digest, clock.UtcNow);
             Commit(draft, before);
             var result = new RecallHuntResult(completed.HuntOperationId, before, Revision, "IDLE_TOWN", completed.KillCount, contribution, gold, false, digest);

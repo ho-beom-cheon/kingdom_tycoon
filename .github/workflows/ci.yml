@@ -38,6 +38,12 @@ jobs:
             echo "has_content=false" >> "$GITHUB_OUTPUT"
           fi
 
+          if [[ -f scripts/ci/p07.sh ]]; then
+            echo "has_p07=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_p07=false" >> "$GITHUB_OUTPUT"
+          fi
+
           if [[ -f gradlew || -f server-api/gradlew ]]; then
             echo "has_server=true" >> "$GITHUB_OUTPUT"
           else
@@ -70,4 +76,16 @@ jobs:
           name: server-test-results-${{ github.run_id }}
           path: "**/build/test-results/test/*.xml"
           if-no-files-found: warn
+          retention-days: 14
+
+      - name: Upload P07 contract evidence
+        if: always() && steps.layout.outputs.has_p07 == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: p07-contract-evidence-${{ github.run_id }}
+          path: |
+            docs/reports/captures/P07/*.png
+            client-unity/Assets/KingdomTycoon/Resources/Contracts/p07-*.json
+            client-unity/Assets/KingdomTycoon/Resources/Contracts/save.content.5.schema.json
+          if-no-files-found: error
           retention-days: 14

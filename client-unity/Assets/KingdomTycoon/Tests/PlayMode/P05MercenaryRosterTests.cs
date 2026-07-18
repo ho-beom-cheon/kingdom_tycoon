@@ -324,7 +324,7 @@ namespace KingdomTycoon.Tests.PlayMode
             string output = Path.Combine(root, "docs", "reports", "captures", "P05", filename);
             Directory.CreateDirectory(Path.GetDirectoryName(output)!);
             if (File.Exists(output)) File.Delete(output);
-            Canvas[] canvases = UnityEngine.Object.FindObjectsByType<Canvas>();
+            Canvas[] canvases = UnityEngine.Object.FindObjectsByType<Canvas>(FindObjectsSortMode.None);
             var modes = canvases.Select(value => value.renderMode).ToArray();
             var cameras = canvases.Select(value => value.worldCamera).ToArray();
             var distances = canvases.Select(value => value.planeDistance).ToArray();
