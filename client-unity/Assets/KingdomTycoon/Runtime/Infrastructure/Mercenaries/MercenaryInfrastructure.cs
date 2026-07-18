@@ -121,6 +121,15 @@ namespace KingdomTycoon.Infrastructure.Mercenaries
         public long Revision { get; }
     }
 
+    public sealed class MercenaryRosterMigratedEventArgs : EventArgs
+    {
+        public MercenaryRosterMigratedEventArgs(int addedCount, string contentVersion, long revision)
+        { AddedCount = addedCount; ContentVersion = contentVersion; Revision = revision; }
+        public int AddedCount { get; }
+        public string ContentVersion { get; }
+        public long Revision { get; }
+    }
+
     public sealed class MercenaryRosterService : IAppService, IMercenaryUnitOfWork
     {
         private readonly ITrustedUtcClock clock;
@@ -146,6 +155,7 @@ namespace KingdomTycoon.Infrastructure.Mercenaries
         public long Revision => game?.Revision ?? 0;
         public CanonicalMercenaryCatalog Catalog => catalog;
         public event EventHandler<MercenaryActivatedEventArgs> ActivityChanged;
+        public event EventHandler<MercenaryRosterMigratedEventArgs> RosterMigrated;
 
         public void Initialize(ServiceRegistry services)
         {
@@ -162,11 +172,15 @@ namespace KingdomTycoon.Infrastructure.Mercenaries
             JObject current = game.Snapshot();
             if (current.Value<string>("contentVersion") == CompileTimeActiveContentVersionProvider.P04ContentVersion)
             {
+                int beforeCount = current["payload"]!["mercenaries"]!.Count();
                 var migration = new KingdomTycoon.Infrastructure.Content.Migrations.P04ToP05ContentMigration(migrationGoldenJson, ids, clock, validator, catalog);
                 JObject draft = migration.Apply(current);
                 SaveWriteResult written = save.Repository.Save(game.ActiveProfileId, draft, game.Revision, clock.UtcNow);
                 if (!written.Success) throw new InvalidOperationException(written.ErrorCode ?? "MERCENARY_SAVE_WRITE_FAILED");
                 game.SynchronizeCommittedDocument(written.Document);
+                int afterCount = written.Document["payload"]!["mercenaries"]!.Count();
+                RosterMigrated?.Invoke(this, new MercenaryRosterMigratedEventArgs(afterCount - beforeCount,
+                    written.Document.Value<string>("contentVersion"), written.Document.Value<long>("revision")));
             }
             else if (current.Value<string>("contentVersion") != CompileTimeActiveContentVersionProvider.P05ContentVersion)
             {
@@ -188,6 +202,15 @@ namespace KingdomTycoon.Infrastructure.Mercenaries
         {
             EnsureReady();
             return new GetMercenaryDetailQuery().Execute(mapper.Read(game.Snapshot()), instanceId, catalog);
+        }
+
+        public void Reload()
+        {
+            EnsureReady();
+            SaveLoadResult loaded = save.Repository.Load(game.ActiveProfileId);
+            if (!loaded.Success) throw new MercenaryDomainException(loaded.ErrorCode ?? "MERCENARY_SAVE_WRITE_FAILED");
+            validator.Validate(loaded.Document, catalog);
+            game.SynchronizeCommittedDocument(loaded.Document);
         }
 
         public MercenaryOperationResult SetActive(SetMercenaryActiveCommand command)
@@ -227,6 +250,7 @@ namespace KingdomTycoon.Infrastructure.Mercenaries
         public void Shutdown()
         {
             ActivityChanged = null;
+            RosterMigrated = null;
             IsBootstrapped = false;
             catalog = null;
             validator = null;

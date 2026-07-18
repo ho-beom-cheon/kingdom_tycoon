@@ -281,6 +281,8 @@ namespace KingdomTycoon.Domain.Mercenaries
 
     public static class MercenaryRosterFilter
     {
+        private static readonly CultureInfo KoreanCulture = CultureInfo.GetCultureInfo("ko-KR");
+
         public static bool Matches(Mercenary item, string search, ISet<string> jobs, ISet<string> grades, ISet<string> ranks, ISet<string> states, string active, bool promotionOnly, bool injuryOnly)
         {
             string needle = Normalize(search);
@@ -294,7 +296,7 @@ namespace KingdomTycoon.Domain.Mercenaries
                 && (!injuryOnly || item.AutonomyState == "INJURED");
         }
 
-        public static string Normalize(string value) => (value ?? string.Empty).Trim().Normalize(NormalizationForm.FormC).ToUpperInvariant();
+        public static string Normalize(string value) => (value ?? string.Empty).Trim().Normalize(NormalizationForm.FormC).ToUpper(KoreanCulture);
     }
 
     public sealed class MercenaryRosterComparer : IComparer<Mercenary>

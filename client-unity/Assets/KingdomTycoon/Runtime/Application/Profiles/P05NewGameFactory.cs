@@ -1,5 +1,6 @@
 using System;
 using System.Globalization;
+using System.Linq;
 using KingdomTycoon.Infrastructure;
 using KingdomTycoon.Infrastructure.Content;
 using KingdomTycoon.Infrastructure.Save;
@@ -37,6 +38,8 @@ namespace KingdomTycoon.Application.Profiles
                 mercenary["autonomy"]!["stateStartedAtUtc"] = timestamp;
                 mercenary["autonomy"]!["nextDecisionAtUtc"] = timestamp;
             }
+            document["payload"]!["mercenaries"] = new JArray(document["payload"]!["mercenaries"]!.Children<JObject>()
+                .OrderBy(value => value.Value<string>("instanceId"), StringComparer.Ordinal));
             foreach (JObject region in document["payload"]!["regions"]!["progress"]!.Children<JObject>())
             {
                 if (region.Value<bool>("unlocked")) region["firstUnlockedAtUtc"] = timestamp;

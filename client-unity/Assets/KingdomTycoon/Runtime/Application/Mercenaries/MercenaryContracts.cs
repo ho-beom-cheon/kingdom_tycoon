@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using KingdomTycoon.Application.Facilities.Commands;
 using KingdomTycoon.Domain.Mercenaries;
 using Newtonsoft.Json.Linq;
@@ -31,6 +33,13 @@ namespace KingdomTycoon.Application.Mercenaries
 
     public sealed class MercenaryRosterQueryDto
     {
+        private static readonly HashSet<string> ActiveFilters = new(StringComparer.Ordinal) { "ALL", "ACTIVE", "INACTIVE" };
+        private static readonly HashSet<string> SortIds = new(StringComparer.Ordinal)
+        {
+            "DEFAULT", "NAME_ASC", "NAME_DESC", "LEVEL_ASC", "LEVEL_DESC",
+            "GRADE_ASC", "GRADE_DESC", "RANK_ASC", "RANK_DESC"
+        };
+
         public MercenaryRosterQueryDto(
             string search = "",
             IEnumerable<string> jobIds = null,
@@ -42,15 +51,18 @@ namespace KingdomTycoon.Application.Mercenaries
             bool injuredOnly = false,
             string sortId = "DEFAULT")
         {
-            Search = search ?? string.Empty;
-            JobIds = (jobIds ?? Array.Empty<string>()).Distinct(StringComparer.Ordinal).ToArray();
-            GradeIds = (gradeIds ?? Array.Empty<string>()).Distinct(StringComparer.Ordinal).ToArray();
-            RankIds = (rankIds ?? Array.Empty<string>()).Distinct(StringComparer.Ordinal).ToArray();
-            StateIds = (stateIds ?? Array.Empty<string>()).Distinct(StringComparer.Ordinal).ToArray();
+            Search = (search ?? string.Empty).Trim().Normalize(NormalizationForm.FormC);
+            if (ScalarCount(Search) > 20) throw new ArgumentOutOfRangeException(nameof(search), "P05_SEARCH_SCALAR_LIMIT");
+            JobIds = NormalizeIds(jobIds, nameof(jobIds));
+            GradeIds = NormalizeIds(gradeIds, nameof(gradeIds));
+            RankIds = NormalizeIds(rankIds, nameof(rankIds));
+            StateIds = NormalizeIds(stateIds, nameof(stateIds));
             ActiveFilter = activeFilter ?? "ALL";
+            if (!ActiveFilters.Contains(ActiveFilter)) throw new ArgumentOutOfRangeException(nameof(activeFilter), "P05_ACTIVE_FILTER_INVALID");
             PromotionReadyOnly = promotionReadyOnly;
             InjuredOnly = injuredOnly;
             SortId = sortId ?? "DEFAULT";
+            if (!SortIds.Contains(SortId)) throw new ArgumentOutOfRangeException(nameof(sortId), "P05_SORT_INVALID");
         }
 
         public string Search { get; }
@@ -62,6 +74,48 @@ namespace KingdomTycoon.Application.Mercenaries
         public bool PromotionReadyOnly { get; }
         public bool InjuredOnly { get; }
         public string SortId { get; }
+
+        private static string[] NormalizeIds(IEnumerable<string> source, string parameter)
+        {
+            string[] values = (source ?? Array.Empty<string>()).ToArray();
+            if (values.Any(string.IsNullOrWhiteSpace)) throw new ArgumentException("P05_FILTER_ID_INVALID", parameter);
+            return values.Distinct(StringComparer.Ordinal).OrderBy(value => value, StringComparer.Ordinal).ToArray();
+        }
+
+        private static int ScalarCount(string value)
+        {
+            int count = 0;
+            for (int index = 0; index < value.Length; index++, count++)
+            {
+                if (char.IsLowSurrogate(value[index])) throw new ArgumentException("P05_SEARCH_UNICODE_INVALID", nameof(value));
+                if (!char.IsHighSurrogate(value[index])) continue;
+                if (index + 1 >= value.Length || !char.IsLowSurrogate(value[index + 1])) throw new ArgumentException("P05_SEARCH_UNICODE_INVALID", nameof(value));
+                index++;
+            }
+            return count;
+        }
+    }
+
+    public static class MercenaryRosterQueryDigest
+    {
+        public static string Compute(MercenaryRosterQueryDto value)
+        {
+            value ??= new MercenaryRosterQueryDto();
+            string canonical = string.Join("\n", new[]
+            {
+                value.Search,
+                string.Join("\u001f", value.JobIds),
+                string.Join("\u001f", value.GradeIds),
+                string.Join("\u001f", value.RankIds),
+                string.Join("\u001f", value.StateIds),
+                value.ActiveFilter,
+                value.PromotionReadyOnly ? "READY_ONLY" : "ANY",
+                value.InjuredOnly ? "INJURED_ONLY" : "ANY",
+                value.SortId
+            });
+            using SHA256 sha = SHA256.Create();
+            return string.Concat(sha.ComputeHash(Encoding.UTF8.GetBytes(canonical)).Select(item => item.ToString("x2")));
+        }
     }
 
     public sealed class MercenaryCardDto

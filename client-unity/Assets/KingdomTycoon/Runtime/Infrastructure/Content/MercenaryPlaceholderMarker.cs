@@ -14,6 +14,15 @@ namespace KingdomTycoon.Infrastructure.Content
 
         public string Fingerprint => fingerprint;
 
+        public Sprite PortraitSprite
+        {
+            get
+            {
+                SpriteRenderer renderer = transform.Find("Body")?.GetComponent<SpriteRenderer>();
+                return renderer != null ? renderer.sprite : null;
+            }
+        }
+
         public void Configure(string configuredJobId, string configuredAssetId, string configuredFingerprint)
         {
             jobId = configuredJobId;
