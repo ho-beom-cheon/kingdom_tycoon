@@ -2,13 +2,16 @@
   "name": "KingdomTycoon.PlayModeTests",
   "rootNamespace": "KingdomTycoon.Tests.PlayMode",
   "references": [
-    "KingdomTycoon.Runtime"
+    "KingdomTycoon.Runtime",
+    "Unity.TextMeshPro"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],
   "allowUnsafeCode": false,
-  "overrideReferences": false,
-  "precompiledReferences": [],
+  "overrideReferences": true,
+  "precompiledReferences": [
+    "Newtonsoft.Json.dll"
+  ],
   "autoReferenced": true,
   "defineConstraints": [],
   "versionDefines": [],
