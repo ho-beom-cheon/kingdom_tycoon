@@ -250,7 +250,7 @@ def generate(package: Package, golden: dict[str, Any], check: bool) -> None:
     if check:
         versions = sorted(path.name for path in CONTENT_ROOT.iterdir() if path.is_dir()) if CONTENT_ROOT.exists() else []
         flat = sorted(path.name for path in CONTENT_ROOT.iterdir() if path.is_file() and path.suffix in {".csv", ".json"}) if CONTENT_ROOT.exists() else []
-        if versions != ["1.0.0-content.1", "1.0.0-content.2"] or flat:
+        if versions[:2] != ["1.0.0-content.1", "1.0.0-content.2"] or flat:
             failures.append(f"versioned package tree invalid: versions={versions}, flat={flat}")
     if failures:
         raise ContractError("P04 package check failed:\n- " + "\n- ".join(failures))

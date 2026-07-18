@@ -11,8 +11,9 @@ namespace KingdomTycoon.Infrastructure.Content
     public sealed class CompileTimeActiveContentVersionProvider : IActiveContentVersionProvider
     {
         public const string P04ContentVersion = "1.0.0-content.2";
+        public const string P05ContentVersion = "1.0.0-content.3";
 
-        public string ActiveContentVersion => P04ContentVersion;
+        public string ActiveContentVersion => P05ContentVersion;
     }
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -20,7 +21,7 @@ namespace KingdomTycoon.Infrastructure.Content
     {
         public DevelopmentActiveContentVersionProvider(string activeContentVersion)
         {
-            if (activeContentVersion is not ("1.0.0-content.1" or "1.0.0-content.2"))
+            if (activeContentVersion is not ("1.0.0-content.1" or "1.0.0-content.2" or "1.0.0-content.3"))
             {
                 throw new ArgumentException("CONTENT_ACTIVE_VERSION_INVALID", nameof(activeContentVersion));
             }

@@ -18,7 +18,7 @@ namespace KingdomTycoon.Infrastructure.Save
             this.validator = validator ?? throw new ArgumentNullException(nameof(validator));
         }
 
-        public SaveLoadResult CreateOrResume(P04NewGameFactory factory, DateTimeOffset now)
+        public SaveLoadResult CreateOrResume(INewGameFactory factory, DateTimeOffset now)
         {
             if (factory == null) throw new ArgumentNullException(nameof(factory));
             Directory.CreateDirectory(savesRoot);
@@ -38,11 +38,12 @@ namespace KingdomTycoon.Infrastructure.Save
             }
             else
             {
+                string saveId = UuidV7.NewString(now);
                 profileId = UuidV7.NewString(now);
                 stagingRoot = Path.Combine(savesRoot, ".creating." + profileId);
                 Directory.CreateDirectory(stagingRoot);
                 AtomicSaveRepository stagingRepository = AtomicSaveRepository.CreateForSavesRoot(stagingRoot, validator);
-                SaveWriteResult written = stagingRepository.Save(profileId, factory.CreateDraft(profileId, now), 0, now);
+                SaveWriteResult written = stagingRepository.Save(profileId, factory.CreateDraft(saveId, profileId, now), 0, now);
                 if (!written.Success) return SaveLoadResult.Failed(written.ErrorCode ?? "SAVE_CREATE_FAILED", written.Report);
             }
 

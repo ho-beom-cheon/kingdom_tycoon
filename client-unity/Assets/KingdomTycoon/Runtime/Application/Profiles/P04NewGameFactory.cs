@@ -6,7 +6,7 @@ using Newtonsoft.Json.Linq;
 
 namespace KingdomTycoon.Application.Profiles
 {
-    public sealed class P04NewGameFactory
+    public sealed class P04NewGameFactory : INewGameFactory
     {
         private readonly JObject template;
 
@@ -15,11 +15,11 @@ namespace KingdomTycoon.Application.Profiles
             template = StrictJson.ParseObject(templateJson ?? throw new ArgumentNullException(nameof(templateJson)));
         }
 
-        public JObject CreateDraft(string profileId, DateTimeOffset now)
+        public JObject CreateDraft(string saveId, string profileId, DateTimeOffset now)
         {
             string timestamp = now.ToUniversalTime().ToString("yyyy-MM-dd'T'HH:mm:ss.fff'Z'", CultureInfo.InvariantCulture);
             var document = (JObject)template.DeepClone();
-            document["saveId"] = UuidV7.NewString(now);
+            document["saveId"] = saveId ?? throw new ArgumentNullException(nameof(saveId));
             document["profileId"] = profileId;
             document["revision"] = 0;
             document["createdAtUtc"] = timestamp;
