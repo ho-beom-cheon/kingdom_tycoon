@@ -1,9 +1,16 @@
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Newtonsoft.Json.Linq;
 
 namespace KingdomTycoon.Application.Profiles
 {
+    public interface INewGameFactory
+    {
+        JObject CreateDraft(string saveId, string profileId, DateTimeOffset now);
+    }
+
     public enum ProfileLocateKind
     {
         NONE,

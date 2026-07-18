@@ -21,16 +21,20 @@ namespace KingdomTycoon.Infrastructure.Facilities
     {
         private readonly ITrustedUtcClock clock;
         private readonly string newGameTemplateJson;
+        private readonly string p04MigrationTemplateJson;
+        private readonly bool p05Enabled;
         private readonly SemaphoreSlim commitGate = new(1, 1);
         private SaveService saveService;
         private ContentCatalogService contentService;
         private CanonicalFacilityCatalog catalog;
         private DateTimeOffset lastTrustedUtc;
 
-        public FacilityGameService(ITrustedUtcClock clock, string newGameTemplateJson)
+        public FacilityGameService(ITrustedUtcClock clock, string newGameTemplateJson, string p04MigrationTemplateJson = null)
         {
             this.clock = clock ?? throw new ArgumentNullException(nameof(clock));
             this.newGameTemplateJson = newGameTemplateJson ?? throw new ArgumentNullException(nameof(newGameTemplateJson));
+            p05Enabled = p04MigrationTemplateJson != null;
+            this.p04MigrationTemplateJson = p04MigrationTemplateJson ?? newGameTemplateJson;
         }
 
         public int InitializationOrder => 50;
@@ -62,8 +66,9 @@ namespace KingdomTycoon.Infrastructure.Facilities
             {
                 if (saveService.Repository is not AtomicSaveRepository atomicRepository)
                     throw new InvalidOperationException("SAVE_CREATE_REPOSITORY_UNSUPPORTED");
+                INewGameFactory factory = p05Enabled ? new P05NewGameFactory(newGameTemplateJson) : new P04NewGameFactory(newGameTemplateJson);
                 SaveLoadResult created = new SingleProfileCreator(saveService.PersistentDataPath, atomicRepository, saveService.Validator)
-                    .CreateOrResume(new P04NewGameFactory(newGameTemplateJson), clock.UtcNow);
+                    .CreateOrResume(factory, clock.UtcNow);
                 if (!created.Success) throw new InvalidOperationException(created.ErrorCode ?? "SAVE_CREATE_FAILED");
                 ActiveProfileId = created.Document.Value<string>("profileId");
                 CurrentDocument = created.Document;
@@ -79,14 +84,14 @@ namespace KingdomTycoon.Infrastructure.Facilities
 
             if (CurrentDocument.Value<string>("contentVersion") == "1.0.0-content.1")
             {
-                var migration = new P03ToP04ContentMigration(newGameTemplateJson);
+                var migration = new P03ToP04ContentMigration(p04MigrationTemplateJson);
                 JObject migrated = migration.CanApply(CurrentDocument)
                     ? migration.Apply(CurrentDocument)
                     : (JObject)CurrentDocument.DeepClone();
                 migrated["contentVersion"] = CompileTimeActiveContentVersionProvider.P04ContentVersion;
                 Commit(migrated, Revision, clock.UtcNow);
             }
-            else if (CurrentDocument.Value<string>("contentVersion") != CompileTimeActiveContentVersionProvider.P04ContentVersion)
+            else if (CurrentDocument.Value<string>("contentVersion") is not (CompileTimeActiveContentVersionProvider.P04ContentVersion or CompileTimeActiveContentVersionProvider.P05ContentVersion))
             {
                 throw new InvalidOperationException("SAVE_CONTENT_VERSION_UNSUPPORTED");
             }
@@ -97,6 +102,13 @@ namespace KingdomTycoon.Infrastructure.Facilities
         }
 
         public JObject Snapshot() => CurrentDocument == null ? null : (JObject)CurrentDocument.DeepClone();
+
+        public void SynchronizeCommittedDocument(JObject document)
+        {
+            if (document == null) throw new ArgumentNullException(nameof(document));
+            if (document.Value<string>("profileId") != ActiveProfileId) throw new InvalidOperationException("SAVE_PROFILE_ID_MISMATCH");
+            CurrentDocument = (JObject)document.DeepClone();
+        }
 
         public FacilityOperationResult StartBuild(StartFacilityBuildCommand command) => Mutate(command, now =>
         {
@@ -374,7 +386,7 @@ namespace KingdomTycoon.Infrastructure.Facilities
         {
             ["operationId"] = operationId.ToString("D"), ["jobType"] = jobType, ["status"] = "RUNNING",
             ["recipeId"] = null, ["targetLevel"] = level, ["treatmentTargetInstanceId"] = null,
-            ["contentVersion"] = CompileTimeActiveContentVersionProvider.P04ContentVersion,
+            ["contentVersion"] = CompileTimeActiveContentVersionProvider.P05ContentVersion,
             ["startedAtUtc"] = FormatUtc(started), ["finishesAtUtc"] = FormatUtc(finishes),
             ["claimedAtUtc"] = null, ["cancelledAtUtc"] = null, ["cycleCount"] = 1,
             ["inputSnapshot"] = input, ["outputSnapshot"] = new JArray()
@@ -444,8 +456,8 @@ namespace KingdomTycoon.Infrastructure.Facilities
             if (facility.Value<string>("facilityId") != "FAC_LODGE") return;
             int level = facility.Value<int>("level");
             JObject kingdom = (JObject)CurrentDocument["payload"]["kingdom"];
-            kingdom["activeMercenaryLimit"] = 3 + level;
-            kingdom["ownedMercenaryLimit"] = 6 + level * 2;
+            kingdom["activeMercenaryLimit"] = level switch { 1 => 4, 2 => 8, 3 => 12, 4 => 16, _ => throw new FacilityCommandException("SAVE_MERCENARY_LODGE_LIMIT_MISMATCH") };
+            kingdom["ownedMercenaryLimit"] = level switch { 1 => 8, 2 => 12, 3 => 18, 4 => 24, _ => throw new FacilityCommandException("SAVE_MERCENARY_LODGE_LIMIT_MISMATCH") };
         }
 
         private string CurrentStageId() => CurrentDocument["payload"]["kingdom"].Value<string>("kingdomStageId");
