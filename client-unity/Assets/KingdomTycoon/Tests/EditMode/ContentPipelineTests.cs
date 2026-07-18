@@ -1,12 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using KingdomTycoon.Infrastructure.Content;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
+using UnityEngine;
 
 namespace KingdomTycoon.Tests.EditMode
 {
@@ -34,7 +36,7 @@ namespace KingdomTycoon.Tests.EditMode
 
             ContentImportResult result = new CsvContentImporter().Import(manifest, file => files[file]);
 
-            Assert.That(result.Report.Issues.Any(issue => issue.Code == "CSV_LEGACY_COMPOUND_CELL_FORBIDDEN"), Is.True);
+            Assert.That(result.Report.Issues.Any(issue => issue.Code == "CSV_PIPE_LIST_FORBIDDEN"), Is.True);
         }
 
         [Test]
@@ -46,7 +48,7 @@ namespace KingdomTycoon.Tests.EditMode
 
             ContentImportResult result = new CsvContentImporter().Import(manifest, file => files[file]);
 
-            Assert.That(result.Report.Issues.Any(issue => issue.Code == "CSV_FIELD_DOMAIN_INVALID"), Is.True);
+            Assert.That(result.Report.Issues.Any(issue => issue.Code == "CSV_DOMAIN_INVALID"), Is.True);
         }
 
         [Test]
@@ -58,7 +60,37 @@ namespace KingdomTycoon.Tests.EditMode
 
             ContentImportResult result = new CsvContentImporter().Import(manifest, file => files[file]);
 
-            Assert.That(result.Report.Issues.Any(issue => issue.Code == "CSV_REWARD_GENERATED_MERCENARY_FORBIDDEN"), Is.True);
+            Assert.That(result.Report.Issues.Any(issue => issue.Code == "CSV_REWARD_DISCRIMINATOR_MISMATCH"), Is.True);
+        }
+
+        [Test]
+        public void Importer_LoadsCheckedInSixtyTablePackage()
+        {
+            string packageDirectory = Path.Combine(Application.dataPath, "StreamingAssets", "Content");
+            string manifest = File.ReadAllText(Path.Combine(packageDirectory, "content_manifest.json"), new UTF8Encoding(false, true));
+
+            ContentImportResult result = new CsvContentImporter().Import(
+                manifest,
+                file => File.ReadAllText(Path.Combine(packageDirectory, file), new UTF8Encoding(false, true)));
+
+            Assert.That(result.IsValid, Is.True, string.Join("\n", result.Report.Issues));
+            Assert.That(result.Catalog.Tables.Count, Is.EqualTo(60));
+            Assert.That(result.Catalog.GetTable("localizations.csv").Rows.Count, Is.EqualTo(470));
+        }
+
+        [Test]
+        public void Importer_RejectsOutOfOrderManifestTables()
+        {
+            var files = CreateValidFiles();
+            JObject manifest = JObject.Parse(CreateManifest(files));
+            manifest["generatedAtUtc"] = "2026-07-18T00:00:00.000Z";
+            JArray tables = (JArray)manifest["tables"];
+            tables.Insert(0, tables[1].DeepClone());
+            tables.RemoveAt(2);
+
+            ContentImportResult result = new CsvContentImporter().Import(manifest.ToString(Newtonsoft.Json.Formatting.None), file => files[file]);
+
+            Assert.That(result.Report.Issues.Any(issue => issue.Code == "CONTENT_MANIFEST_TABLE_ORDER_INVALID"), Is.True, string.Join("\n", result.Report.Issues));
         }
 
         private static Dictionary<string, string> CreateValidFiles()
@@ -110,9 +142,14 @@ namespace KingdomTycoon.Tests.EditMode
 
             return new JObject
             {
-                ["schemaId"] = "urn:tycoon:content-manifest:v1",
-                ["contractVersion"] = 1,
+                ["schemaId"] = "urn:tycoon:content-manifest:v2",
+                ["contractVersion"] = 2,
                 ["contentVersion"] = "1.0.0-content.1",
+                ["csvSchemaSetVersion"] = 2,
+                ["packageKind"] = "BASE",
+                ["baseContentVersion"] = JValue.CreateNull(),
+                ["minimumGameVersion"] = "1.0.0",
+                ["channel"] = "DEV",
                 ["generatedAtUtc"] = "2026-07-18T00:00:00.000Z",
                 ["tables"] = tables
             }.ToString(Newtonsoft.Json.Formatting.None);
@@ -127,6 +164,8 @@ namespace KingdomTycoon.Tests.EditMode
             return new JObject
             {
                 ["file"] = file,
+                ["schemaVersion"] = 1,
+                ["required"] = true,
                 ["sha256"] = Sha256(contents),
                 ["rowCount"] = contents.Count(character => character == '\n') - 1,
                 ["primaryKey"] = new JArray(primaryKey),
@@ -142,7 +181,7 @@ namespace KingdomTycoon.Tests.EditMode
                 ["name"] = name,
                 ["domain"] = domain,
                 ["nullable"] = nullable,
-                ["enumValues"] = enumValues == null ? JValue.CreateNull() : new JArray(enumValues)
+                ["enumValues"] = enumValues == null ? new JArray() : new JArray(enumValues)
             };
         }
 

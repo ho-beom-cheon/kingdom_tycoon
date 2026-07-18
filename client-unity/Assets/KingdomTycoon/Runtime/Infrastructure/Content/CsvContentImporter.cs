@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Linq;
+using System.Numerics;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -69,11 +70,16 @@ namespace KingdomTycoon.Infrastructure.Content
     public sealed class CsvContentImporter
     {
         private const long SafeIntegerMaximum = 9_007_199_254_740_991L;
-        private static readonly Regex HeaderPattern = new("^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$", RegexOptions.CultureInvariant);
-        private static readonly Regex StableIdPattern = new("^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$", RegexOptions.CultureInvariant);
+        private static readonly BigInteger Seed64Maximum = BigInteger.Parse("18446744073709551615", CultureInfo.InvariantCulture);
+        private static readonly Regex HeaderPattern = new("^[a-z][a-z0-9_]*$", RegexOptions.CultureInvariant);
+        private static readonly Regex StableIdPattern = new("^[A-Z][A-Z0-9_]{0,63}$", RegexOptions.CultureInvariant);
         private static readonly Regex IntegerPattern = new("^(0|-?[1-9][0-9]*)$", RegexOptions.CultureInvariant);
-        private static readonly Regex DecimalPattern = new("^(0|-?[1-9][0-9]*)(?:\\.[0-9]*[1-9])?$", RegexOptions.CultureInvariant);
+        private static readonly Regex DecimalPattern = new("^-?(0|[1-9][0-9]*)(?:\\.[0-9]+)?$", RegexOptions.CultureInvariant);
         private static readonly Regex HashPattern = new("^[0-9a-f]{64}$", RegexOptions.CultureInvariant);
+        private static readonly Regex DatePattern = new("^[0-9]{4}-[0-9]{2}-[0-9]{2}$", RegexOptions.CultureInvariant);
+        private static readonly Regex LocalePattern = new("^[a-z]{2}-[A-Z]{2}$", RegexOptions.CultureInvariant);
+        private static readonly Regex SemVerPattern = new("^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?$", RegexOptions.CultureInvariant);
+        private static readonly Regex ContentVersionPattern = new("^[0-9]+\\.[0-9]+\\.[0-9]+-content\\.[1-9][0-9]*$", RegexOptions.CultureInvariant);
 
         public ContentImportResult Import(string manifestJson, Func<string, string> readTable)
         {
@@ -88,14 +94,19 @@ namespace KingdomTycoon.Infrastructure.Content
             {
                 manifest = ParseManifest(manifestJson);
             }
+            catch (ContentManifestException exception)
+            {
+                report.AddError(exception.Code, "content_manifest.json", exception.Location, exception.Message);
+                return new ContentImportResult(null, report);
+            }
             catch (Exception exception)
             {
-                report.AddError("CSV_MANIFEST_INVALID", "content_manifest.json", "/", exception.Message);
+                report.AddError("CONTENT_MANIFEST_REQUIRED_FIELD_MISSING", "content_manifest.json", "/", exception.Message);
                 return new ContentImportResult(null, report);
             }
 
             var tables = new Dictionary<string, ContentTable>(StringComparer.Ordinal);
-            foreach (TableContract contract in manifest.Tables.OrderBy(table => table.FileName, StringComparer.Ordinal))
+            foreach (TableContract contract in manifest.Tables)
             {
                 string text;
                 try
@@ -124,6 +135,7 @@ namespace KingdomTycoon.Infrastructure.Content
 
             ValidateForeignKeys(tables, report);
             ValidateTaggedUnions(tables, report);
+            ContentSemanticValidator.Validate(tables, report);
             return report.IsValid
                 ? new ContentImportResult(new ContentCatalog(manifest.ContentVersion, tables), report)
                 : new ContentImportResult(null, report);
@@ -132,18 +144,36 @@ namespace KingdomTycoon.Infrastructure.Content
         private static ContentManifest ParseManifest(string json)
         {
             JObject root = StrictJson.ParseObject(json);
-            RequireExactProperties(root, "schemaId", "contractVersion", "contentVersion", "generatedAtUtc", "tables");
-            if (root.Value<string>("schemaId") != "urn:tycoon:content-manifest:v1" || root.Value<int>("contractVersion") != 1)
+            RequireExactProperties(root, "/",
+                "schemaId", "contractVersion", "contentVersion", "csvSchemaSetVersion", "packageKind",
+                "baseContentVersion", "minimumGameVersion", "channel", "generatedAtUtc", "tables");
+            if (root.Value<string>("schemaId") != "urn:tycoon:content-manifest:v2" ||
+                root.Value<int?>("contractVersion") != 2 ||
+                root.Value<int?>("csvSchemaSetVersion") != 2)
             {
-                throw new FormatException("Unsupported content manifest contract.");
+                throw new ContentManifestException("CONTENT_MANIFEST_CONTRACT_VERSION_UNSUPPORTED", "/contractVersion", "Only content manifest contract v2/schema set v2 is supported.");
             }
-
             string contentVersion = root.Value<string>("contentVersion");
-            if (string.IsNullOrWhiteSpace(contentVersion))
+            if (!ContentVersionPattern.IsMatch(contentVersion ?? string.Empty))
             {
-                throw new FormatException("contentVersion is required.");
+                throw new ContentManifestException("CONTENT_MANIFEST_REQUIRED_FIELD_MISSING", "/contentVersion", "contentVersion is not canonical.");
             }
-
+            string packageKind = root.Value<string>("packageKind");
+            string baseContentVersion = root["baseContentVersion"]?.Type == JTokenType.Null
+                ? null
+                : root.Value<string>("baseContentVersion");
+            bool validBaseVersion = packageKind == "BASE"
+                ? baseContentVersion == null
+                : packageKind is "PATCH" or "TEMPLATE" && ContentVersionPattern.IsMatch(baseContentVersion ?? string.Empty);
+            if (!validBaseVersion)
+            {
+                throw new ContentManifestException("CONTENT_MANIFEST_BASE_VERSION_INVALID", "/baseContentVersion", "packageKind/baseContentVersion matrix is invalid.");
+            }
+            string minimumGameVersion = root.Value<string>("minimumGameVersion");
+            if (!SemVerPattern.IsMatch(minimumGameVersion ?? string.Empty) || root.Value<string>("channel") is not ("DEV" or "STAGING" or "PRODUCTION"))
+            {
+                throw new ContentManifestException("CONTENT_MANIFEST_REQUIRED_FIELD_MISSING", "/minimumGameVersion", "Release metadata is invalid.");
+            }
             if (!DateTimeOffset.TryParseExact(
                     root.Value<string>("generatedAtUtc"),
                     "yyyy-MM-dd'T'HH:mm:ss.fff'Z'",
@@ -151,64 +181,75 @@ namespace KingdomTycoon.Infrastructure.Content
                     DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
                     out _))
             {
-                throw new FormatException("generatedAtUtc must be a canonical UTC instant.");
+                throw new ContentManifestException("CONTENT_MANIFEST_REQUIRED_FIELD_MISSING", "/generatedAtUtc", "generatedAtUtc must be a canonical UTC instant.");
             }
 
             var tables = new List<TableContract>();
             var files = new HashSet<string>(StringComparer.Ordinal);
-            foreach (JObject table in root["tables"].Children<JObject>())
+            JArray tableArray = root["tables"] as JArray
+                ?? throw new ContentManifestException("CONTENT_MANIFEST_REQUIRED_FIELD_MISSING", "/tables", "tables must be an array.");
+            string previousFile = null;
+            for (int tableIndex = 0; tableIndex < tableArray.Count; tableIndex++)
             {
-                RequireExactProperties(table, "file", "sha256", "rowCount", "primaryKey", "fields", "foreignKeys");
+                JObject table = tableArray[tableIndex] as JObject
+                    ?? throw new ContentManifestException("CONTENT_MANIFEST_REQUIRED_FIELD_MISSING", $"/tables/{tableIndex}", "Table descriptor must be an object.");
+                string tableLocation = $"/tables/{tableIndex}";
+                RequireExactProperties(table, tableLocation, "file", "schemaVersion", "required", "sha256", "rowCount", "primaryKey", "fields", "foreignKeys");
                 string fileName = table.Value<string>("file");
-                if (string.IsNullOrEmpty(fileName) || fileName.Contains('/') || fileName.Contains('\\') || !fileName.EndsWith(".csv", StringComparison.Ordinal))
+                if (string.IsNullOrEmpty(fileName) || fileName.Contains('/') || fileName.Contains('\\') || !Regex.IsMatch(fileName, "^[a-z][a-z0-9_]*\\.csv$", RegexOptions.CultureInvariant))
                 {
-                    throw new FormatException($"Invalid table file name: {fileName}.");
+                    throw new ContentManifestException("CONTENT_MANIFEST_REQUIRED_FIELD_MISSING", tableLocation + "/file", $"Invalid table file name: {fileName}.");
                 }
-
-                if (!files.Add(fileName))
+                if (!files.Add(fileName) || previousFile != null && string.CompareOrdinal(previousFile, fileName) >= 0)
                 {
-                    throw new FormatException($"Duplicate table contract: {fileName}.");
+                    throw new ContentManifestException("CONTENT_MANIFEST_TABLE_ORDER_INVALID", tableLocation + "/file", "Table files must be unique and UTF-8 ordinal ascending.");
                 }
-
+                previousFile = fileName;
+                if (table.Value<int?>("schemaVersion") != 1 || table.Value<bool?>("required") != true)
+                {
+                    throw new ContentManifestException("CONTENT_MANIFEST_REQUIRED_FIELD_MISSING", tableLocation, "P03 tables require schemaVersion=1 and required=true.");
+                }
                 string hash = table.Value<string>("sha256");
                 if (!HashPattern.IsMatch(hash ?? string.Empty))
                 {
-                    throw new FormatException($"Invalid SHA-256 for {fileName}.");
+                    throw new ContentManifestException("CONTENT_MANIFEST_HASH_FORMAT_INVALID", tableLocation + "/sha256", $"Invalid SHA-256 for {fileName}.");
                 }
-
-                if (table.Value<int>("rowCount") < 0)
+                long rowCount = table.Value<long?>("rowCount") ?? -1;
+                if (rowCount < 0 || rowCount > SafeIntegerMaximum)
                 {
-                    throw new FormatException($"rowCount cannot be negative for {fileName}.");
+                    throw new ContentManifestException("CONTENT_MANIFEST_REQUIRED_FIELD_MISSING", tableLocation + "/rowCount", $"rowCount is invalid for {fileName}.");
                 }
 
                 var fields = new List<FieldContract>();
                 var fieldNames = new HashSet<string>(StringComparer.Ordinal);
-                foreach (JObject field in table["fields"].Children<JObject>())
+                JArray fieldArray = table["fields"] as JArray
+                    ?? throw new ContentManifestException("CONTENT_MANIFEST_REQUIRED_FIELD_MISSING", tableLocation + "/fields", "fields must be an array.");
+                for (int fieldIndex = 0; fieldIndex < fieldArray.Count; fieldIndex++)
                 {
-                    RequireExactProperties(field, "name", "domain", "nullable", "enumValues");
+                    JObject field = fieldArray[fieldIndex] as JObject
+                        ?? throw new ContentManifestException("CONTENT_MANIFEST_REQUIRED_FIELD_MISSING", $"{tableLocation}/fields/{fieldIndex}", "Field must be an object.");
+                    RequireExactProperties(field, $"{tableLocation}/fields/{fieldIndex}", "name", "domain", "nullable", "enumValues");
                     string name = field.Value<string>("name");
                     if (!HeaderPattern.IsMatch(name ?? string.Empty) || !fieldNames.Add(name))
                     {
-                        throw new FormatException($"Invalid or duplicate field {name} in {fileName}.");
+                        throw new ContentManifestException("CONTENT_MANIFEST_REQUIRED_FIELD_MISSING", $"{tableLocation}/fields/{fieldIndex}/name", $"Invalid or duplicate field {name} in {fileName}.");
                     }
 
                     string domain = field.Value<string>("domain");
                     if (!Enum.TryParse(domain, false, out ContentFieldDomain parsedDomain))
                     {
-                        throw new FormatException($"Unknown domain {domain} in {fileName}.{name}.");
+                        throw new ContentManifestException("CONTENT_MANIFEST_REQUIRED_FIELD_MISSING", $"{tableLocation}/fields/{fieldIndex}/domain", $"Unknown domain {domain} in {fileName}.{name}.");
                     }
 
-                    IReadOnlyList<string> enumValues = field["enumValues"].Type == JTokenType.Null
-                        ? Array.Empty<string>()
-                        : field["enumValues"].Values<string>().ToArray();
+                    IReadOnlyList<string> enumValues = field["enumValues"] is JArray enumArray ? enumArray.Values<string>().ToArray() : Array.Empty<string>();
                     if (parsedDomain == ContentFieldDomain.ENUM && enumValues.Count == 0)
                     {
-                        throw new FormatException($"ENUM field {fileName}.{name} requires enumValues.");
+                        throw new ContentManifestException("CONTENT_MANIFEST_REQUIRED_FIELD_MISSING", $"{tableLocation}/fields/{fieldIndex}/enumValues", $"ENUM field {fileName}.{name} requires enumValues.");
                     }
 
                     if (enumValues.Count != enumValues.Distinct(StringComparer.Ordinal).Count())
                     {
-                        throw new FormatException($"enumValues must be unique for {fileName}.{name}.");
+                        throw new ContentManifestException("CONTENT_MANIFEST_REQUIRED_FIELD_MISSING", $"{tableLocation}/fields/{fieldIndex}/enumValues", $"enumValues must be unique for {fileName}.{name}.");
                     }
 
                     fields.Add(new FieldContract(name, parsedDomain, field.Value<bool>("nullable"), enumValues));
@@ -219,27 +260,32 @@ namespace KingdomTycoon.Infrastructure.Content
                     primaryKey.Length != primaryKey.Distinct(StringComparer.Ordinal).Count() ||
                     primaryKey.Any(key => !fieldNames.Contains(key)))
                 {
-                    throw new FormatException($"Invalid primary key for {fileName}.");
+                    throw new ContentManifestException("CONTENT_MANIFEST_REQUIRED_FIELD_MISSING", tableLocation + "/primaryKey", $"Invalid primary key for {fileName}.");
                 }
 
                 var foreignKeys = new List<ForeignKeyContract>();
-                foreach (JObject foreignKey in table["foreignKeys"].Children<JObject>())
+                JArray foreignKeyArray = table["foreignKeys"] as JArray
+                    ?? throw new ContentManifestException("CONTENT_MANIFEST_REQUIRED_FIELD_MISSING", tableLocation + "/foreignKeys", "foreignKeys must be an array.");
+                for (int foreignKeyIndex = 0; foreignKeyIndex < foreignKeyArray.Count; foreignKeyIndex++)
                 {
-                    RequireExactProperties(foreignKey, "fields", "targetFile", "targetFields");
-                    string[] sourceFields = foreignKey["fields"].Values<string>().ToArray();
+                    JObject foreignKey = foreignKeyArray[foreignKeyIndex] as JObject
+                        ?? throw new ContentManifestException("CONTENT_MANIFEST_REQUIRED_FIELD_MISSING", $"{tableLocation}/foreignKeys/{foreignKeyIndex}", "Foreign key must be an object.");
+                    RequireExactProperties(foreignKey, $"{tableLocation}/foreignKeys/{foreignKeyIndex}", "sourceFields", "targetFile", "targetFields", "mode");
+                    string[] sourceFields = foreignKey["sourceFields"].Values<string>().ToArray();
                     string[] targetFields = foreignKey["targetFields"].Values<string>().ToArray();
-                    if (sourceFields.Length == 0 || sourceFields.Length != targetFields.Length || sourceFields.Any(field => !fieldNames.Contains(field)))
+                    string mode = foreignKey.Value<string>("mode");
+                    if (sourceFields.Length == 0 || sourceFields.Length != targetFields.Length || sourceFields.Any(field => !fieldNames.Contains(field)) || mode is not ("HARD" or "SOFT"))
                     {
-                        throw new FormatException($"Invalid foreign key in {fileName}.");
+                        throw new ContentManifestException("CONTENT_MANIFEST_REQUIRED_FIELD_MISSING", $"{tableLocation}/foreignKeys/{foreignKeyIndex}", $"Invalid foreign key in {fileName}.");
                     }
 
-                    foreignKeys.Add(new ForeignKeyContract(sourceFields, foreignKey.Value<string>("targetFile"), targetFields));
+                    foreignKeys.Add(new ForeignKeyContract(sourceFields, foreignKey.Value<string>("targetFile"), targetFields, mode == "HARD"));
                 }
 
                 tables.Add(new TableContract(
                     fileName,
                     hash,
-                    table.Value<int>("rowCount"),
+                    checked((int)rowCount),
                     primaryKey,
                     fields,
                     foreignKeys));
@@ -253,12 +299,12 @@ namespace KingdomTycoon.Infrastructure.Content
                     if (!tablesByFile.TryGetValue(foreignKey.TargetFile, out TableContract target) ||
                         foreignKey.TargetFields.Any(field => target.Fields.All(candidate => candidate.Name != field)))
                     {
-                        throw new FormatException($"Foreign key target contract is invalid in {table.FileName}.");
+                        throw new ContentManifestException("CONTENT_MANIFEST_REQUIRED_FIELD_MISSING", "/tables", $"Foreign key target contract is invalid in {table.FileName}.");
                     }
                 }
             }
 
-            return new ContentManifest(contentVersion, tables);
+            return new ContentManifest(contentVersion, minimumGameVersion, root.Value<string>("channel"), tables);
         }
 
         private static ContentTable ParseTable(string text, TableContract contract, ValidationReport report)
@@ -289,13 +335,13 @@ namespace KingdomTycoon.Infrastructure.Content
 
             if (!actualHeaders.SequenceEqual(expectedHeaders, StringComparer.Ordinal))
             {
-                report.AddError("CSV_HEADER_CONTRACT_MISMATCH", contract.FileName, "1", "Header and order must match the manifest contract exactly.");
+                report.AddError("CONTENT_MANIFEST_HEADER_MISMATCH", contract.FileName, "1", "Header and order must match the manifest contract exactly.");
                 return null;
             }
 
             if (records.Count - 1 != contract.RowCount)
             {
-                report.AddError("CSV_ROW_COUNT_MISMATCH", contract.FileName, "/", $"Expected {contract.RowCount}, found {records.Count - 1}.");
+                report.AddError("CONTENT_MANIFEST_ROW_COUNT_MISMATCH", contract.FileName, "/", $"Expected {contract.RowCount}, found {records.Count - 1}.");
             }
 
             var rows = new List<IReadOnlyDictionary<string, string>>();
@@ -317,6 +363,14 @@ namespace KingdomTycoon.Infrastructure.Content
                     string value = values[fieldIndex];
                     row.Add(field.Name, value);
                     ValidateField(contract.FileName, location, field, value, report);
+                }
+
+                if (row.TryGetValue("status", out string status) &&
+                    row.TryGetValue("enabled", out string enabled) &&
+                    (status is "DEFERRED" or "OPS_LATER" or "REFERENCE_ONLY" or "REJECTED" or "UNRESOLVED" or "TEMPLATE") &&
+                    enabled != "FALSE")
+                {
+                    report.AddError("CSV_STATUS_ENABLED_INVALID", contract.FileName, location, "Non-runtime lifecycle statuses require enabled=FALSE.");
                 }
 
                 string key = BuildKey(row, contract.PrimaryKey);
@@ -354,28 +408,43 @@ namespace KingdomTycoon.Infrastructure.Content
                 return;
             }
 
-            if (value.Contains('|') || value.StartsWith("{", StringComparison.Ordinal) || value.StartsWith("[", StringComparison.Ordinal))
+            if (value.Contains('|'))
             {
-                report.AddError("CSV_LEGACY_COMPOUND_CELL_FORBIDDEN", fileName, location, "Canonical cells cannot contain pipe lists or embedded JSON.");
+                report.AddError("CSV_PIPE_LIST_FORBIDDEN", fileName, location, "Canonical cells cannot contain pipe lists.");
+                return;
+            }
+
+            if (value.StartsWith("{", StringComparison.Ordinal) || value.StartsWith("[", StringComparison.Ordinal))
+            {
+                report.AddError("CSV_JSON_CELL_FORBIDDEN", fileName, location, "Canonical cells cannot contain embedded JSON.");
                 return;
             }
 
             bool valid = field.Domain switch
             {
-                ContentFieldDomain.STRING => value == value.Trim() && value.All(character => !char.IsControl(character)),
+                ContentFieldDomain.STRING => Encoding.UTF8.GetByteCount(value) <= 4096 &&
+                    !value.Contains('\0') &&
+                    value.All(character => !char.IsControl(character) ||
+                        field.Name == "text_value" && (character is '\r' or '\n')),
                 ContentFieldDomain.STABLE_ID => StableIdPattern.IsMatch(value),
                 ContentFieldDomain.BOOL => value is "TRUE" or "FALSE",
                 ContentFieldDomain.INT32 => IntegerPattern.IsMatch(value) && int.TryParse(value, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out _),
+                ContentFieldDomain.INT64 => IntegerPattern.IsMatch(value) && long.TryParse(value, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out _),
                 ContentFieldDomain.SAFE_INT => IntegerPattern.IsMatch(value) && long.TryParse(value, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out long parsed) && parsed >= -SafeIntegerMaximum && parsed <= SafeIntegerMaximum,
-                ContentFieldDomain.DECIMAL => DecimalPattern.IsMatch(value) && decimal.TryParse(value, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out _),
+                ContentFieldDomain.DECIMAL => DecimalPattern.IsMatch(value) && decimal.TryParse(value, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out _),
                 ContentFieldDomain.UTC_INSTANT => DateTimeOffset.TryParseExact(value, "yyyy-MM-dd'T'HH:mm:ss.fff'Z'", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out _),
-                ContentFieldDomain.STATUS => value is "CONFIRMED" or "TUNABLE" or "DEPRECATED" or "TEMPLATE",
+                ContentFieldDomain.DATE => DatePattern.IsMatch(value) && DateTime.TryParseExact(value, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out _),
+                ContentFieldDomain.LOCALE => LocalePattern.IsMatch(value),
+                ContentFieldDomain.SEMVER => SemVerPattern.IsMatch(value),
+                ContentFieldDomain.HEX64 => HashPattern.IsMatch(value),
+                ContentFieldDomain.SEED64 => IntegerPattern.IsMatch(value) && BigInteger.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out BigInteger seed) && seed >= BigInteger.Zero && seed <= Seed64Maximum,
+                ContentFieldDomain.STATUS => value is "CONFIRMED" or "TUNABLE" or "DEFERRED" or "OPS_LATER" or "REFERENCE_ONLY" or "REJECTED" or "UNRESOLVED" or "TEMPLATE",
                 ContentFieldDomain.ENUM => field.EnumValues.Contains(value, StringComparer.Ordinal),
                 _ => false
             };
             if (!valid)
             {
-                report.AddError("CSV_FIELD_DOMAIN_INVALID", fileName, location, $"Value does not match {field.Domain} canonical lexical form.", value);
+                report.AddError("CSV_DOMAIN_INVALID", fileName, location, $"Value does not match {field.Domain} canonical lexical form.", value);
             }
         }
 
@@ -408,11 +477,14 @@ namespace KingdomTycoon.Infrastructure.Content
 
                         if (!targetKeys.TryGetValue(key, out IReadOnlyDictionary<string, string> targetRow))
                         {
-                            report.AddError("CSV_FOREIGN_KEY_INVALID", table.FileName, (index + 2).ToString(CultureInfo.InvariantCulture), $"Foreign key to {foreignKey.TargetFile} is missing.", key);
+                            if (foreignKey.IsHard || IsEnabled(row))
+                            {
+                                report.AddError("CSV_ENABLED_ROW_REFERENCES_MISSING_TARGET", table.FileName, (index + 2).ToString(CultureInfo.InvariantCulture), $"Foreign key to {foreignKey.TargetFile} is missing.", key);
+                            }
                         }
                         else if (IsEnabled(row) && !IsEnabled(targetRow))
                         {
-                            report.AddError("CSV_ENABLED_REFERENCE_DISABLED", table.FileName, (index + 2).ToString(CultureInfo.InvariantCulture), $"Enabled row references disabled row in {foreignKey.TargetFile}.", key);
+                            report.AddError("CSV_ENABLED_ROW_REFERENCES_MISSING_TARGET", table.FileName, (index + 2).ToString(CultureInfo.InvariantCulture), $"Enabled row references disabled row in {foreignKey.TargetFile}.", key);
                         }
                     }
                 }
@@ -432,7 +504,7 @@ namespace KingdomTycoon.Infrastructure.Content
                         : row["condition_id"].Length == 0 && row["child_group_id"].Length > 0;
                     if (!valid)
                     {
-                        report.AddError("CSV_CONDITION_MEMBER_UNION_INVALID", members.FileName, (index + 2).ToString(CultureInfo.InvariantCulture), "Exactly one member reference must match member_type.");
+                        report.AddError("CSV_CONDITION_GROUP_INVALID", members.FileName, (index + 2).ToString(CultureInfo.InvariantCulture), "Exactly one member reference must match member_type.");
                     }
                 }
             }
@@ -470,7 +542,7 @@ namespace KingdomTycoon.Infrastructure.Content
                 string location = (index + 2).ToString(CultureInfo.InvariantCulture);
                 if (rewardType == "GENERATED_MERCENARY")
                 {
-                    report.AddError("CSV_REWARD_GENERATED_MERCENARY_FORBIDDEN", rewards.FileName, location, "Generated mercenaries are recruitment results, not reward entries.");
+                    report.AddError("CSV_REWARD_DISCRIMINATOR_MISMATCH", rewards.FileName, location, "Generated mercenaries are recruitment results, not reward entries.");
                     continue;
                 }
 
@@ -478,7 +550,7 @@ namespace KingdomTycoon.Infrastructure.Content
                 {
                     if (rewardId != sentinel)
                     {
-                        report.AddError("CSV_REWARD_SENTINEL_INVALID", rewards.FileName, location, $"{rewardType} requires {sentinel}.", rewardId);
+                        report.AddError("CSV_REWARD_DISCRIMINATOR_MISMATCH", rewards.FileName, location, $"{rewardType} requires {sentinel}.", rewardId);
                     }
 
                     continue;
@@ -486,14 +558,14 @@ namespace KingdomTycoon.Infrastructure.Content
 
                 if (!registryByType.TryGetValue(rewardType, out string registryFile) || !tables.TryGetValue(registryFile, out ContentTable registry))
                 {
-                    report.AddError("CSV_REWARD_REGISTRY_INVALID", rewards.FileName, location, $"Reward type {rewardType} has no loaded registry.", rewardId);
+                    report.AddError("CSV_REWARD_DISCRIMINATOR_MISMATCH", rewards.FileName, location, $"Reward type {rewardType} has no loaded registry.", rewardId);
                     continue;
                 }
 
                 string registryKey = registry.Contract.PrimaryKey.Count == 1 ? registry.Contract.PrimaryKey[0] : null;
                 if (registryKey == null || !registry.Rows.Any(registryRow => registryRow[registryKey] == rewardId && IsEnabled(registryRow)))
                 {
-                    report.AddError("CSV_REWARD_ID_INVALID", rewards.FileName, location, $"Reward ID is not enabled in {registryFile}.", rewardId);
+                    report.AddError("CSV_REWARD_DISCRIMINATOR_MISMATCH", rewards.FileName, location, $"Reward ID is not enabled in {registryFile}.", rewardId);
                 }
             }
         }
@@ -505,7 +577,7 @@ namespace KingdomTycoon.Infrastructure.Content
             string actual = string.Concat(sha256.ComputeHash(bytes).Select(value => value.ToString("x2", CultureInfo.InvariantCulture)));
             if (!string.Equals(actual, contract.Sha256, StringComparison.Ordinal))
             {
-                report.AddError("CSV_FILE_HASH_MISMATCH", contract.FileName, "/", "CSV SHA-256 does not match manifest.");
+                report.AddError("CONTENT_MANIFEST_HASH_MISMATCH", contract.FileName, "/", "CSV SHA-256 does not match manifest.");
             }
         }
 
@@ -519,28 +591,51 @@ namespace KingdomTycoon.Infrastructure.Content
             return string.Join("\u001f", fields.Select(field => row[field]));
         }
 
-        private static void RequireExactProperties(JObject value, params string[] expected)
+        private static void RequireExactProperties(JObject value, string location, params string[] expected)
         {
             string[] actual = value.Properties().Select(property => property.Name).OrderBy(name => name, StringComparer.Ordinal).ToArray();
             string[] sortedExpected = expected.OrderBy(name => name, StringComparer.Ordinal).ToArray();
             if (!actual.SequenceEqual(sortedExpected, StringComparer.Ordinal))
             {
-                throw new FormatException("Manifest object has missing or unknown properties.");
+                string code = actual.Except(sortedExpected, StringComparer.Ordinal).Any()
+                    ? "CONTENT_MANIFEST_UNKNOWN_FIELD"
+                    : "CONTENT_MANIFEST_REQUIRED_FIELD_MISSING";
+                throw new ContentManifestException(code, location, "Manifest object has missing or unknown properties.");
             }
         }
 
         private sealed class ContentManifest
         {
-            public ContentManifest(string contentVersion, IReadOnlyList<TableContract> tables)
+            public ContentManifest(string contentVersion, string minimumGameVersion, string channel, IReadOnlyList<TableContract> tables)
             {
                 ContentVersion = contentVersion;
+                MinimumGameVersion = minimumGameVersion;
+                Channel = channel;
                 Tables = tables;
             }
 
             public string ContentVersion { get; }
 
+            public string MinimumGameVersion { get; }
+
+            public string Channel { get; }
+
             public IReadOnlyList<TableContract> Tables { get; }
         }
+    }
+
+    internal sealed class ContentManifestException : FormatException
+    {
+        public ContentManifestException(string code, string location, string message)
+            : base(message)
+        {
+            Code = code;
+            Location = location;
+        }
+
+        public string Code { get; }
+
+        public string Location { get; }
     }
 
     internal enum ContentFieldDomain
@@ -549,9 +644,15 @@ namespace KingdomTycoon.Infrastructure.Content
         STABLE_ID,
         BOOL,
         INT32,
+        INT64,
         SAFE_INT,
         DECIMAL,
         UTC_INSTANT,
+        DATE,
+        LOCALE,
+        SEMVER,
+        HEX64,
+        SEED64,
         STATUS,
         ENUM
     }
@@ -577,11 +678,12 @@ namespace KingdomTycoon.Infrastructure.Content
 
     internal sealed class ForeignKeyContract
     {
-        public ForeignKeyContract(IReadOnlyList<string> fields, string targetFile, IReadOnlyList<string> targetFields)
+        public ForeignKeyContract(IReadOnlyList<string> fields, string targetFile, IReadOnlyList<string> targetFields, bool isHard)
         {
             Fields = fields;
             TargetFile = targetFile;
             TargetFields = targetFields;
+            IsHard = isHard;
         }
 
         public IReadOnlyList<string> Fields { get; }
@@ -589,6 +691,8 @@ namespace KingdomTycoon.Infrastructure.Content
         public string TargetFile { get; }
 
         public IReadOnlyList<string> TargetFields { get; }
+
+        public bool IsHard { get; }
     }
 
     internal sealed class TableContract
