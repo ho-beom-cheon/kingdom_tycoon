@@ -1,0 +1,6 @@
+asset_id,name,creator,source_url,version,acquired_date,price_krw,license,commercial_use,modification_allowed,credit_required,used_in,notes,status,enabled
+ASSET_MERC_PLACEHOLDER_WARRIOR_V1,Internal Warrior Placeholder,KINGDOM_TYCOON_TEAM,,1,2026-07-18,0,INTERNAL,TRUE,TRUE,FALSE,MERCENARY_APPEARANCE,Built-in production-valid placeholder,CONFIRMED,TRUE
+ASSET_MERC_PLACEHOLDER_GUARDIAN_V1,Internal Guardian Placeholder,KINGDOM_TYCOON_TEAM,,1,2026-07-18,0,INTERNAL,TRUE,TRUE,FALSE,MERCENARY_APPEARANCE,Built-in production-valid placeholder,CONFIRMED,TRUE
+ASSET_MERC_PLACEHOLDER_ARCHER_V1,Internal Archer Placeholder,KINGDOM_TYCOON_TEAM,,1,2026-07-18,0,INTERNAL,TRUE,TRUE,FALSE,MERCENARY_APPEARANCE,Built-in production-valid placeholder,CONFIRMED,TRUE
+ASSET_MERC_PLACEHOLDER_MAGE_V1,Internal Mage Placeholder,KINGDOM_TYCOON_TEAM,,1,2026-07-18,0,INTERNAL,TRUE,TRUE,FALSE,MERCENARY_APPEARANCE,Built-in production-valid placeholder,CONFIRMED,TRUE
+ASSET_MERC_PLACEHOLDER_CLERIC_V1,Internal Cleric Placeholder,KINGDOM_TYCOON_TEAM,,1,2026-07-18,0,INTERNAL,TRUE,TRUE,FALSE,MERCENARY_APPEARANCE,Built-in production-valid placeholder,CONFIRMED,TRUE
