@@ -28,6 +28,15 @@ artifact_dir="${delivery_dir}/artifacts"
 mkdir -p "$artifact_dir"
 artifact_count=0
 
+canonical_content="client-unity/Assets/StreamingAssets/Content"
+if [ -d "$canonical_content" ]; then
+  mkdir -p "${artifact_dir}/content"
+  cp -R "${canonical_content}/." "${artifact_dir}/content/"
+  content_count="$(find "${artifact_dir}/content" -type f ! -name '*.meta' | wc -l)"
+  artifact_count=$((artifact_count + content_count))
+  printf '[delivery] Collected canonical content package: %s files\n' "$content_count"
+fi
+
 if [ -d "server-api/build/libs" ]; then
   mkdir -p "${artifact_dir}/server"
   while IFS= read -r -d '' artifact; do

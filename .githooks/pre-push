@@ -54,8 +54,12 @@ printf '[%s] Pipeline started (branch: %s, remote: %s).\n' \
 
 start_step 1 2 "Validate content data"
 validator="scripts/validate_content.py"
+canonical_generator="scripts/generate_canonical_content.py"
 [ -f "$validator" ] || fail "Tracked content validator not found: ${validator}"
+[ -f "$canonical_generator" ] || fail "Canonical content generator not found: ${canonical_generator}"
 command -v python >/dev/null 2>&1 || fail "Python is not available on PATH."
+printf '[%s] Canonical package: %s --check\n' "$hook_name" "$canonical_generator"
+PYTHONUNBUFFERED=1 python -u "$canonical_generator" --check
 printf '[%s] Validator: %s\n' "$hook_name" "$validator"
 PYTHONUNBUFFERED=1 python -u "$validator"
 finish_step
