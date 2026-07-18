@@ -85,15 +85,19 @@ start_step 2 4 "Content data validation"
 validator="scripts/validate_content.py"
 canonical_generator="scripts/generate_canonical_content.py"
 p04_generator="scripts/generate_p04_content.py"
+p05_generator="scripts/generate_p05_content.py"
 
 if [ -f "$validator" ]; then
   command -v python >/dev/null 2>&1 || fail "Python is required for ${validator}"
   [ -f "$canonical_generator" ] || fail "canonical content generator is missing: ${canonical_generator}"
   [ -f "$p04_generator" ] || fail "P04 content generator is missing: ${p04_generator}"
+  [ -f "$p05_generator" ] || fail "P05 content generator is missing: ${p05_generator}"
   printf '[%s] Canonical package: %s --check\n' "$pipeline_name" "$canonical_generator"
   PYTHONUNBUFFERED=1 python -u "$canonical_generator" --check
   printf '[%s] P04 package: %s --check\n' "$pipeline_name" "$p04_generator"
   PYTHONUNBUFFERED=1 python -u "$p04_generator" --check
+  printf '[%s] P05 package: %s --check\n' "$pipeline_name" "$p05_generator"
+  PYTHONUNBUFFERED=1 python -u "$p05_generator" --check
   printf '[%s] Validator: %s\n' "$pipeline_name" "$validator"
   PYTHONUNBUFFERED=1 python -u "$validator"
   finish_step "${validator} completed"
