@@ -11,7 +11,7 @@
 *.csv text
 # Versioned manifest hashes cover exact RFC 4180 CRLF bytes. Keep those blobs
 # opaque so Linux checkout and core.autocrlf cannot rewrite signed packages.
-client-unity/Assets/StreamingAssets/Content/**/*.csv -text whitespace=-cr-at-eol
+client-unity/Assets/StreamingAssets/Content/**/*.csv -text whitespace=cr-at-eol
 client-unity/Assets/StreamingAssets/Content/**/*.json text eol=lf
 *.py text
 *.ps1 text

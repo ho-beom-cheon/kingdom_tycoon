@@ -32,6 +32,8 @@ hs_err_pid*
 .delivery/
 coverage/
 /artifacts/
+**/__pycache__/
+*.py[cod]
 
 # Secrets and signing material
 .env
