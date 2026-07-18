@@ -182,7 +182,7 @@ namespace KingdomTycoon.Infrastructure.Mercenaries
                 RosterMigrated?.Invoke(this, new MercenaryRosterMigratedEventArgs(afterCount - beforeCount,
                     written.Document.Value<string>("contentVersion"), written.Document.Value<long>("revision")));
             }
-            else if (current.Value<string>("contentVersion") is not (CompileTimeActiveContentVersionProvider.P05ContentVersion or CompileTimeActiveContentVersionProvider.P06ContentVersion))
+            else if (current.Value<string>("contentVersion") is not (CompileTimeActiveContentVersionProvider.P05ContentVersion or CompileTimeActiveContentVersionProvider.P06ContentVersion or CompileTimeActiveContentVersionProvider.P07ContentVersion))
             {
                 throw new InvalidOperationException("SAVE_CONTENT_VERSION_UNSUPPORTED");
             }

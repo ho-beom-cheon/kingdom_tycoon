@@ -43,11 +43,23 @@ namespace KingdomTycoon.Infrastructure.Save
         };
 
         private readonly JObject schema;
+        private readonly IReadOnlyDictionary<string, JObject> versionSchemas;
         private readonly JsonSchemaValidator schemaValidator = new();
 
         public SaveDocumentValidator(string schemaJson)
         {
             schema = StrictJson.ParseObject(schemaJson ?? throw new ArgumentNullException(nameof(schemaJson)));
+            versionSchemas = new Dictionary<string, JObject>(StringComparer.Ordinal);
+        }
+
+        public SaveDocumentValidator(string legacySchemaJson, string content5SchemaJson)
+        {
+            schema = StrictJson.ParseObject(legacySchemaJson ?? throw new ArgumentNullException(nameof(legacySchemaJson)));
+            var content5 = StrictJson.ParseObject(content5SchemaJson ?? throw new ArgumentNullException(nameof(content5SchemaJson)));
+            versionSchemas = new Dictionary<string, JObject>(StringComparer.Ordinal)
+            {
+                ["1.0.0-content.5"] = content5
+            };
         }
 
         public SaveValidationResult ParseAndValidate(string json, string source)
@@ -75,7 +87,10 @@ namespace KingdomTycoon.Infrastructure.Save
                 throw new ArgumentNullException(nameof(document));
             }
 
-            var report = schemaValidator.Validate(document, schema, source);
+            JObject selected = versionSchemas.TryGetValue(document.Value<string>("contentVersion") ?? string.Empty, out JObject versionSchema)
+                ? versionSchema
+                : schema;
+            var report = schemaValidator.Validate(document, selected, source);
             if (!report.IsValid)
             {
                 return report;
