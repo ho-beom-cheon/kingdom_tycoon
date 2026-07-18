@@ -10,7 +10,10 @@
 - 완료: [DB P0 설계 채택·감사](docs/reports/P0_DB_IMPLEMENTATION_REPORT.md)
 - 완료: [P02 Unity 기반](docs/reports/P02_UNITY_FOUNDATION_REPORT.md)
 - 완료: [P03 콘텐츠 파이프라인·Save](docs/reports/P03_CONTENT_SAVE_REPORT.md)
-- 다음: [P04 왕국·시설](phases/P04_KINGDOM_FACILITIES.md)
+- 완료: [P04 왕국·시설](docs/reports/P04_KINGDOM_FACILITIES_REPORT.md)
+- 완료: [P05 용병 로스터](docs/reports/P05_MERCENARY_ROSTER_REPORT.md)
+- 완료: [P06 이동·전투·AI](docs/reports/P06_MOVEMENT_COMBAT_AI_REPORT.md)
+- 다음: [P07 전리품·인벤토리·장비](phases/P07_LOOT_INVENTORY_EQUIPMENT.md)
 
 한 Phase의 구현과 검증이 끝나기 전에는 다음 Phase로 이동하지 않는다.
 
@@ -56,11 +59,14 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\setup-git-hooks.ps
 
 ```powershell
 python .\scripts\generate_canonical_content.py --check
+python .\scripts\generate_p04_content.py --check
+python .\scripts\generate_p05_content.py --check
+python .\scripts\generate_p06_content.py --check
 python .\scripts\validate_content.py
 ```
 
-첫 명령은 최종 P03 설계와 `StreamingAssets/Content` 60-table package의 byte drift를 검사한다.
-두 번째 명령은 기존 콘텐츠와 생성된 Save schema 두 사본을 검사한다. 생성물이 변경된 경우 먼저
+각 generator는 P03~P06 설계와 해당 immutable `StreamingAssets/Content` package의 byte drift를 검사한다.
+마지막 명령은 기존 콘텐츠와 생성된 Save schema 두 사본을 검사한다. 생성물이 변경된 경우 먼저
 해당 generator를 실행한다.
 
 ```powershell
@@ -91,8 +97,7 @@ Unity `6000.3.20f1`에서 EditMode와 PlayMode를 각각 실행한다. `<UNITY_E
   -testResults .\client-unity\Logs\playmode-results.xml
 ```
 
-P02 결과는 [Unity 기반 구현 보고서](docs/reports/P02_UNITY_FOUNDATION_REPORT.md), P03 완료 결과는
-[콘텐츠 파이프라인·Save 구현 보고서](docs/reports/P03_CONTENT_SAVE_REPORT.md)에 기록한다.
+Phase별 결과와 실행 증거는 `docs/reports/`의 구현 보고서에 기록한다.
 
 ### 서버 테스트
 
