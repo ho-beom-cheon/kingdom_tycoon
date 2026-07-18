@@ -1,0 +1,119 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bbb281ee3bf0b054c82ac2347e9e782c, type: 3}
+  m_Name: Content-P06-Combat-v1
+  m_EditorClassIdentifier: Unity.Addressables.Editor::UnityEditor.AddressableAssets.Settings.AddressableAssetGroup
+  m_GroupName: Content-P06-Combat-v1
+  m_GUID: 09e04b975ddcd73479fb1eda4e309369
+  m_SerializeEntries:
+  - m_GUID: 17f86b3de29f0e24eb183ac50f64e45d
+    m_Address: P06/Status/STATUS_BURN
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P06-Combat
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 220893ef1b217bf40b4592e979fd785c
+    m_Address: P06/Tiles/Meadow
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P06-Combat
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 466f2a7b4808bb04fbd951ea8f251d98
+    m_Address: P06/Monsters/ELITE
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P06-Combat
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 4e06badcaaac34246a4c94fb11686182
+    m_Address: P06/Status/STATUS_SLOW
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P06-Combat
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 53a21c314491d9d4281d009cf62067ce
+    m_Address: P06/Status/STATUS_TAUNT
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P06-Combat
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 76eae08f15aa1c648b014f24a556fd0e
+    m_Address: P06/Monsters/MELEE
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P06-Combat
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 91e8bc389801bca48ad2a10ba108ff3f
+    m_Address: P06/Missing
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P06-Combat
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 97918fd2a47fae343b7a819d9e9aee86
+    m_Address: P06/Characters/JOB_ARCHER
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P06-Combat
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: a198d80d042577a4bb7c1095aa343cb9
+    m_Address: P06/Characters/JOB_CLERIC
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P06-Combat
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: a79ff7f426bb33448b75c1fb76023dff
+    m_Address: P06/Characters/JOB_MAGE
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P06-Combat
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: aaffff9fd71036c4c91d0c247090e9a3
+    m_Address: P06/Status/STATUS_POISON
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P06-Combat
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: b2a1efaf70fca414bba55802b6b16d51
+    m_Address: P06/Projectile
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P06-Combat
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: c01a9c60f27f0dc4b8bad86eac327024
+    m_Address: P06/Characters/JOB_GUARDIAN
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P06-Combat
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: cb27b5e6e63502e449371f92c21f596d
+    m_Address: P06/Status/STATUS_BARRIER
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P06-Combat
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: d1ebdd8f0fbc81549a848829bde079c8
+    m_Address: P06/Status/STATUS_BLESSING
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P06-Combat
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: e27e61f11aeef9349aeda5d1e01dac74
+    m_Address: P06/Characters/JOB_WARRIOR
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P06-Combat
+    FlaggedDuringContentUpdateRestriction: 0
+  m_ReadOnly: 0
+  m_Settings: {fileID: 11400000, guid: 50a16fd5bbff422489f2854e28312161, type: 2}
+  m_SchemaSet:
+    m_Schemas:
+    - {fileID: 11400000, guid: 707677d0240af564bb5f649f548d6866, type: 2}
+    - {fileID: 11400000, guid: 6991cb1a87b6e024dac46eaf8ba638e2, type: 2}

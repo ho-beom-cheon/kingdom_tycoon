@@ -1,0 +1,13 @@
+{
+  "fixture": "SOAK_30M",
+  "sha256": "999e3e084b1cd94f5706833383813ee9558fd8d92888c43252d795eda3a7c7bd",
+  "metrics": {
+    "fixture": "SOAK_30M",
+    "ticks": 18000,
+    "encounters": 439,
+    "kills": 878,
+    "partyDamage": 272180,
+    "hostileDamage": 80337,
+    "activeEntityCount": 4
+  }
+}

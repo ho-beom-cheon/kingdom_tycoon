@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using KingdomTycoon.Application.Abstractions;
 using KingdomTycoon.Application.Content;
 using KingdomTycoon.Infrastructure.Content;
+using KingdomTycoon.Infrastructure.Combat;
 using KingdomTycoon.Infrastructure.Facilities;
 using KingdomTycoon.Infrastructure.Mercenaries;
 using KingdomTycoon.Infrastructure.Save;
@@ -55,10 +56,10 @@ namespace KingdomTycoon.Bootstrap
             }
 
             TextAsset p04Template = Resources.Load<TextAsset>("Contracts/p04-new-game.template");
-            TextAsset newGameTemplate = Resources.Load<TextAsset>("Contracts/p05-new-game.template");
+            TextAsset newGameTemplate = Resources.Load<TextAsset>("Contracts/p06-new-game.template");
             if (newGameTemplate == null)
             {
-                throw new InvalidOperationException("P05 new-game template resource is missing.");
+                throw new InvalidOperationException("P06 new-game template resource is missing.");
             }
             if (p04Template == null) throw new InvalidOperationException("P04 migration template resource is missing.");
             TextAsset p05MigrationGolden = Resources.Load<TextAsset>("Contracts/p05-migration-after.golden");
@@ -71,6 +72,7 @@ namespace KingdomTycoon.Bootstrap
             Services.Register(new ContentCatalogService(contentReader, new CompileTimeActiveContentVersionProvider()));
             Services.Register(new FacilityGameService(new SystemTrustedUtcClock(), newGameTemplate.text, p04Template.text));
             Services.Register(new MercenaryRosterService(new SystemTrustedUtcClock(), p05MigrationGolden.text));
+            Services.Register(new CombatGameService(new SystemTrustedUtcClock()));
             Services.Register(new SceneFlowService());
             Services.InitializeAll();
         }
@@ -101,6 +103,7 @@ namespace KingdomTycoon.Bootstrap
             await Services.Get<ContentCatalogService>().LoadActiveAsync(CancellationToken.None);
             await Services.Get<FacilityGameService>().BootstrapAsync(CancellationToken.None);
             Services.Get<MercenaryRosterService>().Bootstrap();
+            Services.Get<CombatGameService>().Bootstrap();
         }
 
         private void OnDestroy()

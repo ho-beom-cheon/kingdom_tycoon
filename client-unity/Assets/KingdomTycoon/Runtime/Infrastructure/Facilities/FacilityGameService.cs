@@ -23,6 +23,7 @@ namespace KingdomTycoon.Infrastructure.Facilities
         private readonly string newGameTemplateJson;
         private readonly string p04MigrationTemplateJson;
         private readonly bool p05Enabled;
+        private readonly bool p06Enabled;
         private readonly SemaphoreSlim commitGate = new(1, 1);
         private SaveService saveService;
         private ContentCatalogService contentService;
@@ -34,6 +35,7 @@ namespace KingdomTycoon.Infrastructure.Facilities
             this.clock = clock ?? throw new ArgumentNullException(nameof(clock));
             this.newGameTemplateJson = newGameTemplateJson ?? throw new ArgumentNullException(nameof(newGameTemplateJson));
             p05Enabled = p04MigrationTemplateJson != null;
+            p06Enabled = StrictJson.ParseObject(newGameTemplateJson).Value<string>("contentVersion") == CompileTimeActiveContentVersionProvider.P06ContentVersion;
             this.p04MigrationTemplateJson = p04MigrationTemplateJson ?? newGameTemplateJson;
         }
 
@@ -66,7 +68,7 @@ namespace KingdomTycoon.Infrastructure.Facilities
             {
                 if (saveService.Repository is not AtomicSaveRepository atomicRepository)
                     throw new InvalidOperationException("SAVE_CREATE_REPOSITORY_UNSUPPORTED");
-                INewGameFactory factory = p05Enabled ? new P05NewGameFactory(newGameTemplateJson) : new P04NewGameFactory(newGameTemplateJson);
+                INewGameFactory factory = p06Enabled ? new P06NewGameFactory(newGameTemplateJson) : p05Enabled ? new P05NewGameFactory(newGameTemplateJson) : new P04NewGameFactory(newGameTemplateJson);
                 SaveLoadResult created = new SingleProfileCreator(saveService.PersistentDataPath, atomicRepository, saveService.Validator)
                     .CreateOrResume(factory, clock.UtcNow);
                 if (!created.Success) throw new InvalidOperationException(created.ErrorCode ?? "SAVE_CREATE_FAILED");
@@ -91,7 +93,7 @@ namespace KingdomTycoon.Infrastructure.Facilities
                 migrated["contentVersion"] = CompileTimeActiveContentVersionProvider.P04ContentVersion;
                 Commit(migrated, Revision, clock.UtcNow);
             }
-            else if (CurrentDocument.Value<string>("contentVersion") is not (CompileTimeActiveContentVersionProvider.P04ContentVersion or CompileTimeActiveContentVersionProvider.P05ContentVersion))
+            else if (CurrentDocument.Value<string>("contentVersion") is not (CompileTimeActiveContentVersionProvider.P04ContentVersion or CompileTimeActiveContentVersionProvider.P05ContentVersion or CompileTimeActiveContentVersionProvider.P06ContentVersion))
             {
                 throw new InvalidOperationException("SAVE_CONTENT_VERSION_UNSUPPORTED");
             }
@@ -386,7 +388,7 @@ namespace KingdomTycoon.Infrastructure.Facilities
         {
             ["operationId"] = operationId.ToString("D"), ["jobType"] = jobType, ["status"] = "RUNNING",
             ["recipeId"] = null, ["targetLevel"] = level, ["treatmentTargetInstanceId"] = null,
-            ["contentVersion"] = CompileTimeActiveContentVersionProvider.P05ContentVersion,
+            ["contentVersion"] = CompileTimeActiveContentVersionProvider.P06ContentVersion,
             ["startedAtUtc"] = FormatUtc(started), ["finishesAtUtc"] = FormatUtc(finishes),
             ["claimedAtUtc"] = null, ["cancelledAtUtc"] = null, ["cycleCount"] = 1,
             ["inputSnapshot"] = input, ["outputSnapshot"] = new JArray()

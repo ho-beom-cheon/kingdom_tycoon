@@ -173,7 +173,8 @@ def generate(package: Package, new_game: dict[str, Any], migration: dict[str, An
             failures.append(f"stale: {(OUTPUT / stale).relative_to(ROOT)}")
 
     versions = sorted(path.name for path in CONTENT_ROOT.iterdir() if path.is_dir()) if CONTENT_ROOT.exists() else []
-    if check and versions != ["1.0.0-content.1", "1.0.0-content.2", "1.0.0-content.3"]:
+    required_versions = {"1.0.0-content.1", "1.0.0-content.2", "1.0.0-content.3"}
+    if check and not required_versions.issubset(versions):
         failures.append(f"versioned package tree invalid: versions={versions}")
     if failures:
         raise ContractError("P05 package check failed:\n- " + "\n- ".join(failures))

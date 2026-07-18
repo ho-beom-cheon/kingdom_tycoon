@@ -108,6 +108,8 @@ def _validate_domains(manifest: dict[str, Any], csv_bytes: dict[str, bytes]) -> 
                     valid = value in {"TRUE", "FALSE"}
                 elif domain in {"INT32", "INT64", "SAFE_INT", "SEED64"}:
                     valid = bool(integer.fullmatch(value))
+                elif domain == "POSITIVE_INT":
+                    valid = bool(integer.fullmatch(value)) and 0 < int(value) <= 9_007_199_254_740_991
                 elif domain == "DECIMAL":
                     valid = bool(decimal.fullmatch(value))
                 elif domain == "ENUM":

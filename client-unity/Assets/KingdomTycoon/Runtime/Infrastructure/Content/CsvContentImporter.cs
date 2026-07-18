@@ -278,7 +278,7 @@ namespace KingdomTycoon.Infrastructure.Content
                     string[] sourceFields = foreignKey["sourceFields"].Values<string>().ToArray();
                     string[] targetFields = foreignKey["targetFields"].Values<string>().ToArray();
                     string mode = foreignKey.Value<string>("mode");
-                    if (sourceFields.Length == 0 || sourceFields.Length != targetFields.Length || sourceFields.Any(field => !fieldNames.Contains(field)) || mode is not ("HARD" or "SOFT"))
+                    if (sourceFields.Length == 0 || sourceFields.Length != targetFields.Length || sourceFields.Any(field => !fieldNames.Contains(field)) || mode is not ("HARD" or "SOFT" or "SOFT_SENTINEL_EMPTY"))
                     {
                         throw new ContentManifestException("CONTENT_MANIFEST_REQUIRED_FIELD_MISSING", $"{tableLocation}/foreignKeys/{foreignKeyIndex}", $"Invalid foreign key in {fileName}.");
                     }
@@ -436,6 +436,7 @@ namespace KingdomTycoon.Infrastructure.Content
                 ContentFieldDomain.INT32 => IntegerPattern.IsMatch(value) && int.TryParse(value, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out _),
                 ContentFieldDomain.INT64 => IntegerPattern.IsMatch(value) && long.TryParse(value, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out _),
                 ContentFieldDomain.SAFE_INT => IntegerPattern.IsMatch(value) && long.TryParse(value, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out long parsed) && parsed >= -SafeIntegerMaximum && parsed <= SafeIntegerMaximum,
+                ContentFieldDomain.POSITIVE_INT => IntegerPattern.IsMatch(value) && long.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out long positive) && positive > 0 && positive <= SafeIntegerMaximum,
                 ContentFieldDomain.DECIMAL => DecimalPattern.IsMatch(value) && decimal.TryParse(value, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out _),
                 ContentFieldDomain.UTC_INSTANT => DateTimeOffset.TryParseExact(value, "yyyy-MM-dd'T'HH:mm:ss.fff'Z'", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out _),
                 ContentFieldDomain.DATE => DatePattern.IsMatch(value) && DateTime.TryParseExact(value, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out _),
@@ -651,6 +652,7 @@ namespace KingdomTycoon.Infrastructure.Content
         INT32,
         INT64,
         SAFE_INT,
+        POSITIVE_INT,
         DECIMAL,
         UTC_INSTANT,
         DATE,
