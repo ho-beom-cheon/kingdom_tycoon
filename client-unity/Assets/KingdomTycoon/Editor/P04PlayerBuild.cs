@@ -8,12 +8,13 @@ using UnityEngine;
 
 namespace KingdomTycoon.Editor
 {
-    public static class P03PlayerBuild
+    public static class P04PlayerBuild
     {
         public static void BuildAndroid()
         {
             P03ContentAssetGenerator.Verify();
-            string output = Path.GetFullPath(Path.Combine(UnityEngine.Application.dataPath, "..", "..", "artifacts", "player", "KingdomTycoon-P03.apk"));
+            P04KingdomAssetGenerator.Verify();
+            string output = Path.GetFullPath(Path.Combine(UnityEngine.Application.dataPath, "..", "..", "artifacts", "player", "KingdomTycoon-P04-Development.apk"));
             Directory.CreateDirectory(Path.GetDirectoryName(output) ?? throw new InvalidOperationException("Player output directory is invalid."));
             var options = new BuildPlayerOptions
             {
@@ -24,11 +25,8 @@ namespace KingdomTycoon.Editor
                 options = BuildOptions.Development
             };
             BuildReport report = BuildPipeline.BuildPlayer(options);
-            if (report.summary.result != BuildResult.Succeeded)
-            {
-                throw new BuildFailedException($"P03 Android build failed: {report.summary.result}, errors={report.summary.totalErrors}");
-            }
-            Debug.Log($"P03 Android player build succeeded: {output}, bytes={report.summary.totalSize}");
+            if (report.summary.result != BuildResult.Succeeded) throw new BuildFailedException($"P04 Android build failed: {report.summary.result}, errors={report.summary.totalErrors}");
+            Debug.Log($"P04 Android player build succeeded: {output}, bytes={report.summary.totalSize}");
         }
     }
 }

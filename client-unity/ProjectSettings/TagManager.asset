@@ -44,5 +44,8 @@ TagManager:
   - name: Characters
     uniqueID: 193484
     locked: 0
+  - name: KingdomWorld
+    uniqueID: 294041
+    locked: 0
   m_RenderingLayers:
   - Default
