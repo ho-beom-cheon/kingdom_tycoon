@@ -1,4 +1,7 @@
 using System.Collections;
+using System.IO;
+using KingdomTycoon.Infrastructure.Content;
+using KingdomTycoon.Infrastructure.Save;
 using KingdomTycoon.Services;
 using KingdomTycoon.UI;
 using UnityEngine;
@@ -39,6 +42,14 @@ namespace KingdomTycoon.Bootstrap
             }
 
             Services.Register(new LocalizationService());
+            TextAsset saveSchema = Resources.Load<TextAsset>("Contracts/save.schema");
+            if (saveSchema == null)
+            {
+                throw new System.InvalidOperationException("P03 save schema resource is missing.");
+            }
+
+            Services.Register(new SaveService(Application.persistentDataPath, saveSchema.text));
+            Services.Register(new ContentCatalogService(Path.Combine(Application.streamingAssetsPath, "Content")));
             Services.Register(new SceneFlowService());
             Services.InitializeAll();
         }

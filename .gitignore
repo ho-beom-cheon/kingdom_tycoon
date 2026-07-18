@@ -8,6 +8,9 @@
 [Uu]ser[Ss]ettings/
 [Mm]emoryCaptures/
 [Rr]ecordings/
+client-unity/.utmp/
+client-unity/Assets/AddressableAssetsData/Android/
+client-unity/Assets/AddressableAssetsData/Android.meta
 
 # IDE and editor-local files
 .idea/
@@ -28,6 +31,7 @@ hs_err_pid*
 .tools/
 .delivery/
 coverage/
+/artifacts/
 
 # Secrets and signing material
 .env

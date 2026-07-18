@@ -1,9 +1,21 @@
 from pathlib import Path
-import csv, json, sys
+import csv, json, subprocess, sys
 
 ROOT = Path(__file__).resolve().parents[1]
 CSV = ROOT / 'data' / 'csv'
 errors = []
+
+schema_check = subprocess.run(
+    [sys.executable, str(ROOT / 'scripts' / 'generate_save_schema.py'), '--check'],
+    cwd=ROOT,
+    capture_output=True,
+    text=True,
+    encoding='utf-8',
+)
+if schema_check.returncode != 0:
+    errors.append('generated save schema is stale; run scripts/generate_save_schema.py')
+elif schema_check.stdout.strip():
+    print(schema_check.stdout.strip())
 
 def rows(name):
     with (CSV/name).open(encoding='utf-8-sig', newline='') as f:

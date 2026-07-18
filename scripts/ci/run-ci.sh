@@ -83,9 +83,13 @@ finish_step "repository-managed hooks parsed successfully"
 
 start_step 2 4 "Content data validation"
 validator="scripts/validate_content.py"
+canonical_generator="scripts/generate_canonical_content.py"
 
 if [ -f "$validator" ]; then
   command -v python >/dev/null 2>&1 || fail "Python is required for ${validator}"
+  [ -f "$canonical_generator" ] || fail "canonical content generator is missing: ${canonical_generator}"
+  printf '[%s] Canonical package: %s --check\n' "$pipeline_name" "$canonical_generator"
+  PYTHONUNBUFFERED=1 python -u "$canonical_generator" --check
   printf '[%s] Validator: %s\n' "$pipeline_name" "$validator"
   PYTHONUNBUFFERED=1 python -u "$validator"
   finish_step "${validator} completed"
