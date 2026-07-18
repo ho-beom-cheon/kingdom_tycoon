@@ -102,7 +102,7 @@ namespace KingdomTycoon.Editor
 
         private static void VerifyPackage()
         {
-            string root = Path.Combine(Application.dataPath, "StreamingAssets", "Content");
+            string root = Path.Combine(UnityEngine.Application.dataPath, "StreamingAssets", "Content", "1.0.0-content.1");
             string manifest = File.ReadAllText(Path.Combine(root, "content_manifest.json"), new UTF8Encoding(false, true));
             ContentImportResult result = new CsvContentImporter().Import(
                 manifest,
@@ -115,7 +115,7 @@ namespace KingdomTycoon.Editor
 
         private static HashSet<string> LoadAssetRegistryIds()
         {
-            string path = Path.Combine(Application.dataPath, "StreamingAssets", "Content", "asset_register.csv");
+            string path = Path.Combine(UnityEngine.Application.dataPath, "StreamingAssets", "Content", "1.0.0-content.1", "asset_register.csv");
             string[] lines = File.ReadAllLines(path, new UTF8Encoding(false, true));
             return lines.Skip(1).Where(line => line.Length > 0).Select(line => line.Split(',')[0]).ToHashSet(StringComparer.Ordinal);
         }

@@ -1,0 +1,101 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bbb281ee3bf0b054c82ac2347e9e782c, type: 3}
+  m_Name: Content-P04-Kingdom-v1
+  m_EditorClassIdentifier: Unity.Addressables.Editor::UnityEditor.AddressableAssets.Settings.AddressableAssetGroup
+  m_GroupName: Content-P04-Kingdom-v1
+  m_GUID: 36c208228700ad64682a89f39e1b5473
+  m_SerializeEntries:
+  - m_GUID: 07aa819af2b8219498c3a0e91a335444
+    m_Address: P04/Kingdom/FAC_TAVERN
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P04-Kingdom
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 0a97a05626a0fa3478d673a8277a25ea
+    m_Address: P04/Kingdom/FAC_WAREHOUSE
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P04-Kingdom
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 19013e4f15c7bd444beea8e362f6750b
+    m_Address: P04/Kingdom/FAC_ALCHEMY
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P04-Kingdom
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 23010861e0f169f42810fe03b9c44b45
+    m_Address: P04/Kingdom/Stopped
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P04-Kingdom
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 313de9ed479984b43855aa9c64fd10c4
+    m_Address: P04/Kingdom/Construction
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P04-Kingdom
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 604d587531354c24c9a63874b3a337e8
+    m_Address: P04/Kingdom/FAC_GUILD
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P04-Kingdom
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 7a106b994ddf5b3428a9ccc3b41bc142
+    m_Address: P04/Kingdom/FAC_STORE
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P04-Kingdom
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 9165d7edc31489f428d86b4de68be4e9
+    m_Address: P04/Kingdom/FAC_BLACKSMITH
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P04-Kingdom
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: ac56f9ba39ce62d4ab8de76f82222f6b
+    m_Address: P04/Kingdom/Background
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P04-Kingdom
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: c3abdf0fc72188d46bac29ad102c92e1
+    m_Address: P04/Kingdom/Locked
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P04-Kingdom
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: ce95b73b81241c24b8756a724a13b09e
+    m_Address: P04/Kingdom/Plot
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P04-Kingdom
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: d179b6e9258d96444a87d43b106311d5
+    m_Address: P04/Kingdom/FAC_INFIRMARY
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P04-Kingdom
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: d46229f148430424ab72156cca07e051
+    m_Address: P04/Kingdom/FAC_LODGE
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P04-Kingdom
+    FlaggedDuringContentUpdateRestriction: 0
+  m_ReadOnly: 0
+  m_Settings: {fileID: 11400000, guid: 50a16fd5bbff422489f2854e28312161, type: 2}
+  m_SchemaSet:
+    m_Schemas:
+    - {fileID: 11400000, guid: c4cf03e85830e614290a82f79ef5ed7c, type: 2}
+    - {fileID: 11400000, guid: 88004989657a63c4587853dd736de3ce, type: 2}

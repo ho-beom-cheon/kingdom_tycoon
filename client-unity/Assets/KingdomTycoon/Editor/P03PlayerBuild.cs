@@ -13,7 +13,7 @@ namespace KingdomTycoon.Editor
         public static void BuildAndroid()
         {
             P03ContentAssetGenerator.Verify();
-            string output = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "..", "artifacts", "player", "KingdomTycoon-P03.apk"));
+            string output = Path.GetFullPath(Path.Combine(UnityEngine.Application.dataPath, "..", "..", "artifacts", "player", "KingdomTycoon-P03.apk"));
             Directory.CreateDirectory(Path.GetDirectoryName(output) ?? throw new InvalidOperationException("Player output directory is invalid."));
             var options = new BuildPlayerOptions
             {

@@ -167,6 +167,7 @@ namespace KingdomTycoon.Infrastructure.Save
         private static void ValidateFacilities(JObject document, string source, ValidationReport report)
         {
             JArray facilities = (JArray)document["payload"]["facilities"];
+            JArray managementNpcs = (JArray)document["payload"]["managementNpcs"];
             ILookup<string, JObject> journalByOperationId = document["payload"]["operationJournal"]
                 .Children<JObject>()
                 .ToLookup(entry => entry.Value<string>("operationId"), StringComparer.Ordinal);
@@ -184,6 +185,7 @@ namespace KingdomTycoon.Infrastructure.Save
 
                 levelDelta += facility.Value<long>("level") - 1;
                 ValidateFacilityJobMatrix(facility, journalByOperationId, source, location, report);
+                ValidateFacilityNpcLinks(facility, managementNpcs, source, location, report);
             }
 
             long persistedCount = document["payload"]["kingdom"].Value<long>("facilityUpgradeCount");
@@ -194,6 +196,44 @@ namespace KingdomTycoon.Infrastructure.Save
                     source,
                     "/payload/kingdom/facilityUpgradeCount",
                     $"Expected {levelDelta.ToString(CultureInfo.InvariantCulture)} from facility levels.");
+            }
+        }
+
+        private static void ValidateFacilityNpcLinks(JObject facility, JArray managementNpcs, string source, string location, ValidationReport report)
+        {
+            string facilityId = facility.Value<string>("facilityId");
+            bool managed = facilityId is "FAC_STORE" or "FAC_BLACKSMITH" or "FAC_ALCHEMY" or "FAC_INFIRMARY";
+            string state = facility.Value<string>("state");
+            string assignedId = facility["assignedNpcInstanceId"].Type == JTokenType.Null ? null : facility.Value<string>("assignedNpcInstanceId");
+            JObject[] linked = managementNpcs.Children<JObject>()
+                .Where(npc => string.Equals(npc.Value<string>("assignedFacilityId"), facilityId, StringComparison.Ordinal))
+                .ToArray();
+
+            if (!managed && (assignedId != null || linked.Length != 0))
+            {
+                report.AddError("SAVE_FACILITY_NPC_LINK_INVALID", source, location + "/assignedNpcInstanceId", "SYSTEM facilities cannot have management NPC links.");
+                return;
+            }
+
+            if (assignedId == null)
+            {
+                if (linked.Length != 0 || (managed && state == "ACTIVE"))
+                {
+                    report.AddError("SAVE_FACILITY_NPC_LINK_INVALID", source, location + "/assignedNpcInstanceId", "Facility and NPC links must be bidirectional.");
+                }
+                if (managed && state == "STOPPED" && linked.Any(npc => npc.Value<bool>("working")))
+                {
+                    report.AddError("SAVE_FACILITY_STOPPED_INVALID", source, location, "STOPPED facilities cannot have a working NPC.");
+                }
+                return;
+            }
+
+            JObject npc = managementNpcs.Children<JObject>().SingleOrDefault(value => value.Value<string>("instanceId") == assignedId);
+            if (npc == null || linked.Length != 1 || linked[0] != npc ||
+                (state == "ACTIVE" && !npc.Value<bool>("working")) ||
+                (state != "ACTIVE" && npc.Value<bool>("working")))
+            {
+                report.AddError("SAVE_FACILITY_NPC_LINK_INVALID", source, location + "/assignedNpcInstanceId", "Facility and NPC links/working state must be bidirectional.", assignedId);
             }
         }
 
@@ -238,6 +278,8 @@ namespace KingdomTycoon.Infrastructure.Save
                 "ACTIVE" => (jobType == "BUILD" && status == "CLAIMED") ||
                             (jobType == "UPGRADE" && status is "CLAIMED" or "CANCELLED") ||
                             (jobType is "PRODUCTION" or "CRAFT" or "TREATMENT"),
+                "STOPPED" => (jobType == "BUILD" && status == "CLAIMED") ||
+                             (jobType == "UPGRADE" && status is "CLAIMED" or "CANCELLED"),
                 _ => false
             };
             if (!allowed)
@@ -274,6 +316,15 @@ namespace KingdomTycoon.Infrastructure.Save
             if (!terminalTimesValid)
             {
                 report.AddError("SAVE_FACILITY_JOB_TERMINAL_TIME_INVALID", source, location + "/job", "Terminal timestamps do not match job status.");
+            }
+
+            if (status is "CLAIMED" or "CANCELLED")
+            {
+                string requiredJournalStatus = status == "CLAIMED" ? "COMMITTED" : "FAILED_PERMANENT";
+                if (journalEntries.Length != 1 || journalEntries[0].Value<string>("status") != requiredJournalStatus)
+                {
+                    report.AddError("SAVE_FACILITY_TERMINAL_JOURNAL_MISMATCH", source, location + "/job/operationId", $"{status} requires journal status {requiredJournalStatus}.");
+                }
             }
         }
 

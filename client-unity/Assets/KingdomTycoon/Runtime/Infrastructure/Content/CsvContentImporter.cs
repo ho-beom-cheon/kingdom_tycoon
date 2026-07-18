@@ -147,11 +147,15 @@ namespace KingdomTycoon.Infrastructure.Content
             RequireExactProperties(root, "/",
                 "schemaId", "contractVersion", "contentVersion", "csvSchemaSetVersion", "packageKind",
                 "baseContentVersion", "minimumGameVersion", "channel", "generatedAtUtc", "tables");
+            int schemaSetVersion = root.Value<int?>("csvSchemaSetVersion") ?? -1;
             if (root.Value<string>("schemaId") != "urn:tycoon:content-manifest:v2" ||
                 root.Value<int?>("contractVersion") != 2 ||
-                root.Value<int?>("csvSchemaSetVersion") != 2)
+                schemaSetVersion is not (2 or 3))
             {
-                throw new ContentManifestException("CONTENT_MANIFEST_CONTRACT_VERSION_UNSUPPORTED", "/contractVersion", "Only content manifest contract v2/schema set v2 is supported.");
+                throw new ContentManifestException(
+                    "CONTENT_MANIFEST_SCHEMA_SET_UNSUPPORTED",
+                    "/csvSchemaSetVersion",
+                    "Only content manifest contract v2/schema set v2 or v3 is supported.");
             }
             string contentVersion = root.Value<string>("contentVersion");
             if (!ContentVersionPattern.IsMatch(contentVersion ?? string.Empty))
@@ -414,7 +418,8 @@ namespace KingdomTycoon.Infrastructure.Content
                 return;
             }
 
-            if (value.StartsWith("{", StringComparison.Ordinal) || value.StartsWith("[", StringComparison.Ordinal))
+            if (field.Name != "text_value" &&
+                (value.StartsWith("{", StringComparison.Ordinal) || value.StartsWith("[", StringComparison.Ordinal)))
             {
                 report.AddError("CSV_JSON_CELL_FORBIDDEN", fileName, location, "Canonical cells cannot contain embedded JSON.");
                 return;

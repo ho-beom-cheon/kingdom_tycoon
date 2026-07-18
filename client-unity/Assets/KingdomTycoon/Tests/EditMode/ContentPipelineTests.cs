@@ -66,7 +66,7 @@ namespace KingdomTycoon.Tests.EditMode
         [Test]
         public void Importer_LoadsCheckedInSixtyTablePackage()
         {
-            string packageDirectory = Path.Combine(Application.dataPath, "StreamingAssets", "Content");
+            string packageDirectory = Path.Combine(UnityEngine.Application.dataPath, "StreamingAssets", "Content", "1.0.0-content.1");
             string manifest = File.ReadAllText(Path.Combine(packageDirectory, "content_manifest.json"), new UTF8Encoding(false, true));
 
             ContentImportResult result = new CsvContentImporter().Import(

@@ -18,6 +18,8 @@ namespace KingdomTycoon.Infrastructure.Save
 
         public int InitializationOrder => 30;
 
+        public string PersistentDataPath => persistentDataPath;
+
         public SaveDocumentValidator Validator { get; private set; }
 
         public ISaveRepository Repository { get; private set; }

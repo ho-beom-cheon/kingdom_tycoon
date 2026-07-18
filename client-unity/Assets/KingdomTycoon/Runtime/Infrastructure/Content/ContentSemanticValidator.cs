@@ -24,6 +24,8 @@ namespace KingdomTycoon.Infrastructure.Content
             ValidateConditionGroups(tables, report);
             ValidateRuntimeConfig(tables, report);
             ValidateRandomEquipment(tables, report);
+            ValidateFacilityConstruction(tables, report);
+            ValidateFacilityWorldAssets(tables, report);
         }
 
         private static void ValidateEquipmentSource(IReadOnlyDictionary<string, ContentTable> tables, ValidationReport report)
@@ -211,18 +213,110 @@ namespace KingdomTycoon.Infrastructure.Content
             for (int index = 0; index < table.Rows.Count; index++)
             {
                 IReadOnlyDictionary<string, string> row = table.Rows[index];
-                bool valid = row["value_type"] switch
+                string valueType = row["value_type"];
+                bool boolean = valueType == "BOOLEAN";
+                bool valid = valueType switch
                 {
-                    "INTEGER" => long.TryParse(row["value"], NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out _),
-                    "DECIMAL" => decimal.TryParse(row["value"], NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out _),
-                    "BOOLEAN" => row["value"] is "TRUE" or "FALSE",
-                    "STRING" => row["value"].Length > 0,
+                    "INTEGER" => long.TryParse(row["value"], NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out long integer) &&
+                        Bound(row["min_value"], row["max_value"], integer),
+                    "DECIMAL" => decimal.TryParse(row["value"], NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out decimal number) &&
+                        Bound(row["min_value"], row["max_value"], number),
+                    "BOOLEAN" => row["value"] is "TRUE" or "FALSE" && row["min_value"].Length == 0 && row["max_value"].Length == 0 && row["unit"] == "BOOL",
+                    "STRING" => row["value"].Length > 0 && row["min_value"].Length == 0 && row["max_value"].Length == 0,
                     _ => false
                 };
                 if (!valid)
                 {
-                    Error(report, "CSV_DOMAIN_INVALID", table, index, "runtime_config value does not match value_type.");
+                    Error(
+                        report,
+                        boolean ? "CSV_RUNTIME_BOOLEAN_LEXICAL_INVALID" : "CSV_RUNTIME_VALUE_TYPE_MISMATCH",
+                        table,
+                        index,
+                        "runtime_config value/min/max does not match value_type.");
                 }
+            }
+        }
+
+        private static bool Bound(string minimum, string maximum, long value) =>
+            (minimum.Length == 0 || long.TryParse(minimum, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out long min) && min <= value) &&
+            (maximum.Length == 0 || long.TryParse(maximum, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out long max) && value <= max);
+
+        private static bool Bound(string minimum, string maximum, decimal value) =>
+            (minimum.Length == 0 || decimal.TryParse(minimum, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out decimal min) && min <= value) &&
+            (maximum.Length == 0 || decimal.TryParse(maximum, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out decimal max) && value <= max);
+
+        private static void ValidateFacilityConstruction(IReadOnlyDictionary<string, ContentTable> tables, ValidationReport report)
+        {
+            if (!tables.TryGetValue("facility_construction_rules.csv", out ContentTable table))
+            {
+                return;
+            }
+
+            List<IReadOnlyDictionary<string, string>> rows = Enabled(table).ToList();
+            string[] facilityIds = rows.Select(row => row["facility_id"]).Distinct(StringComparer.Ordinal).ToArray();
+            bool valid = rows.Count == 32 && facilityIds.Length == 8;
+            foreach (string facilityId in facilityIds)
+            {
+                valid &= rows.Where(row => row["facility_id"] == facilityId)
+                    .Select(row => row["level"])
+                    .SequenceEqual(new[] { "1", "2", "3", "4" });
+            }
+
+            if (!valid)
+            {
+                report.AddError("CSV_FACILITY_CONSTRUCTION_COVERAGE_INVALID", table.FileName, "/", "Enabled construction rules require exact 8x4 coverage.");
+            }
+
+            for (int index = 0; index < table.Rows.Count; index++)
+            {
+                IReadOnlyDictionary<string, string> row = table.Rows[index];
+                if (!int.TryParse(row["build_or_upgrade_duration_seconds"], NumberStyles.None, CultureInfo.InvariantCulture, out int seconds) || seconds is < 1 or > 86_400)
+                {
+                    Error(report, "CSV_FACILITY_DURATION_INVALID", table, index, "Facility duration must be in 1..86400 seconds.");
+                }
+                if (row["cancel_refund_ratio"] != "0")
+                {
+                    Error(report, "CSV_FACILITY_CANCEL_RATIO_INVALID", table, index, "P04 facility cancellation ratio must be zero.");
+                }
+            }
+        }
+
+        private static void ValidateFacilityWorldAssets(IReadOnlyDictionary<string, ContentTable> tables, ValidationReport report)
+        {
+            if (!tables.TryGetValue("facility_world_assets.csv", out ContentTable table))
+            {
+                return;
+            }
+
+            List<IReadOnlyDictionary<string, string>> rows = Enabled(table).ToList();
+            bool unique = rows.Select(row => row["address"]).Distinct(StringComparer.Ordinal).Count() == rows.Count;
+            if (!unique)
+            {
+                report.AddError("CSV_FACILITY_WORLD_ASSET_DUPLICATE", table.FileName, "/address", "World asset addresses must be globally unique.");
+            }
+
+            int bases = rows.Count(row => row["state_variant"] == "BASE" && row["asset_type"] == "PREFAB" && row["facility_id"].Length > 0);
+            if (bases != 8 || rows.Where(row => row["state_variant"] == "BASE").Select(row => row["facility_id"]).Distinct(StringComparer.Ordinal).Count() != 8)
+            {
+                report.AddError("CSV_FACILITY_WORLD_ASSET_COVERAGE_INVALID", table.FileName, "/", "Every facility requires one PREFAB/BASE asset.");
+            }
+
+            var roles = new HashSet<string>(rows.Where(row => row["facility_id"].Length == 0).Select(row => row["state_variant"]), StringComparer.Ordinal);
+            if (!roles.SetEquals(new[] { "BACKGROUND", "PLOT", "LOCKED", "CONSTRUCTION", "STOPPED" }))
+            {
+                report.AddError("CSV_FACILITY_WORLD_ROLE_COVERAGE_INVALID", table.FileName, "/", "Scene/state role coverage is incomplete.");
+            }
+
+            for (int index = 0; index < table.Rows.Count; index++)
+            {
+                IReadOnlyDictionary<string, string> row = table.Rows[index];
+                bool dimensions = int.TryParse(row["width_px"], out int width) && width is >= 1 and <= 4096 &&
+                    int.TryParse(row["height_px"], out int height) && height is >= 1 and <= 4096;
+                bool pivot = decimal.TryParse(row["pivot_x"], NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out decimal pivotX) && pivotX is >= 0 and <= 1 &&
+                    decimal.TryParse(row["pivot_y"], NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out decimal pivotY) && pivotY is >= 0 and <= 1;
+                if (!dimensions) Error(report, "CSV_FACILITY_WORLD_DIMENSION_INVALID", table, index, "World asset dimensions must be in 1..4096.");
+                if (!pivot) Error(report, "CSV_FACILITY_WORLD_PIVOT_INVALID", table, index, "World asset pivot must be in 0..1.");
+                if (row["pixels_per_unit"] != "100") Error(report, "CSV_FACILITY_WORLD_PPU_INVALID", table, index, "World asset PPU must be 100.");
             }
         }
 

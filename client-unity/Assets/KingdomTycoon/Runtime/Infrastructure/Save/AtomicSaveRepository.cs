@@ -95,15 +95,29 @@ namespace KingdomTycoon.Infrastructure.Save
         private readonly TimeSpan lockTimeout;
 
         public AtomicSaveRepository(string persistentDataPath, SaveDocumentValidator validator, TimeSpan? lockTimeout = null)
+            : this(Path.Combine(Path.GetFullPath(persistentDataPath ?? throw new ArgumentNullException(nameof(persistentDataPath))), "saves"), validator, lockTimeout, true)
         {
             if (string.IsNullOrWhiteSpace(persistentDataPath))
             {
                 throw new ArgumentException("Persistent data path is required.", nameof(persistentDataPath));
             }
+        }
 
-            savesRoot = Path.Combine(Path.GetFullPath(persistentDataPath), "saves");
+        private AtomicSaveRepository(string directSavesRoot, SaveDocumentValidator validator, TimeSpan? lockTimeout, bool directRoot)
+        {
+            if (string.IsNullOrWhiteSpace(directSavesRoot))
+            {
+                throw new ArgumentException("Saves root is required.", nameof(directSavesRoot));
+            }
+
+            savesRoot = Path.GetFullPath(directSavesRoot);
             this.validator = validator ?? throw new ArgumentNullException(nameof(validator));
             this.lockTimeout = lockTimeout ?? TimeSpan.FromSeconds(5);
+        }
+
+        public static AtomicSaveRepository CreateForSavesRoot(string savesRoot, SaveDocumentValidator validator, TimeSpan? lockTimeout = null)
+        {
+            return new AtomicSaveRepository(savesRoot, validator, lockTimeout, true);
         }
 
         public SaveLoadResult Load(string profileId)
