@@ -19,9 +19,12 @@ namespace KingdomTycoon.Presentation.Combat
         private float accumulator;
 
         public void Configure(RegionCombatView target) => view = target;
+        public string LastError { get; private set; }
+        public bool IsStarted { get; private set; }
 
         private void Start()
         {
+            IsStarted = true;
             view ??= GetComponentInChildren<RegionCombatView>(true);
             view.StartRequested += StartHunt;
             view.RecallRequested += Recall;
@@ -42,6 +45,7 @@ namespace KingdomTycoon.Presentation.Combat
 
                 combat = AppRoot.Instance.Services.Get<CombatGameService>();
                 roster = AppRoot.Instance.Services.Get<MercenaryRosterService>();
+                LastError = null;
                 combat.SnapshotChanged -= OnSnapshot;
                 combat.SnapshotChanged += OnSnapshot;
                 view.SetState(roster.GetRoster().TotalActive == 0 ? RegionUiState.Empty : RegionUiState.Content);
@@ -49,6 +53,7 @@ namespace KingdomTycoon.Presentation.Combat
             }
             catch (Exception exception)
             {
+                LastError = exception.Message;
                 view.SetState(RegionUiState.Error, exception.Message);
             }
         }
@@ -57,6 +62,7 @@ namespace KingdomTycoon.Presentation.Combat
         {
             try
             {
+                LastError = null;
                 string[] ids = roster.GetRoster().Cards
                     .Where(value => value.Active && value.AutonomyState == "IDLE_TOWN")
                     .Take(4)
@@ -77,6 +83,7 @@ namespace KingdomTycoon.Presentation.Combat
             }
             catch (Exception exception)
             {
+                LastError = exception.Message;
                 view.SetState(RegionUiState.Error, exception.Message);
             }
         }
@@ -85,12 +92,14 @@ namespace KingdomTycoon.Presentation.Combat
         {
             try
             {
+                LastError = null;
                 var hasher = new CombatRequestHasher();
                 var draft = new RecallHuntCommand(huntOperationId, combat.Revision, null);
                 combat.RecallHunt(new RecallHuntCommand(huntOperationId, combat.Revision, hasher.ComputeHash(draft)));
             }
             catch (Exception exception)
             {
+                LastError = exception.Message;
                 view.SetState(RegionUiState.Error, exception.Message);
             }
         }

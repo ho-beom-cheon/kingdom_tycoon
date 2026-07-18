@@ -25,6 +25,8 @@ namespace KingdomTycoon.Presentation.Combat
         public event Action RecallRequested;
         public event Action PauseRequested;
         public event Action RetryRequested;
+        public void TriggerStartForFixture() => StartRequested?.Invoke();
+        public void TriggerRecallForFixture() => RecallRequested?.Invoke();
 
         public void Configure(Button start, Button recall, Button pause, Button stateAction, TMP_Text encounter, TMP_Text autonomy, TMP_Text party, TMP_Text state, GameObject content, GameObject overlay, GameObject offline)
         {

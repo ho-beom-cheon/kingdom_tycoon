@@ -13,7 +13,6 @@ using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
 using UnityEditor.SceneManagement;
 using UnityEngine;
-using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using Object = UnityEngine.Object;
@@ -100,6 +99,8 @@ namespace KingdomTycoon.Editor
         [MenuItem("Kingdom Tycoon/P06/Generate Region Combat Screen")]
         public static void GenerateScreen()
         {
+            P06GeneratedAssetMarker marker = AssetDatabase.LoadAssetAtPath<P06GeneratedAssetMarker>(MarkerPath);
+            if (marker != null && marker.fingerprint == Fingerprint && AssetDatabase.LoadAssetAtPath<GameObject>(ScreenPath) != null) return;
             AssetDatabase.DeleteAsset(ScreenPath);
             var root = new GameObject("P06RegionCombatRoot", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster), typeof(RegionCombatPresenter));
             Canvas canvas = root.GetComponent<Canvas>(); canvas.renderMode = RenderMode.ScreenSpaceOverlay; canvas.sortingOrder = 25;
@@ -146,11 +147,22 @@ namespace KingdomTycoon.Editor
         public static void AttachToRegionScene()
         {
             Scene scene = EditorSceneManager.OpenScene(RegionScenePath, OpenSceneMode.Single);
-            foreach (GameObject target in scene.GetRootGameObjects().Where(value => value.name == "P06RegionCombatRoot").ToArray()) Object.DestroyImmediate(target);
-            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(ScreenPath) ?? throw new BuildFailedException("P06_REGION_PREFAB_MISSING");
-            GameObject instance = (GameObject)PrefabUtility.InstantiatePrefab(prefab, scene); instance.name = "P06RegionCombatRoot";
-            if (Object.FindFirstObjectByType<EventSystem>() == null) new GameObject("EventSystem", typeof(EventSystem), typeof(StandaloneInputModule));
-            EditorSceneManager.MarkSceneDirty(scene); EditorSceneManager.SaveScene(scene, RegionScenePath);
+            bool changed = false;
+            GameObject[] roots = scene.GetRootGameObjects().Where(value => value.name == "P06RegionCombatRoot").ToArray();
+            foreach (GameObject duplicate in roots.Skip(1)) { Object.DestroyImmediate(duplicate); changed = true; }
+            if (roots.Length == 0)
+            {
+                GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(ScreenPath) ?? throw new BuildFailedException("P06_REGION_PREFAB_MISSING");
+                GameObject instance = (GameObject)PrefabUtility.InstantiatePrefab(prefab, scene); instance.name = "P06RegionCombatRoot";
+                changed = true;
+            }
+            // Bootstrap owns the single persistent Input System EventSystem.
+            foreach (GameObject eventSystem in scene.GetRootGameObjects().Where(value => value.GetComponent<UnityEngine.EventSystems.EventSystem>() != null).ToArray())
+            {
+                Object.DestroyImmediate(eventSystem);
+                changed = true;
+            }
+            if (changed) { EditorSceneManager.MarkSceneDirty(scene); EditorSceneManager.SaveScene(scene, RegionScenePath); }
         }
 
         private static Image Image(string name, Transform parent, Color color)
@@ -202,6 +214,80 @@ namespace KingdomTycoon.Editor
             BuildReport report = BuildPipeline.BuildPlayer(options);
             if (report.summary.result != BuildResult.Succeeded || !File.Exists(output)) throw new BuildFailedException($"P06 Android build failed: {report.summary.result}, errors={report.summary.totalErrors}");
             Debug.Log($"P06_ANDROID_APK={output}; bytes={new FileInfo(output).Length}");
+        }
+    }
+
+    public static class P06CaptureGenerator
+    {
+        [MenuItem("Kingdom Tycoon/P06/Generate Acceptance Captures")]
+        public static void Run()
+        {
+            P06GeneratedAssetVerifier.VerifyAll();
+            Scene scene = EditorSceneManager.OpenScene(P06CombatSetup.RegionScenePath, OpenSceneMode.Single);
+            GameObject root = scene.GetRootGameObjects().Single(value => value.name == "P06RegionCombatRoot");
+            Transform[] nodes = root.GetComponentsInChildren<Transform>(true);
+            GameObject partyModal = Find(nodes, "P06_UI_PARTY_MODAL");
+            GameObject recallModal = Find(nodes, "P06_UI_RECALL_MODAL");
+            GameObject result = Find(nodes, "P06_UI_RESULT");
+            GameObject overlay = Find(nodes, "P06_UI_STATE_OVERLAY");
+            GameObject offline = Find(nodes, "P06_UI_OFFLINE_BADGE");
+            Button start = Find(nodes, "P06_UI_START").GetComponent<Button>();
+            Button recall = Find(nodes, "P06_UI_RECALL").GetComponent<Button>();
+            TMP_Text encounter = Find(nodes, "P06_UI_ENCOUNTER").GetComponent<TMP_Text>();
+            TMP_Text autonomy = Find(nodes, "P06_UI_AUTONOMY").GetComponent<TMP_Text>();
+            TMP_Text members = Find(nodes, "P06_UI_MEMBER_CARD").GetComponent<TMP_Text>();
+            TMP_Text state = Find(nodes, "P06_UI_STATE_MESSAGE").GetComponent<TMP_Text>();
+            TMP_Text pause = Find(nodes, "P06_UI_PAUSE").GetComponentInChildren<TMP_Text>();
+
+            string output = Path.GetFullPath(Path.Combine(UnityEngine.Application.dataPath, "..", "..", "docs", "reports", "captures", "P06"));
+            Directory.CreateDirectory(output);
+            SetBase(partyModal, recallModal, result, overlay, offline, start, recall, encounter, autonomy, members, pause);
+            Capture(root, output, "p06_01_region_start.png", 1920, 1080);
+            partyModal.SetActive(false); start.gameObject.SetActive(false); recall.gameObject.SetActive(true);
+            encounter.text = "R01 · 경로 탐색 · Tick 32"; autonomy.text = "FIND_TARGET · TARGET_FOUND";
+            Capture(root, output, "p06_02_path.png", 1920, 1080);
+            encounter.text = "R01 · 전투 1 · 적 4"; autonomy.text = "COMBAT · TARGET_FOUND · Tick 87";
+            members.text = "0001  HP 182/220  기여 96\n0002  HP 240/260  기여 42\n0003  HP 138/160  기여 121\n0004  HP 150/170  기여 28";
+            Capture(root, output, "p06_03_combat.png", 1920, 1080);
+            autonomy.text = "COMBAT · TAUNT · 위협 대상 고정"; members.text = "가디언  HP 211/260  방벽 · 도발\n전사  HP 182/220  기여 128\n궁수  HP 138/160  기여 154\n성직자  HP 150/170  기여 36";
+            Capture(root, output, "p06_04_taunt.png", 1920, 1080);
+            autonomy.text = "COMBAT · HEAL · 유효 회복 48"; members.text = "성직자  HP 150/170  회복 48\n가디언  HP 259/260  방벽\n전사  HP 204/220  기여 168\n궁수  HP 142/160  기여 181";
+            Capture(root, output, "p06_05_heal.png", 1920, 1080);
+            recallModal.SetActive(true); autonomy.text = "RETURN_TOWN · PLAYER_RECALL";
+            Capture(root, output, "p06_06_recall.png", 1920, 1080);
+            recallModal.SetActive(false); overlay.SetActive(true); state.text = "전투 정보를 표시할 수 없습니다.\nP06_CONTENT_MISSING";
+            Capture(root, output, "p06_07_error.png", 1920, 1080);
+            overlay.SetActive(false); offline.SetActive(true); autonomy.text = "OFFLINE · 로컬 상태 표시";
+            Capture(root, output, "p06_08_20x9.png", 2400, 1080);
+            Debug.Log($"P06_CAPTURES={output}; count=8");
+        }
+
+        private static void SetBase(GameObject partyModal, GameObject recallModal, GameObject result, GameObject overlay, GameObject offline, Button start, Button recall, TMP_Text encounter, TMP_Text autonomy, TMP_Text members, TMP_Text pause)
+        {
+            partyModal.SetActive(true); recallModal.SetActive(false); result.SetActive(false); overlay.SetActive(false); offline.SetActive(false);
+            start.gameObject.SetActive(true); recall.gameObject.SetActive(false); pause.text = "일시정지";
+            encounter.text = "R01 · 전투 준비"; autonomy.text = "활동 용병 1~4명을 선택해 사냥을 시작하세요."; members.text = "파티 미편성";
+        }
+
+        private static GameObject Find(IEnumerable<Transform> nodes, string name) => nodes.Single(value => value.name == name).gameObject;
+
+        private static void Capture(GameObject root, string directory, string filename, int width, int height)
+        {
+            Canvas canvas = root.GetComponent<Canvas>();
+            var cameraObject = new GameObject("P06CaptureCamera", typeof(Camera));
+            Camera camera = cameraObject.GetComponent<Camera>();
+            camera.clearFlags = CameraClearFlags.SolidColor; camera.backgroundColor = new Color32(11, 16, 18, 255); camera.orthographic = true; camera.nearClipPlane = 0.1f; camera.farClipPlane = 100f;
+            var target = new RenderTexture(width, height, 24, RenderTextureFormat.ARGB32);
+            camera.targetTexture = target; canvas.renderMode = RenderMode.ScreenSpaceCamera; canvas.worldCamera = camera; canvas.planeDistance = 1f;
+            Canvas.ForceUpdateCanvases(); camera.Render();
+            RenderTexture previous = RenderTexture.active; RenderTexture.active = target;
+            var texture = new Texture2D(width, height, TextureFormat.RGB24, false);
+            texture.ReadPixels(new Rect(0, 0, width, height), 0, 0); texture.Apply(false, false);
+            File.WriteAllBytes(Path.Combine(directory, filename), texture.EncodeToPNG());
+            RenderTexture.active = previous; camera.targetTexture = null; target.Release(); Object.DestroyImmediate(texture); Object.DestroyImmediate(cameraObject);
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay; canvas.worldCamera = null;
+            string path = Path.Combine(directory, filename);
+            if (!File.Exists(path) || new FileInfo(path).Length <= 1024) throw new BuildFailedException("P06_CAPTURE_FAILED: " + filename);
         }
     }
 

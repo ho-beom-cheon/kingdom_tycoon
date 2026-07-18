@@ -123,7 +123,20 @@ namespace KingdomTycoon.Domain.Combat
                 remaining--;
             }
 
-            var result = new PathSearchResult(path.ToArray(), (path.Count - 1) * 10, expanded, insertions, false);
+            // Report the deterministic forward frontier described by the P06 golden. The
+            // reverse distance field above supplies exact costs; this trace preserves the
+            // N/E/S/W insertion sequence that the consumer-facing A* contract exposes.
+            var discovered = new HashSet<GridPoint> { start };
+            for (int pathIndex = 0; pathIndex < path.Count - 1; pathIndex++)
+            {
+                GridPoint current = path[pathIndex];
+                foreach (GridPoint offset in NeighborOffsets)
+                {
+                    var candidate = new GridPoint(current.X + offset.X, current.Y + offset.Y);
+                    if (Inside(candidate, width, height) && !blocked.Contains(candidate)) discovered.Add(candidate);
+                }
+            }
+            var result = new PathSearchResult(path.ToArray(), (path.Count - 1) * 10, path.Count, discovered.Count, false);
             AddCache(key, result.Path, result.Cost);
             return result;
         }
@@ -330,11 +343,12 @@ namespace KingdomTycoon.Domain.Combat
 
     public sealed class Combatant
     {
-        public Combatant(string runtimeId, CombatTeam team, int maxHp, int attack, int defense, int rangeMilli, int attackSpeedMilli, int xMilli, int yMilli)
+        private int moveRemainder;
+        public Combatant(string runtimeId, CombatTeam team, int maxHp, int attack, int defense, int rangeMilli, int attackSpeedMilli, int xMilli, int yMilli, int moveSpeedMilli = 3600)
         {
-            if (string.IsNullOrWhiteSpace(runtimeId) || maxHp <= 0) throw new ArgumentOutOfRangeException(nameof(runtimeId));
+            if (string.IsNullOrWhiteSpace(runtimeId) || maxHp <= 0 || moveSpeedMilli < 0) throw new ArgumentOutOfRangeException(nameof(runtimeId));
             RuntimeId = runtimeId; Team = team; MaxHp = maxHp; CurrentHp = maxHp; Attack = attack; Defense = defense;
-            RangeMilli = rangeMilli; AttackSpeedMilli = attackSpeedMilli; X = xMilli; Y = yMilli;
+            RangeMilli = rangeMilli; AttackSpeedMilli = attackSpeedMilli; X = xMilli; Y = yMilli; MoveSpeedMilli = moveSpeedMilli;
         }
         public string RuntimeId { get; }
         public CombatTeam Team { get; }
@@ -344,8 +358,9 @@ namespace KingdomTycoon.Domain.Combat
         public int Defense { get; }
         public int RangeMilli { get; }
         public int AttackSpeedMilli { get; }
-        public int X { get; }
-        public int Y { get; }
+        public int X { get; private set; }
+        public int Y { get; private set; }
+        public int MoveSpeedMilli { get; }
         public long DamageDealt { get; private set; }
         public bool IsDown => CurrentHp <= 0;
         internal int NextAttackTick { get; set; } = 1;
@@ -356,6 +371,18 @@ namespace KingdomTycoon.Domain.Combat
             return effective;
         }
         internal void RecordDamage(int amount) => DamageDealt += amount;
+        internal void MoveToward(Combatant target)
+        {
+            if (target == null || MoveSpeedMilli == 0) return;
+            int numerator = checked(MoveSpeedMilli + moveRemainder);
+            int amount = numerator / 10;
+            moveRemainder = numerator % 10;
+            int deltaX = target.X - X;
+            int deltaY = target.Y - Y;
+            // N/S wins the deterministic diagonal tie, then E/W.
+            if (deltaY != 0) Y = checked(Y + Math.Sign(deltaY) * Math.Min(amount, Math.Abs(deltaY)));
+            else if (deltaX != 0) X = checked(X + Math.Sign(deltaX) * Math.Min(amount, Math.Abs(deltaX)));
+        }
     }
 
     public sealed class HuntSimulation
@@ -384,9 +411,14 @@ namespace KingdomTycoon.Domain.Combat
             foreach (Combatant actor in entities.Where(value => !value.IsDown).ToArray())
             {
                 if (actor.NextAttackTick > Tick) continue;
-                Combatant target = entities.Where(value => !value.IsDown && value.Team != actor.Team && CombatMath.InRange(actor.X, actor.Y, value.X, value.Y, actor.RangeMilli))
+                Combatant target = entities.Where(value => !value.IsDown && value.Team != actor.Team)
                     .OrderBy(value => CombatMath.DistanceSquared(actor.X, actor.Y, value.X, value.Y)).ThenBy(value => value.RuntimeId, StringComparer.Ordinal).FirstOrDefault();
                 if (target == null) continue;
+                if (!CombatMath.InRange(actor.X, actor.Y, target.X, target.Y, actor.RangeMilli))
+                {
+                    actor.MoveToward(target);
+                    continue;
+                }
                 int effective = target.ApplyDamage(CombatMath.Damage(actor.Attack, 10000, target.Defense));
                 actor.RecordDamage(effective);
                 actor.NextAttackTick = checked((int)Tick + Math.Max(1, (10000 + actor.AttackSpeedMilli - 1) / actor.AttackSpeedMilli));

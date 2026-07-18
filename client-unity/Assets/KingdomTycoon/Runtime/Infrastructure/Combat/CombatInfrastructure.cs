@@ -281,10 +281,10 @@ namespace KingdomTycoon.Infrastructure.Combat
             {
                 string id = runtime.Party[index];
                 CombatJobProfile job = catalog.Job(runtime.JobIds[id]);
-                simulation.Add(new Combatant($"{runtime.HuntOperationId:D}:{runtime.EncounterIndex:0000}:P:{index:000}", CombatTeam.Party, job.MaxHp, job.Attack, job.Defense, job.RangeMilli, job.AttackSpeedMilli, index * 700, 0));
+                simulation.Add(new Combatant($"{runtime.HuntOperationId:D}:{runtime.EncounterIndex:0000}:P:{index:000}", CombatTeam.Party, job.MaxHp, job.Attack, job.Defense, job.RangeMilli, job.AttackSpeedMilli, index * 700, 0, job.MoveSpeedMilli));
             }
             for (int index = 0; index < waveSize; index++)
-                simulation.Add(new Combatant($"{runtime.HuntOperationId:D}:{runtime.EncounterIndex:0000}:M:{index:000}", CombatTeam.Hostile, monster.MaxHp, monster.Attack, monster.Defense, 1500, 900, 2500 + index * 700, 0));
+                simulation.Add(new Combatant($"{runtime.HuntOperationId:D}:{runtime.EncounterIndex:0000}:M:{index:000}", CombatTeam.Hostile, monster.MaxHp, monster.Attack, monster.Defense, 1500, 900, 2500 + index * 700, 0, 3000));
             return simulation;
         }
 
@@ -343,7 +343,7 @@ namespace KingdomTycoon.Infrastructure.Combat
             }
         }
 
-        private bool RegionUnlocked(string regionId) => game.Snapshot()["payload"]!["regions"]!.Children<JObject>().Any(value => value.Value<string>("regionId") == regionId && value.Value<bool>("unlocked"));
+        private bool RegionUnlocked(string regionId) => game.Snapshot()["payload"]!["regions"]!["progress"]!.Children<JObject>().Any(value => value.Value<string>("regionId") == regionId && value.Value<bool>("unlocked"));
         private JObject FindJournal(Guid operationId) => game.Snapshot()["payload"]!["operationJournal"]!.Children<JObject>().SingleOrDefault(value => value.Value<string>("operationId") == operationId.ToString("D"));
         private static void AppendJournal(JObject document, Guid operationId, string requestHash, string resultDigest, DateTimeOffset now)
         {
