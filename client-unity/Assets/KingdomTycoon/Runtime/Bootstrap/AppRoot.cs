@@ -1,6 +1,11 @@
 using System.Collections;
-using System.IO;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+using KingdomTycoon.Application.Abstractions;
+using KingdomTycoon.Application.Content;
 using KingdomTycoon.Infrastructure.Content;
+using KingdomTycoon.Infrastructure.Facilities;
 using KingdomTycoon.Infrastructure.Save;
 using KingdomTycoon.Services;
 using KingdomTycoon.UI;
@@ -48,14 +53,34 @@ namespace KingdomTycoon.Bootstrap
                 throw new System.InvalidOperationException("P03 save schema resource is missing.");
             }
 
-            Services.Register(new SaveService(Application.persistentDataPath, saveSchema.text));
-            Services.Register(new ContentCatalogService(Path.Combine(Application.streamingAssetsPath, "Content")));
+            TextAsset newGameTemplate = Resources.Load<TextAsset>("Contracts/p04-new-game.template");
+            if (newGameTemplate == null)
+            {
+                throw new InvalidOperationException("P04 new-game template resource is missing.");
+            }
+
+            Services.Register(new SaveService(UnityEngine.Application.persistentDataPath, saveSchema.text));
+            IStreamingAssetReader contentReader = UnityEngine.Application.platform == RuntimePlatform.Android
+                ? new AndroidStreamingAssetReader(UnityEngine.Application.streamingAssetsPath)
+                : new LocalStreamingAssetReader(UnityEngine.Application.streamingAssetsPath);
+            Services.Register(new ContentCatalogService(contentReader, new CompileTimeActiveContentVersionProvider()));
+            Services.Register(new FacilityGameService(new SystemTrustedUtcClock(), newGameTemplate.text));
             Services.Register(new SceneFlowService());
             Services.InitializeAll();
         }
 
         private IEnumerator Start()
         {
+            Task bootstrap = BootstrapGameAsync();
+            while (!bootstrap.IsCompleted)
+            {
+                yield return null;
+            }
+            if (bootstrap.IsFaulted)
+            {
+                throw bootstrap.Exception?.GetBaseException() ?? new InvalidOperationException("P04 bootstrap failed.");
+            }
+
             if (!loadFirstSceneOnStart || SceneManager.GetActiveScene().name != "Bootstrap")
             {
                 yield break;
@@ -63,6 +88,12 @@ namespace KingdomTycoon.Bootstrap
 
             AsyncOperation operation = Services.Get<SceneFlowService>().LoadSceneAsync(firstScene);
             yield return operation;
+        }
+
+        private async Task BootstrapGameAsync()
+        {
+            await Services.Get<ContentCatalogService>().LoadActiveAsync(CancellationToken.None);
+            await Services.Get<FacilityGameService>().BootstrapAsync(CancellationToken.None);
         }
 
         private void OnDestroy()

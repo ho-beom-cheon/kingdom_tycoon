@@ -4,7 +4,9 @@
   "references": [
     "Unity.InputSystem",
     "Unity.Localization",
-    "Unity.ResourceManager"
+    "Unity.ResourceManager",
+    "Unity.TextMeshPro",
+    "UnityEngine.UI"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],
