@@ -23,7 +23,8 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_SOURCE = ROOT / "docs" / "design" / "TYCOON_P03_CANONICAL_CONTENT_COMPLETE_DESIGN_v1.1.md"
-DEFAULT_OUTPUT = ROOT / "client-unity" / "Assets" / "StreamingAssets" / "Content"
+CONTENT_ROOT = ROOT / "client-unity" / "Assets" / "StreamingAssets" / "Content"
+DEFAULT_OUTPUT = CONTENT_ROOT / "1.0.0-content.1"
 SCHEMA_OUTPUT = ROOT / "data" / "schemas" / "content_manifest.schema.json"
 EXPECTED_SCHEMA_ID = "urn:tycoon:content-manifest:v2"
 EXPECTED_SCHEMA_DOCUMENT_ID = "urn:tycoon:content-manifest-schema:v2"
@@ -308,6 +309,7 @@ def _expected_files(package: Package) -> dict[Path, bytes]:
     files = {
         SCHEMA_OUTPUT: schema_bytes,
         DEFAULT_OUTPUT / "content_manifest.json": package.manifest_bytes,
+        DEFAULT_OUTPUT / "content_manifest.schema.json": schema_bytes,
     }
     files.update({DEFAULT_OUTPUT / name: contents for name, contents in package.csv_bytes.items()})
     return files
@@ -340,7 +342,7 @@ def generate(package: Package, check: bool) -> None:
         actual_managed_names = {
             path.name
             for path in DEFAULT_OUTPUT.iterdir()
-            if path.is_file() and (path.suffix == ".csv" or path.name == "content_manifest.json")
+            if path.is_file() and (path.suffix == ".csv" or path.name in {"content_manifest.json", "content_manifest.schema.json"})
         }
         stale = sorted(actual_managed_names - expected_package_names)
         if check:

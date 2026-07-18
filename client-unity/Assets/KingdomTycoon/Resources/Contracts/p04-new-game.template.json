@@ -1,0 +1,240 @@
+{
+  "schemaId": "urn:tycoon:save:v1",
+  "saveVersion": 1,
+  "gameVersion": "1.0.0",
+  "contentVersion": "1.0.0-content.2",
+  "saveId": "019f77ac-2c00-7000-8000-000000000001",
+  "profileId": "019f77ac-2c00-7000-8000-000000000002",
+  "revision": 1,
+  "createdAtUtc": "2026-07-19T00:00:00.000Z",
+  "savedAtUtc": "2026-07-19T00:00:00.000Z",
+  "integrity": {
+    "integrityVersion": 1,
+    "algorithm": "SHA-256",
+    "canonicalization": "RFC8785",
+    "payloadSha256": "81ff9df5566613ea07b883f5c08375b62c259dd48c39d355d416a21ae45e0719",
+    "fileSha256": "6434fbccf5dd968a5c76782cb9fb5c938a737c7577caaa62358c97b565b0a22c"
+  },
+  "payload": {
+    "profile": {
+      "nickname": "왕국",
+      "locale": "ko-KR",
+      "playerExp": 0,
+      "progressionFlagIds": []
+    },
+    "kingdom": {
+      "kingdomStageId": "KINGDOM_1",
+      "kingdomGold": 5000,
+      "activeMercenaryLimit": 4,
+      "ownedMercenaryLimit": 8,
+      "kingdomExp": 0,
+      "progressionFlagIds": [],
+      "facilityUpgradeCount": 0,
+      "pricingPolicy": "STANDARD",
+      "regionAccessPolicies": [
+        {
+          "regionId": "REGION_R01",
+          "allowed": true
+        }
+      ],
+      "inventoryPolicies": {
+        "autoSellMaxTier": 0,
+        "protectQualityIds": []
+      }
+    },
+    "mercenaries": [],
+    "managementNpcs": [
+      {
+        "instanceId": "019f77ac-2c00-7001-8000-000000000001",
+        "professionId": "NPC_MERCHANT",
+        "proficiencyId": "NPC_APPRENTICE",
+        "proficiencyExp": 0,
+        "assignedFacilityId": null,
+        "working": false
+      },
+      {
+        "instanceId": "019f77ac-2c00-7001-8000-000000000002",
+        "professionId": "NPC_BLACKSMITH",
+        "proficiencyId": "NPC_APPRENTICE",
+        "proficiencyExp": 0,
+        "assignedFacilityId": null,
+        "working": false
+      },
+      {
+        "instanceId": "019f77ac-2c00-7001-8000-000000000003",
+        "professionId": "NPC_ALCHEMIST",
+        "proficiencyId": "NPC_APPRENTICE",
+        "proficiencyExp": 0,
+        "assignedFacilityId": null,
+        "working": false
+      },
+      {
+        "instanceId": "019f77ac-2c00-7001-8000-000000000004",
+        "professionId": "NPC_HEALER",
+        "proficiencyId": "NPC_APPRENTICE",
+        "proficiencyExp": 0,
+        "assignedFacilityId": null,
+        "working": false
+      }
+    ],
+    "facilities": [
+      {
+        "facilityId": "FAC_TAVERN",
+        "level": 1,
+        "state": "ACTIVE",
+        "assignedNpcInstanceId": null,
+        "job": null,
+        "storage": []
+      },
+      {
+        "facilityId": "FAC_LODGE",
+        "level": 1,
+        "state": "ACTIVE",
+        "assignedNpcInstanceId": null,
+        "job": null,
+        "storage": []
+      },
+      {
+        "facilityId": "FAC_GUILD",
+        "level": 1,
+        "state": "ACTIVE",
+        "assignedNpcInstanceId": null,
+        "job": null,
+        "storage": []
+      },
+      {
+        "facilityId": "FAC_STORE",
+        "level": 1,
+        "state": "BUILDABLE",
+        "assignedNpcInstanceId": null,
+        "job": null,
+        "storage": []
+      },
+      {
+        "facilityId": "FAC_BLACKSMITH",
+        "level": 1,
+        "state": "BUILDABLE",
+        "assignedNpcInstanceId": null,
+        "job": null,
+        "storage": []
+      },
+      {
+        "facilityId": "FAC_ALCHEMY",
+        "level": 1,
+        "state": "BUILDABLE",
+        "assignedNpcInstanceId": null,
+        "job": null,
+        "storage": []
+      },
+      {
+        "facilityId": "FAC_WAREHOUSE",
+        "level": 1,
+        "state": "ACTIVE",
+        "assignedNpcInstanceId": null,
+        "job": null,
+        "storage": []
+      },
+      {
+        "facilityId": "FAC_INFIRMARY",
+        "level": 1,
+        "state": "BUILDABLE",
+        "assignedNpcInstanceId": null,
+        "job": null,
+        "storage": []
+      }
+    ],
+    "inventory": {
+      "itemStacks": [],
+      "equipment": [],
+      "warehousePotions": []
+    },
+    "regions": {
+      "progress": [
+        {
+          "regionId": "REGION_R01",
+          "unlocked": true,
+          "progressPercent": 0,
+          "highestRankReachedId": null,
+          "huntCount": 0,
+          "eliteKillCount": 0,
+          "firstUnlockedAtUtc": "2026-07-19T00:00:00.000Z",
+          "lastVisitedAtUtc": null
+        },
+        {
+          "regionId": "REGION_R02",
+          "unlocked": false,
+          "progressPercent": 0,
+          "highestRankReachedId": null,
+          "huntCount": 0,
+          "eliteKillCount": 0,
+          "firstUnlockedAtUtc": null,
+          "lastVisitedAtUtc": null
+        },
+        {
+          "regionId": "REGION_R03",
+          "unlocked": false,
+          "progressPercent": 0,
+          "highestRankReachedId": null,
+          "huntCount": 0,
+          "eliteKillCount": 0,
+          "firstUnlockedAtUtc": null,
+          "lastVisitedAtUtc": null
+        },
+        {
+          "regionId": "REGION_R04",
+          "unlocked": false,
+          "progressPercent": 0,
+          "highestRankReachedId": null,
+          "huntCount": 0,
+          "eliteKillCount": 0,
+          "firstUnlockedAtUtc": null,
+          "lastVisitedAtUtc": null
+        },
+        {
+          "regionId": "REGION_R05",
+          "unlocked": false,
+          "progressPercent": 0,
+          "highestRankReachedId": null,
+          "huntCount": 0,
+          "eliteKillCount": 0,
+          "firstUnlockedAtUtc": null,
+          "lastVisitedAtUtc": null
+        }
+      ],
+      "raids": []
+    },
+    "recruitmentMockState": {
+      "authority": "MOCK_ONLY",
+      "serverRevision": null,
+      "premiumWalletCache": {
+        "freePremium": 0,
+        "paidPremium": 0,
+        "specialRecruitTickets": 0
+      },
+      "pityCounters": [],
+      "featuredGuarantees": [],
+      "pendingRequests": []
+    },
+    "tutorial": {
+      "currentStepId": "TUTORIAL_KINGDOM_INTRO",
+      "completedStepIds": [],
+      "grantedRewardIds": [],
+      "skipped": false,
+      "completedAtUtc": null
+    },
+    "offline": {
+      "accrualCursorUtc": "2026-07-19T00:00:00.000Z",
+      "lastTrustedUtc": "2026-07-19T00:00:00.000Z",
+      "pendingSettlement": null
+    },
+    "operationJournal": [],
+    "settings": {
+      "masterVolume": 1,
+      "musicVolume": 0.8,
+      "sfxVolume": 1,
+      "vibrationEnabled": true,
+      "battleSpeed": 1
+    },
+    "extensions": {}
+  }
+}
