@@ -1,0 +1,2 @@
+generation_profile_id,algorithm_id,initial_rank_id,name_pool_id,appearance_pool_id,personality_policy,fixed_personality_id,growth_seed_min,growth_seed_max,status,enabled
+GEN_MERC_STANDARD_V1,GENERATED_MERCENARY_V1,RANK_APPRENTICE,NAME_POOL_KO_V1,APPEARANCE_POOL_V1,WEIGHTED_ALL,,0,18446744073709551615,CONFIRMED,TRUE
