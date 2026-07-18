@@ -13,7 +13,8 @@
 - 완료: [P04 왕국·시설](docs/reports/P04_KINGDOM_FACILITIES_REPORT.md)
 - 완료: [P05 용병 로스터](docs/reports/P05_MERCENARY_ROSTER_REPORT.md)
 - 완료: [P06 이동·전투·AI](docs/reports/P06_MOVEMENT_COMBAT_AI_REPORT.md)
-- 다음: [P07 전리품·인벤토리·장비](phases/P07_LOOT_INVENTORY_EQUIPMENT.md)
+- 완료: [P07 전리품·인벤토리·장비](docs/reports/P07_LOOT_INVENTORY_EQUIPMENT_REPORT.md)
+- 다음: P08 경제·상점·거래 상세 설계 확정
 
 한 Phase의 구현과 검증이 끝나기 전에는 다음 Phase로 이동하지 않는다.
 
@@ -65,7 +66,7 @@ python .\scripts\generate_p06_content.py --check
 python .\scripts\validate_content.py
 ```
 
-각 generator는 P03~P06 설계와 해당 immutable `StreamingAssets/Content` package의 byte drift를 검사한다.
+각 generator는 P03~P07 설계와 해당 immutable `StreamingAssets/Content` package의 byte drift를 검사한다.
 마지막 명령은 기존 콘텐츠와 생성된 Save schema 두 사본을 검사한다. 생성물이 변경된 경우 먼저
 해당 generator를 실행한다.
 
