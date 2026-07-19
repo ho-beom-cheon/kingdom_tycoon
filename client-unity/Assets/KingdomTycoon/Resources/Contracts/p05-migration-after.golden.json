@@ -1,0 +1,437 @@
+{
+  "schemaId": "urn:tycoon:save:v1",
+  "saveVersion": 1,
+  "gameVersion": "1.0.0",
+  "contentVersion": "1.0.0-content.3",
+  "saveId": "019f77ac-2c00-7000-8000-000000000001",
+  "profileId": "019f77ac-2c00-7000-8000-000000000002",
+  "revision": 2,
+  "createdAtUtc": "2026-07-19T00:00:00.000Z",
+  "savedAtUtc": "2026-07-20T00:00:00.000Z",
+  "integrity": {
+    "integrityVersion": 1,
+    "algorithm": "SHA-256",
+    "canonicalization": "RFC8785",
+    "payloadSha256": "441d02adf6d58189ea0b15c8f5ea3919211c5aa0a0c1ca31f706fe0a254c887e",
+    "fileSha256": "ef10df65febf0f049ebb330cc3adfb2c2f87985d90e3f015c079f204e85cbec1"
+  },
+  "payload": {
+    "profile": {
+      "nickname": "왕국",
+      "locale": "ko-KR",
+      "playerExp": 0,
+      "progressionFlagIds": []
+    },
+    "kingdom": {
+      "kingdomStageId": "KINGDOM_1",
+      "kingdomGold": 5000,
+      "activeMercenaryLimit": 4,
+      "ownedMercenaryLimit": 8,
+      "kingdomExp": 0,
+      "progressionFlagIds": [],
+      "facilityUpgradeCount": 0,
+      "pricingPolicy": "STANDARD",
+      "regionAccessPolicies": [
+        {
+          "regionId": "REGION_R01",
+          "allowed": true
+        }
+      ],
+      "inventoryPolicies": {
+        "autoSellMaxTier": 0,
+        "protectQualityIds": []
+      }
+    },
+    "mercenaries": [
+      {
+        "instanceId": "019f7cd2-8800-7002-8000-000000000001",
+        "generationProfileId": "GEN_MERC_STANDARD_V1",
+        "nameSeed": "1001",
+        "appearanceSeed": "2001",
+        "growthSeed": "3001",
+        "displayName": "레온",
+        "jobId": "JOB_WARRIOR",
+        "gradeId": "GRADE_B",
+        "rankId": "RANK_APPRENTICE",
+        "level": 1,
+        "exp": 0,
+        "personalityId": "PERSONALITY_PRACTICAL",
+        "traitIds": [
+          "TRAIT_STRONG"
+        ],
+        "personalGold": 500,
+        "contribution": 0,
+        "active": true,
+        "autonomy": {
+          "state": "IDLE_TOWN",
+          "currentRegionId": null,
+          "targetInstanceId": null,
+          "reasonCode": "NONE",
+          "stateStartedAtUtc": "2026-07-20T00:00:00.000Z",
+          "nextDecisionAtUtc": "2026-07-20T00:00:00.000Z"
+        },
+        "potions": [],
+        "equipmentSlots": {
+          "WEAPON": null,
+          "ARMOR": null,
+          "HELMET": null,
+          "ACCESSORY": null
+        },
+        "promotion": {
+          "status": "NONE",
+          "targetRankId": null,
+          "operationId": null,
+          "startedAtUtc": null,
+          "finishesAtUtc": null,
+          "costSnapshot": null
+        },
+        "records": {
+          "huntCount": 0,
+          "killCount": 0,
+          "raidClearCount": 0,
+          "itemsCollected": 0
+        }
+      },
+      {
+        "instanceId": "019f7cd2-8800-7002-8000-000000000002",
+        "generationProfileId": "GEN_MERC_STANDARD_V1",
+        "nameSeed": "1002",
+        "appearanceSeed": "2002",
+        "growthSeed": "3002",
+        "displayName": "미라",
+        "jobId": "JOB_GUARDIAN",
+        "gradeId": "GRADE_C",
+        "rankId": "RANK_APPRENTICE",
+        "level": 1,
+        "exp": 0,
+        "personalityId": "PERSONALITY_CAUTIOUS",
+        "traitIds": [
+          "TRAIT_STURDY"
+        ],
+        "personalGold": 500,
+        "contribution": 0,
+        "active": true,
+        "autonomy": {
+          "state": "IDLE_TOWN",
+          "currentRegionId": null,
+          "targetInstanceId": null,
+          "reasonCode": "NONE",
+          "stateStartedAtUtc": "2026-07-20T00:00:00.000Z",
+          "nextDecisionAtUtc": "2026-07-20T00:00:00.000Z"
+        },
+        "potions": [],
+        "equipmentSlots": {
+          "WEAPON": null,
+          "ARMOR": null,
+          "HELMET": null,
+          "ACCESSORY": null
+        },
+        "promotion": {
+          "status": "NONE",
+          "targetRankId": null,
+          "operationId": null,
+          "startedAtUtc": null,
+          "finishesAtUtc": null,
+          "costSnapshot": null
+        },
+        "records": {
+          "huntCount": 0,
+          "killCount": 0,
+          "raidClearCount": 0,
+          "itemsCollected": 0
+        }
+      },
+      {
+        "instanceId": "019f7cd2-8800-7002-8000-000000000003",
+        "generationProfileId": "GEN_MERC_STANDARD_V1",
+        "nameSeed": "1009",
+        "appearanceSeed": "2003",
+        "growthSeed": "3003",
+        "displayName": "아린",
+        "jobId": "JOB_ARCHER",
+        "gradeId": "GRADE_B",
+        "rankId": "RANK_APPRENTICE",
+        "level": 1,
+        "exp": 0,
+        "personalityId": "PERSONALITY_BRAVE",
+        "traitIds": [
+          "TRAIT_KEEN_EYE"
+        ],
+        "personalGold": 500,
+        "contribution": 0,
+        "active": true,
+        "autonomy": {
+          "state": "IDLE_TOWN",
+          "currentRegionId": null,
+          "targetInstanceId": null,
+          "reasonCode": "NONE",
+          "stateStartedAtUtc": "2026-07-20T00:00:00.000Z",
+          "nextDecisionAtUtc": "2026-07-20T00:00:00.000Z"
+        },
+        "potions": [],
+        "equipmentSlots": {
+          "WEAPON": null,
+          "ARMOR": null,
+          "HELMET": null,
+          "ACCESSORY": null
+        },
+        "promotion": {
+          "status": "NONE",
+          "targetRankId": null,
+          "operationId": null,
+          "startedAtUtc": null,
+          "finishesAtUtc": null,
+          "costSnapshot": null
+        },
+        "records": {
+          "huntCount": 0,
+          "killCount": 0,
+          "raidClearCount": 0,
+          "itemsCollected": 0
+        }
+      },
+      {
+        "instanceId": "019f7cd2-8800-7002-8000-000000000004",
+        "generationProfileId": "GEN_MERC_STANDARD_V1",
+        "nameSeed": "1004",
+        "appearanceSeed": "2004",
+        "growthSeed": "3004",
+        "displayName": "세라",
+        "jobId": "JOB_CLERIC",
+        "gradeId": "GRADE_C",
+        "rankId": "RANK_APPRENTICE",
+        "level": 1,
+        "exp": 0,
+        "personalityId": "PERSONALITY_FRUGAL",
+        "traitIds": [
+          "TRAIT_ARCANE"
+        ],
+        "personalGold": 500,
+        "contribution": 0,
+        "active": true,
+        "autonomy": {
+          "state": "IDLE_TOWN",
+          "currentRegionId": null,
+          "targetInstanceId": null,
+          "reasonCode": "NONE",
+          "stateStartedAtUtc": "2026-07-20T00:00:00.000Z",
+          "nextDecisionAtUtc": "2026-07-20T00:00:00.000Z"
+        },
+        "potions": [],
+        "equipmentSlots": {
+          "WEAPON": null,
+          "ARMOR": null,
+          "HELMET": null,
+          "ACCESSORY": null
+        },
+        "promotion": {
+          "status": "NONE",
+          "targetRankId": null,
+          "operationId": null,
+          "startedAtUtc": null,
+          "finishesAtUtc": null,
+          "costSnapshot": null
+        },
+        "records": {
+          "huntCount": 0,
+          "killCount": 0,
+          "raidClearCount": 0,
+          "itemsCollected": 0
+        }
+      }
+    ],
+    "managementNpcs": [
+      {
+        "instanceId": "019f77ac-2c00-7001-8000-000000000001",
+        "professionId": "NPC_MERCHANT",
+        "proficiencyId": "NPC_APPRENTICE",
+        "proficiencyExp": 0,
+        "assignedFacilityId": null,
+        "working": false
+      },
+      {
+        "instanceId": "019f77ac-2c00-7001-8000-000000000002",
+        "professionId": "NPC_BLACKSMITH",
+        "proficiencyId": "NPC_APPRENTICE",
+        "proficiencyExp": 0,
+        "assignedFacilityId": null,
+        "working": false
+      },
+      {
+        "instanceId": "019f77ac-2c00-7001-8000-000000000003",
+        "professionId": "NPC_ALCHEMIST",
+        "proficiencyId": "NPC_APPRENTICE",
+        "proficiencyExp": 0,
+        "assignedFacilityId": null,
+        "working": false
+      },
+      {
+        "instanceId": "019f77ac-2c00-7001-8000-000000000004",
+        "professionId": "NPC_HEALER",
+        "proficiencyId": "NPC_APPRENTICE",
+        "proficiencyExp": 0,
+        "assignedFacilityId": null,
+        "working": false
+      }
+    ],
+    "facilities": [
+      {
+        "facilityId": "FAC_TAVERN",
+        "level": 1,
+        "state": "ACTIVE",
+        "assignedNpcInstanceId": null,
+        "job": null,
+        "storage": []
+      },
+      {
+        "facilityId": "FAC_LODGE",
+        "level": 1,
+        "state": "ACTIVE",
+        "assignedNpcInstanceId": null,
+        "job": null,
+        "storage": []
+      },
+      {
+        "facilityId": "FAC_GUILD",
+        "level": 1,
+        "state": "ACTIVE",
+        "assignedNpcInstanceId": null,
+        "job": null,
+        "storage": []
+      },
+      {
+        "facilityId": "FAC_STORE",
+        "level": 1,
+        "state": "BUILDABLE",
+        "assignedNpcInstanceId": null,
+        "job": null,
+        "storage": []
+      },
+      {
+        "facilityId": "FAC_BLACKSMITH",
+        "level": 1,
+        "state": "BUILDABLE",
+        "assignedNpcInstanceId": null,
+        "job": null,
+        "storage": []
+      },
+      {
+        "facilityId": "FAC_ALCHEMY",
+        "level": 1,
+        "state": "BUILDABLE",
+        "assignedNpcInstanceId": null,
+        "job": null,
+        "storage": []
+      },
+      {
+        "facilityId": "FAC_WAREHOUSE",
+        "level": 1,
+        "state": "ACTIVE",
+        "assignedNpcInstanceId": null,
+        "job": null,
+        "storage": []
+      },
+      {
+        "facilityId": "FAC_INFIRMARY",
+        "level": 1,
+        "state": "BUILDABLE",
+        "assignedNpcInstanceId": null,
+        "job": null,
+        "storage": []
+      }
+    ],
+    "inventory": {
+      "itemStacks": [],
+      "equipment": [],
+      "warehousePotions": []
+    },
+    "regions": {
+      "progress": [
+        {
+          "regionId": "REGION_R01",
+          "unlocked": true,
+          "progressPercent": 0,
+          "highestRankReachedId": null,
+          "huntCount": 0,
+          "eliteKillCount": 0,
+          "firstUnlockedAtUtc": "2026-07-19T00:00:00.000Z",
+          "lastVisitedAtUtc": null
+        },
+        {
+          "regionId": "REGION_R02",
+          "unlocked": false,
+          "progressPercent": 0,
+          "highestRankReachedId": null,
+          "huntCount": 0,
+          "eliteKillCount": 0,
+          "firstUnlockedAtUtc": null,
+          "lastVisitedAtUtc": null
+        },
+        {
+          "regionId": "REGION_R03",
+          "unlocked": false,
+          "progressPercent": 0,
+          "highestRankReachedId": null,
+          "huntCount": 0,
+          "eliteKillCount": 0,
+          "firstUnlockedAtUtc": null,
+          "lastVisitedAtUtc": null
+        },
+        {
+          "regionId": "REGION_R04",
+          "unlocked": false,
+          "progressPercent": 0,
+          "highestRankReachedId": null,
+          "huntCount": 0,
+          "eliteKillCount": 0,
+          "firstUnlockedAtUtc": null,
+          "lastVisitedAtUtc": null
+        },
+        {
+          "regionId": "REGION_R05",
+          "unlocked": false,
+          "progressPercent": 0,
+          "highestRankReachedId": null,
+          "huntCount": 0,
+          "eliteKillCount": 0,
+          "firstUnlockedAtUtc": null,
+          "lastVisitedAtUtc": null
+        }
+      ],
+      "raids": []
+    },
+    "recruitmentMockState": {
+      "authority": "MOCK_ONLY",
+      "serverRevision": null,
+      "premiumWalletCache": {
+        "freePremium": 0,
+        "paidPremium": 0,
+        "specialRecruitTickets": 0
+      },
+      "pityCounters": [],
+      "featuredGuarantees": [],
+      "pendingRequests": []
+    },
+    "tutorial": {
+      "currentStepId": "TUTORIAL_KINGDOM_INTRO",
+      "completedStepIds": [],
+      "grantedRewardIds": [],
+      "skipped": false,
+      "completedAtUtc": null
+    },
+    "offline": {
+      "accrualCursorUtc": "2026-07-19T00:00:00.000Z",
+      "lastTrustedUtc": "2026-07-19T00:00:00.000Z",
+      "pendingSettlement": null
+    },
+    "operationJournal": [],
+    "settings": {
+      "masterVolume": 1,
+      "musicVolume": 0.8,
+      "sfxVolume": 1,
+      "vibrationEnabled": true,
+      "battleSpeed": 1
+    },
+    "extensions": {}
+  }
+}

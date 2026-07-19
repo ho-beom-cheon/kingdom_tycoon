@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1045 &1
+EditorBuildSettings:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Scenes:
+  - enabled: 1
+    path: Assets/KingdomTycoon/Scenes/Bootstrap.unity
+    guid: 33e0f54a813c304479f96899725aebfe
+  - enabled: 1
+    path: Assets/KingdomTycoon/Scenes/Kingdom.unity
+    guid: 3a2a02e1fa098e244a8faa672d2bb071
+  - enabled: 1
+    path: Assets/KingdomTycoon/Scenes/Region.unity
+    guid: a9f6f85d8d27d4d44b1c59a341f54304
+  - enabled: 1
+    path: Assets/KingdomTycoon/Scenes/Raid.unity
+    guid: 080b5948aa7490e4c862f4a2648fd3c2
+  m_configObjects:
+    com.unity.addressableassets: {fileID: 11400000, guid: 0e733726695cc394db41f28bfc400a42, type: 2}
+    com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 3590b91b4603b465dbb4216d601bff33, type: 3}
+    com.unity.localization.settings: {fileID: 11400000, guid: 2ee2b3752a7a7fb4a9bd4f01c4e0cda3, type: 2}
+  m_UseUCBPForAssetBundles: 0

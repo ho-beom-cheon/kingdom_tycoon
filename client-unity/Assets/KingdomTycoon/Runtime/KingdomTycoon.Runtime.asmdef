@@ -1,0 +1,21 @@
+{
+  "name": "KingdomTycoon.Runtime",
+  "rootNamespace": "KingdomTycoon",
+  "references": [
+    "Unity.Addressables",
+    "Unity.InputSystem",
+    "Unity.Localization",
+    "Unity.ResourceManager",
+    "Unity.TextMeshPro",
+    "UnityEngine.UI"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

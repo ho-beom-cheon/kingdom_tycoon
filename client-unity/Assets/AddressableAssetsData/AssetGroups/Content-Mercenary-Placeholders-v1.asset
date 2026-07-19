@@ -1,0 +1,53 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bbb281ee3bf0b054c82ac2347e9e782c, type: 3}
+  m_Name: Content-Mercenary-Placeholders-v1
+  m_EditorClassIdentifier: Unity.Addressables.Editor::UnityEditor.AddressableAssets.Settings.AddressableAssetGroup
+  m_GroupName: Content-Mercenary-Placeholders-v1
+  m_GUID: 9f746456bd7012d45a16354b7b295cff
+  m_SerializeEntries:
+  - m_GUID: 5fae87b25f9411643aced488b0a7bf00
+    m_Address: ASSET_MERC_PLACEHOLDER_MAGE_V1
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P03-Placeholder
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 826baedef99aa324eb23c18f79b1f2ad
+    m_Address: ASSET_MERC_PLACEHOLDER_GUARDIAN_V1
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P03-Placeholder
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: ac428bcd4e057cd4ab213c022c2fe7ac
+    m_Address: ASSET_MERC_PLACEHOLDER_CLERIC_V1
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P03-Placeholder
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: fc65386e095bbc542a68104420d574b8
+    m_Address: ASSET_MERC_PLACEHOLDER_ARCHER_V1
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P03-Placeholder
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: fed7ffe177add7f4d9519e4bf39e375b
+    m_Address: ASSET_MERC_PLACEHOLDER_WARRIOR_V1
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P03-Placeholder
+    FlaggedDuringContentUpdateRestriction: 0
+  m_ReadOnly: 0
+  m_Settings: {fileID: 11400000, guid: 50a16fd5bbff422489f2854e28312161, type: 2}
+  m_SchemaSet:
+    m_Schemas:
+    - {fileID: 11400000, guid: 91db7b0af6bd5104a8c58d211e564720, type: 2}
+    - {fileID: 11400000, guid: 6447c3dca1daa9941aaecd216c9c13aa, type: 2}

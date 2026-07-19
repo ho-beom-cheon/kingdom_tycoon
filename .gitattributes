@@ -9,13 +9,19 @@
 *.yml text
 *.md text
 *.csv text
+# Versioned manifest hashes cover exact RFC 4180 CRLF bytes. Keep those blobs
+# opaque so Linux checkout and core.autocrlf cannot rewrite signed packages.
+client-unity/Assets/StreamingAssets/Content/**/*.csv -text whitespace=cr-at-eol
+client-unity/Assets/StreamingAssets/Content/**/*.json text eol=lf
 *.py text
 *.ps1 text
 *.sh text eol=lf
-*.unity text
-*.prefab text
-*.asset text
-*.meta text
+# Unity YAML serializes empty scalar values as `key: `, so do not treat the
+# generated trailing space as a whitespace error.
+*.unity text whitespace=-blank-at-eol
+*.prefab text whitespace=-blank-at-eol
+*.asset text whitespace=-blank-at-eol
+*.meta text whitespace=-blank-at-eol
 
 *.png binary
 *.jpg binary

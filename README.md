@@ -7,8 +7,10 @@
 
 - 완료: [P00 기준선 분석](docs/reports/P00_BASELINE_REPORT.md)
 - 완료: [P01 저장소 기반](docs/reports/P01_REPOSITORY_FOUNDATION_REPORT.md)
-- 병행 진행: [DB P0 설계 채택·감사](docs/reports/P0_DB_IMPLEMENTATION_REPORT.md)
-- 다음: `P02_UNITY_FOUNDATION` (Unity 6.3 LTS 정확한 패치 설치 후 시작)
+- 완료: [DB P0 설계 채택·감사](docs/reports/P0_DB_IMPLEMENTATION_REPORT.md)
+- 완료: [P02 Unity 기반](docs/reports/P02_UNITY_FOUNDATION_REPORT.md)
+- 완료: [P03 콘텐츠 파이프라인·Save](docs/reports/P03_CONTENT_SAVE_REPORT.md)
+- 다음: [P04 왕국·시설](phases/P04_KINGDOM_FACILITIES.md)
 
 한 Phase의 구현과 검증이 끝나기 전에는 다음 Phase로 이동하지 않는다.
 
@@ -33,11 +35,12 @@ data/       CSV 원본, JSON Schema, UI token, OpenAPI 초안
 phases/     P00~P17 단계별 구현 계약
 prompts/    검토·구현·회귀·릴리스용 Codex 프롬프트
 scripts/    콘텐츠 검증, Git Hook 설정, CI 재현 스크립트
+client-unity/ Unity 6000.3.20f1 클라이언트와 EditMode·PlayMode 테스트
 server-api/ Java 25·Spring Boot 4.1 서버 모듈
 infra/      PostgreSQL 18.4 로컬 개발 환경
 ```
 
-`client-unity/`는 P02에서 추가한다. 서버·DB 기준은
+`client-unity/`는 P02에서 추가했다. 서버·DB 기준은
 [DB 인터페이스 설계서](docs/design/TYCOON_DB_INTERFACE_DESIGN_v1.0.md)를
 따른다. 로컬의 실험 코드나 인계 ZIP을 이 구조와 중복해 커밋하지 않는다.
 
@@ -52,7 +55,17 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\setup-git-hooks.ps
 콘텐츠 데이터를 직접 검증한다.
 
 ```powershell
+python .\scripts\generate_canonical_content.py --check
 python .\scripts\validate_content.py
+```
+
+첫 명령은 최종 P03 설계와 `StreamingAssets/Content` 60-table package의 byte drift를 검사한다.
+두 번째 명령은 기존 콘텐츠와 생성된 Save schema 두 사본을 검사한다. 생성물이 변경된 경우 먼저
+해당 generator를 실행한다.
+
+```powershell
+python .\scripts\generate_canonical_content.py
+python .\scripts\generate_save_schema.py
 ```
 
 Git Bash에서 중앙 CI 계약을 재현한다.
@@ -62,6 +75,24 @@ scripts/ci/run-ci.sh
 ```
 
 자동화 동작과 Delivery 경계는 [CI/CD 운영 가이드](docs/ci-cd.md)를 참고한다.
+
+### Unity 테스트
+
+Unity `6000.3.20f1`에서 EditMode와 PlayMode를 각각 실행한다. `<UNITY_EDITOR>`는
+해당 버전의 설치 경로로 바꾼다.
+
+```powershell
+& <UNITY_EDITOR>\Editor\Unity.exe -batchmode -nographics `
+  -projectPath .\client-unity -runTests -testPlatform EditMode `
+  -testResults .\client-unity\Logs\editmode-results.xml
+
+& <UNITY_EDITOR>\Editor\Unity.exe -batchmode -nographics `
+  -projectPath .\client-unity -runTests -testPlatform PlayMode `
+  -testResults .\client-unity\Logs\playmode-results.xml
+```
+
+P02 결과는 [Unity 기반 구현 보고서](docs/reports/P02_UNITY_FOUNDATION_REPORT.md), P03 완료 결과는
+[콘텐츠 파이프라인·Save 구현 보고서](docs/reports/P03_CONTENT_SAVE_REPORT.md)에 기록한다.
 
 ### 서버 테스트
 
