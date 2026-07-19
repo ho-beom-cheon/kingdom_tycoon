@@ -4,6 +4,8 @@ using KingdomTycoon.Bootstrap;
 using KingdomTycoon.Presentation.Combat;
 using KingdomTycoon.Presentation.Kingdom.Views;
 using KingdomTycoon.Presentation.Navigation;
+using KingdomTycoon.Presentation.Inventory;
+using KingdomTycoon.Presentation.Regions;
 using KingdomTycoon.Presentation.Store;
 using NUnit.Framework;
 using UnityEngine;
@@ -70,18 +72,19 @@ namespace KingdomTycoon.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator PersistentNavigationLoadsRegionAndReturnsToKingdom()
+        public IEnumerator UnifiedNavigationOpensRegionAndInventoryReturnsToKingdom()
         {
             StoreScreenPresenter presenter = null;
             yield return LoadKingdom(value => presenter = value);
-            SceneNavigationButton hunt = Object.FindObjectsByType<SceneNavigationButton>(FindObjectsInactive.Include, FindObjectsSortMode.None).Single(value => value.TargetScene == "Region");
-            hunt.GetComponent<Button>().onClick.Invoke();
-            yield return new WaitUntil(() => SceneManager.GetActiveScene().name == "Region");
-            Assert.That(Object.FindFirstObjectByType<RegionCombatPresenter>(), Is.Not.Null);
-            Assert.That(Camera.allCamerasCount, Is.GreaterThanOrEqualTo(1));
-
-            SceneNavigationButton kingdom = Object.FindObjectsByType<SceneNavigationButton>(FindObjectsInactive.Include, FindObjectsSortMode.None).Single(value => value.TargetScene == "Kingdom");
+            UnifiedNavigationMenu navigation = Object.FindFirstObjectByType<UnifiedNavigationMenu>(FindObjectsInactive.Include);
+            navigation.OpenRegions();
             yield return null;
+            Assert.That(Object.FindFirstObjectByType<RegionMapScreenPresenter>(FindObjectsInactive.Include).gameObject.activeSelf, Is.True);
+
+            navigation.OpenInventory();
+            yield return new WaitUntil(() => SceneManager.GetActiveScene().name == "Inventory");
+            Assert.That(Object.FindFirstObjectByType<InventoryScreenPresenter>(), Is.Not.Null);
+            SceneNavigationButton kingdom = Object.FindObjectsByType<SceneNavigationButton>(FindObjectsInactive.Include, FindObjectsSortMode.None).Single(value => value.TargetScene == "Kingdom" && value.name == "P07_RETURN_KINGDOM");
             Assert.That(kingdom.GetComponent<Button>().interactable, Is.True);
             kingdom.GetComponent<Button>().onClick.Invoke();
             yield return new WaitUntil(() => SceneManager.GetActiveScene().name == "Kingdom");

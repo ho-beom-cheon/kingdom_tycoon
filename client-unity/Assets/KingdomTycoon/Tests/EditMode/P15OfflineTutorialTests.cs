@@ -83,12 +83,33 @@ namespace KingdomTycoon.Tests.EditMode
         [Test]
         public void TutorialGrantAndReplayAreExactlyOnceThenSkipAllCompletes()
         {
-            TutorialCommand command = offline.CreateCurrentActionCommand(); long gold = game.Snapshot()["payload"]!["kingdom"]!.Value<long>("kingdomGold");
+            TutorialCommand command = offline.CreateCurrentActionCommand("OBSERVE"); long gold = game.Snapshot()["payload"]!["kingdom"]!.Value<long>("kingdomGold");
             TutorialOperationResult first = offline.Execute(command); long revision = game.Revision; TutorialOperationResult replay = offline.Execute(command);
             Assert.That(first.Replayed, Is.False); Assert.That(replay.Replayed, Is.True); Assert.That(game.Revision, Is.EqualTo(revision));
             Assert.That(game.Snapshot()["payload"]!["kingdom"]!.Value<long>("kingdomGold"), Is.GreaterThanOrEqualTo(gold));
             TutorialOperationResult skipped = offline.Execute(offline.CreateSkipAllCommand()); OfflineTutorialOverviewDto overview = offline.GetOverview();
             Assert.That(skipped.ResultCode, Is.EqualTo("P15_TUTORIAL_COMPLETED")); Assert.That(overview.TutorialCompleted, Is.True); Assert.That(overview.CompletedCount, Is.EqualTo(10)); AssertValid(game.Snapshot(), "P15_TUTORIAL_COMPLETE");
+        }
+
+        [Test]
+        public void TutorialRejectsManualCompletionAndAdvancesFromPersistedGameplayEvidence()
+        {
+            OfflineTutorialDomainException error = Assert.Throws<OfflineTutorialDomainException>(() => offline.Execute(offline.CreateCurrentActionCommand()));
+            Assert.That(error.Code, Is.EqualTo("P15_TUTORIAL_GOAL_NOT_MET"));
+            Assert.That(offline.CompleteObservedKingdomView(), Is.True);
+            Assert.That(offline.GetOverview().CurrentStep.Id, Is.EqualTo("TUT_02_FIRST_RECRUIT"));
+
+            JObject draft = game.Snapshot(); JObject state = (JObject)draft["payload"]!["recruitmentMockState"]!;
+            ((JArray)state["history"]!).Add(new JObject
+            {
+                ["sequence"] = 1, ["operationId"] = "019f7cd2-8800-7002-8000-000000009901", ["poolId"] = "POOL_TAVERN_C_A",
+                ["poolType"] = "TAVERN", ["paymentType"] = "KINGDOM_GOLD", ["count"] = 1, ["costAmount"] = 750,
+                ["resultInstanceIds"] = new JArray("019f7cd2-8800-7002-8000-000000009902"), ["resultGradeIds"] = new JArray("GRADE_B"),
+                ["guaranteeReasonIds"] = new JArray(), ["serverReceiptId"] = null, ["createdAtUtc"] = "2026-07-22T00:00:00.000Z"
+            });
+            state["nextHistorySequence"] = 2; Commit(draft);
+            Assert.That(offline.RefreshTutorialProgress(), Is.EqualTo(1));
+            Assert.That(offline.GetOverview().CurrentStep.Id, Is.EqualTo("TUT_03_REGION_R01_PERMISSION"));
         }
 
         private void Commit(JObject draft) { SaveWriteResult result = services.Get<SaveService>().Repository.Save(game.ActiveProfileId, draft, game.Revision, clock.UtcNow); Assert.That(result.Success, Is.True, result.ErrorCode + "\n" + string.Join("\n", result.Report.Issues)); game.SynchronizeCommittedDocument(result.Document); }

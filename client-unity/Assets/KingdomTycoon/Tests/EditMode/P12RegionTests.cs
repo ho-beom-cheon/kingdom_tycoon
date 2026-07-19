@@ -30,7 +30,7 @@ namespace KingdomTycoon.Tests.EditMode
             temporaryRoot = Path.Combine(Path.GetTempPath(), "kingdom-tycoon-p12-" + Guid.NewGuid().ToString("N")); Directory.CreateDirectory(temporaryRoot);
             clock = new DeterministicClock(new DateTimeOffset(2026, 7, 22, 0, 0, 0, TimeSpan.Zero)); string contracts = Path.Combine(UnityEngine.Application.dataPath, "KingdomTycoon", "Resources", "Contracts");
             services = new ServiceRegistry(); services.Register(new SaveService(temporaryRoot, Read(contracts, "save.schema.json"), Read(contracts, "save.content.5.schema.json"), Read(contracts, "save.content.6.schema.json"), Read(contracts, "save.content.7.schema.json"), Read(contracts, "save.content.8.schema.json"), Read(contracts, "save.content.9.schema.json"), Read(contracts, "save.content.10.schema.json")));
-            services.Register(new ContentCatalogService(new LocalStreamingAssetReader(Path.Combine(UnityEngine.Application.dataPath, "StreamingAssets")), new CompileTimeActiveContentVersionProvider()));
+            services.Register(new ContentCatalogService(new LocalStreamingAssetReader(Path.Combine(UnityEngine.Application.dataPath, "StreamingAssets")), new DevelopmentActiveContentVersionProvider(CompileTimeActiveContentVersionProvider.P12ContentVersion)));
             game = new FacilityGameService(clock, Read(contracts, "p12-new-game.template.json"), Read(contracts, "p04-new-game.template.json")); services.Register(game);
             regions = new RegionGameService(clock); services.Register(regions); services.InitializeAll();
             services.Get<ContentCatalogService>().LoadActiveAsync(CancellationToken.None).GetAwaiter().GetResult(); game.BootstrapAsync(CancellationToken.None).GetAwaiter().GetResult(); regions.Bootstrap();

@@ -35,7 +35,7 @@ namespace KingdomTycoon.Tests.EditMode
             clock = new DeterministicClock(new DateTimeOffset(2026, 7, 22, 0, 0, 0, TimeSpan.Zero));
             services = new ServiceRegistry();
             services.Register(new SaveService(temporaryRoot, Read("save.schema.json"), Read("save.content.5.schema.json"), Read("save.content.6.schema.json"), Read("save.content.7.schema.json"), Read("save.content.8.schema.json"), Read("save.content.9.schema.json"), Read("save.content.10.schema.json"), Read("save.content.11.schema.json")));
-            services.Register(new ContentCatalogService(new LocalStreamingAssetReader(Path.Combine(UnityEngine.Application.dataPath, "StreamingAssets")), new CompileTimeActiveContentVersionProvider()));
+            services.Register(new ContentCatalogService(new LocalStreamingAssetReader(Path.Combine(UnityEngine.Application.dataPath, "StreamingAssets")), new DevelopmentActiveContentVersionProvider(CompileTimeActiveContentVersionProvider.P13ContentVersion)));
             game = new FacilityGameService(clock, Read("p13-new-game.template.json"), Read("p04-new-game.template.json"));
             services.Register(game);
             services.Register(new MercenaryRosterService(clock, Read("p05-migration-after.golden.json")));

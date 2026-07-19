@@ -2,6 +2,7 @@ using System.Collections;
 using System.Linq;
 using KingdomTycoon.Bootstrap;
 using KingdomTycoon.Presentation.OfflineTutorial;
+using KingdomTycoon.Presentation.Navigation;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -31,6 +32,25 @@ namespace KingdomTycoon.Tests.PlayMode
         {
             yield return Load(); OfflineTutorialHubPresenter presenter = Object.FindFirstObjectByType<OfflineTutorialHubPresenter>(FindObjectsInactive.Include); presenter.gameObject.SetActive(true);
             foreach ((int width, int height) in new[] { (1920, 1080), (2400, 1080) }) { Screen.SetResolution(width, height, false); yield return null; Canvas.ForceUpdateCanvases(); foreach (Button button in presenter.GetComponentsInChildren<Button>(true)) { Assert.That(button.GetComponent<RectTransform>().rect.width, Is.GreaterThanOrEqualTo(64), button.name); Assert.That(button.GetComponent<RectTransform>().rect.height, Is.GreaterThanOrEqualTo(64), button.name); } }
+        }
+
+        [UnityTest]
+        public IEnumerator UnifiedNavigationHasSixNonOverlappingPrimaryButtons()
+        {
+            yield return Load(); UnifiedNavigationMenu navigation = Object.FindFirstObjectByType<UnifiedNavigationMenu>(FindObjectsInactive.Include);
+            Assert.That(navigation, Is.Not.Null); Transform safe = navigation.transform.parent;
+            string[] ids = { "NAV_KINGDOM", "NAV_MERCENARIES", "P09_CRAFT_NAV_BUTTON", "P12_REGION_MAP_NAV_BUTTON", "P13_RECRUITMENT_NAV_BUTTON", "P15_MENU_NAV_BUTTON" };
+            foreach ((int width, int height) in new[] { (1920, 1080), (2400, 1080) })
+            {
+                Screen.SetResolution(width, height, false); yield return null; Canvas.ForceUpdateCanvases();
+                RectTransform[] buttons = ids.Select(id => id == "P15_MENU_NAV_BUTTON" ? navigation.transform.Find(id).GetComponent<RectTransform>() : safe.Find(id).GetComponent<RectTransform>()).ToArray();
+                Assert.That(buttons.All(value => value.gameObject.activeSelf), Is.True);
+                for (int index = 0; index < buttons.Length; index++)
+                {
+                    Assert.That(buttons[index].rect.width, Is.GreaterThanOrEqualTo(64), ids[index]); Assert.That(buttons[index].rect.height, Is.GreaterThanOrEqualTo(64), ids[index]);
+                    for (int other = index + 1; other < buttons.Length; other++) Assert.That(RectTransformUtility.RectangleContainsScreenPoint(buttons[index], buttons[other].TransformPoint(buttons[other].rect.center)), Is.False, $"{ids[index]} overlaps {ids[other]}");
+                }
+            }
         }
 
         private static IEnumerator Load() { yield return SceneManager.LoadSceneAsync("Bootstrap", LoadSceneMode.Single); yield return new WaitUntil(() => SceneManager.GetActiveScene().name == "Kingdom" && AppRoot.Instance != null && AppRoot.Instance.IsInitialized); yield return null; }
