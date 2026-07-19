@@ -1,0 +1,2 @@
+treatment_id,facility_id,required_profession_id,base_ticks,xp_reward,from_state,to_state,status,enabled
+TREAT_INJURY_BASIC,FAC_INFIRMARY,NPC_HEALER,30,30,INJURED,IDLE_TOWN,TUNABLE,TRUE

@@ -56,6 +56,12 @@ jobs:
             echo "has_p09=false" >> "$GITHUB_OUTPUT"
           fi
 
+          if [[ -f scripts/ci/p10.sh ]]; then
+            echo "has_p10=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_p10=false" >> "$GITHUB_OUTPUT"
+          fi
+
           if [[ -f gradlew || -f server-api/gradlew ]]; then
             echo "has_server=true" >> "$GITHUB_OUTPUT"
           else
@@ -125,5 +131,18 @@ jobs:
             docs/goldens/P09/*.json
             client-unity/Assets/KingdomTycoon/Resources/Contracts/p09-new-game.template.json
             client-unity/Assets/KingdomTycoon/Resources/Contracts/save.content.7.schema.json
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload P10 contract evidence
+        if: always() && steps.layout.outputs.has_p10 == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: p10-contract-evidence-${{ github.run_id }}
+          path: |
+            docs/reports/captures/P10/*.png
+            docs/goldens/P10/*.json
+            client-unity/Assets/KingdomTycoon/Resources/Contracts/p10-new-game.template.json
+            client-unity/Assets/KingdomTycoon/Resources/Contracts/save.content.8.schema.json
           if-no-files-found: error
           retention-days: 14

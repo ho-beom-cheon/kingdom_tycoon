@@ -12,6 +12,7 @@ using KingdomTycoon.Infrastructure.Inventory;
 using KingdomTycoon.Infrastructure.Mercenaries;
 using KingdomTycoon.Infrastructure.Save;
 using KingdomTycoon.Infrastructure.Production;
+using KingdomTycoon.Infrastructure.EquipmentGrowth;
 using KingdomTycoon.Services;
 using KingdomTycoon.UI;
 using UnityEngine;
@@ -56,16 +57,17 @@ namespace KingdomTycoon.Bootstrap
             TextAsset p07SaveSchema = Resources.Load<TextAsset>("Contracts/save.content.5.schema");
             TextAsset p08SaveSchema = Resources.Load<TextAsset>("Contracts/save.content.6.schema");
             TextAsset p09SaveSchema = Resources.Load<TextAsset>("Contracts/save.content.7.schema");
+            TextAsset p10SaveSchema = Resources.Load<TextAsset>("Contracts/save.content.8.schema");
             if (saveSchema == null)
             {
                 throw new System.InvalidOperationException("P03 save schema resource is missing.");
             }
 
             TextAsset p04Template = Resources.Load<TextAsset>("Contracts/p04-new-game.template");
-            TextAsset newGameTemplate = Resources.Load<TextAsset>("Contracts/p09-new-game.template");
+            TextAsset newGameTemplate = Resources.Load<TextAsset>("Contracts/p10-new-game.template");
             if (newGameTemplate == null)
             {
-                throw new InvalidOperationException("P09 new-game template resource is missing.");
+                throw new InvalidOperationException("P10 new-game template resource is missing.");
             }
             if (p04Template == null) throw new InvalidOperationException("P04 migration template resource is missing.");
             TextAsset p05MigrationGolden = Resources.Load<TextAsset>("Contracts/p05-migration-after.golden");
@@ -74,7 +76,8 @@ namespace KingdomTycoon.Bootstrap
             if (p07SaveSchema == null) throw new InvalidOperationException("P07 save schema resource is missing.");
             if (p08SaveSchema == null) throw new InvalidOperationException("P08 save schema resource is missing.");
             if (p09SaveSchema == null) throw new InvalidOperationException("P09 save schema resource is missing.");
-            Services.Register(new SaveService(UnityEngine.Application.persistentDataPath, saveSchema.text, p07SaveSchema.text, p08SaveSchema.text, p09SaveSchema.text));
+            if (p10SaveSchema == null) throw new InvalidOperationException("P10 save schema resource is missing.");
+            Services.Register(new SaveService(UnityEngine.Application.persistentDataPath, saveSchema.text, p07SaveSchema.text, p08SaveSchema.text, p09SaveSchema.text, p10SaveSchema.text));
             IStreamingAssetReader contentReader = UnityEngine.Application.platform == RuntimePlatform.Android
                 ? new AndroidStreamingAssetReader(UnityEngine.Application.streamingAssetsPath)
                 : new LocalStreamingAssetReader(UnityEngine.Application.streamingAssetsPath);
@@ -85,6 +88,7 @@ namespace KingdomTycoon.Bootstrap
             Services.Register(new EconomyGameService(new SystemTrustedUtcClock()));
             Services.Register(new CombatGameService(new SystemTrustedUtcClock()));
             Services.Register(new ProductionGameService(new SystemTrustedUtcClock()));
+            Services.Register(new EquipmentGrowthGameService(new SystemTrustedUtcClock()));
             Services.Register(new SceneFlowService());
             Services.InitializeAll();
         }
@@ -119,6 +123,7 @@ namespace KingdomTycoon.Bootstrap
             Services.Get<EconomyGameService>().Bootstrap();
             Services.Get<CombatGameService>().Bootstrap();
             Services.Get<ProductionGameService>().Bootstrap();
+            Services.Get<EquipmentGrowthGameService>().Bootstrap();
         }
 
         private void OnDestroy()

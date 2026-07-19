@@ -266,7 +266,10 @@ def build_extras(schema_bytes: bytes) -> tuple[bytes, dict[Path, bytes]]:
     before = copy.deepcopy(source)
     after = migrate(before)
     registry = json.loads(REGISTRY_OUTPUT.read_bytes())
-    registry["entries"] = [entry for entry in registry["entries"] if "1.0.0-content.7" not in entry["contentVersions"]]
+    registry["entries"] = [entry for entry in registry["entries"] if not any(
+        version.startswith("1.0.0-content.") and int(version.rsplit(".", 1)[1]) >= 7
+        for version in entry["contentVersions"]
+    )]
     registry["entries"].append({"contentVersions": ["1.0.0-content.7"], "schemaFile": "save.content.7.schema.json", "sha256": sha(schema_bytes)})
     files = {
         TEMPLATE_OUTPUT: pretty(new_game),
@@ -295,8 +298,22 @@ def generate(package: Package, schema_bytes: bytes, registry_bytes: bytes, extra
         OUTPUT / "content_manifest.json": package.manifest_bytes,
         OUTPUT / "content_manifest.schema.json": pretty(package.schema),
         SCHEMA_OUTPUT: schema_bytes,
-        REGISTRY_OUTPUT: registry_bytes,
     }
+    expected_registry = json.loads(registry_bytes)
+    current_registry = json.loads(REGISTRY_OUTPUT.read_bytes())
+    successor_entries = [entry for entry in current_registry["entries"] if any(
+        version.startswith("1.0.0-content.") and int(version.rsplit(".", 1)[1]) > 7
+        for version in entry["contentVersions"]
+    )]
+    if check:
+        actual_prefix = dict(current_registry)
+        actual_prefix["entries"] = [entry for entry in current_registry["entries"] if entry not in successor_entries]
+        if actual_prefix != expected_registry:
+            raise ContractError("P09 registry entry drifted")
+    else:
+        merged_registry = dict(expected_registry)
+        merged_registry["entries"] = expected_registry["entries"] + successor_entries
+        files[REGISTRY_OUTPUT] = pretty(merged_registry)
     files.update({OUTPUT / name: contents for name, contents in package.csv_bytes.items()})
     files.update(extras)
     failures: list[str] = []
