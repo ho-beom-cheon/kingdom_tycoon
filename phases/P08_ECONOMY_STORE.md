@@ -1,5 +1,7 @@
 # P08_ECONOMY_STORE — 경제·상점
 
+> 상태: **완료** (`docs/reports/P08_ECONOMY_STORE_REPORT.md`, GitHub Issue #28)
+
 ## 목적
 
 개인·왕국 골드, 판매·구매, 가격 정책을 구현한다.
@@ -10,9 +12,11 @@
 
 ## 구현 범위
 
-- Wallets
--  transactions
--  store AI
+- 개인 골드·왕국 금고 Wallets
+- 가격 정책, 상점 재고, 판매·구매·보급 transactions
+- 사냥 귀환 후 sell→potion→equipment store autonomy
+- 거래 ledger·journal·idempotency와 P07→P08 Save migration
+- Kingdom 상점 화면, 6개 상태, Addressables, Android 개발 빌드
 
 ## 제외 범위
 
@@ -39,9 +43,11 @@
 
 ## 완료 조건
 
-- 경제 루프 정지·음수 없음
-- 테스트 실패 0
-- 다음 Phase 진입 가능 여부 명시
+- [x] 경제 루프 정지·음수 없음
+- [x] 전체 Unity EditMode 80/80, PlayMode 22 passed/1 skipped/0 failed
+- [x] Java 25 + PostgreSQL 18 server integration 10/10
+- [x] 고정 Unity 6000.3.20f1 Android IL2CPP ARM64 APK 생성
+- [x] 다음 Phase P09 진입 가능 여부와 선행 설계 검토 조건 명시
 
 ## 롤백
 

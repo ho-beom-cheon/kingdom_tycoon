@@ -221,10 +221,25 @@ def _expected_files(package: Package, blocks: list[dict[str, Any]]) -> dict[Path
     return files
 
 
+def _registry_preserves_p07(actual_bytes: bytes, expected_bytes: bytes) -> bool:
+    try:
+        actual = json.loads(actual_bytes)
+        expected = json.loads(expected_bytes)
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return False
+    return (
+        actual.get("registryVersion") == expected.get("registryVersion")
+        and actual.get("preparseRequired") == expected.get("preparseRequired")
+        and all(entry in actual.get("entries", []) for entry in expected.get("entries", []))
+    )
+
+
 def generate(package: Package, blocks: list[dict[str, Any]], check: bool) -> None:
     failures: list[str] = []
     expected = _expected_files(package, blocks)
     for path, contents in expected.items():
+        if path == SAVE_REGISTRY_OUTPUT and path.is_file() and _registry_preserves_p07(path.read_bytes(), contents):
+            continue
         if path.is_file() and path.read_bytes() != contents:
             failures.append(f"CONTENT_RELEASE_SPLIT_BRAIN: {path.relative_to(ROOT)}")
         elif check and not path.is_file():

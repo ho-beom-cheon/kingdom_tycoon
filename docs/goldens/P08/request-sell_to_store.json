@@ -1,0 +1,19 @@
+{
+  "commandType": "SELL_TO_STORE",
+  "operationId": "018f0000-0000-7000-8000-000000000902",
+  "expectedRevision": 13,
+  "mercenaryInstanceId": "018f0000-0000-7000-8000-000000000101",
+  "lines": [
+    {
+      "kind": "EQUIPMENT",
+      "id": "018f0000-0000-7000-8000-000000000201",
+      "quantity": 1
+    },
+    {
+      "kind": "ITEM",
+      "id": "MAT_R01_WILD_HERB",
+      "quantity": 3
+    }
+  ],
+  "requestHash": "d18ab64c87efbe132c550230e74fc540493f976586e499f86ce714822438a88d"
+}

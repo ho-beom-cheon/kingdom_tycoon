@@ -1,0 +1,17 @@
+{
+  "commandType": "BUY_FROM_STORE",
+  "operationId": "018f0000-0000-7000-8000-000000000903",
+  "expectedRevision": 14,
+  "quoteContextHash": "4d3dc8f578cd0474dd4f8ee536b05dba652b76f7a8f40df89f6e6c593ee10d27",
+  "mercenaryInstanceId": "018f0000-0000-7000-8000-000000000101",
+  "equipIfUpgrade": false,
+  "lines": [
+    {
+      "kind": "POTION",
+      "id": "POT_HEAL_SMALL",
+      "quantity": 2,
+      "quotedUnitPrice": 46
+    }
+  ],
+  "requestHash": "8c1d85e42bad6a75f6025af448b04a6a984a4adfd9570d99d83406643ea3c944"
+}

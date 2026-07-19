@@ -77,7 +77,7 @@ namespace KingdomTycoon.Infrastructure.Combat
         public CanonicalCombatCatalog(ContentCatalog catalog)
         {
             if (catalog == null) throw new ArgumentNullException(nameof(catalog));
-            if (catalog.ContentVersion is not (CompileTimeActiveContentVersionProvider.P06ContentVersion or CompileTimeActiveContentVersionProvider.P07ContentVersion))
+            if (catalog.ContentVersion is not (CompileTimeActiveContentVersionProvider.P06ContentVersion or CompileTimeActiveContentVersionProvider.P07ContentVersion or CompileTimeActiveContentVersionProvider.P08ContentVersion))
                 throw new CombatDomainException("P06_CONTENT_VERSION_UNSUPPORTED");
             ContentVersion = catalog.ContentVersion;
             jobs = catalog.GetTable("combat_job_profiles.csv").Rows.Where(Enabled).Select(row => new CombatJobProfile(row)).ToDictionary(value => value.JobId, StringComparer.Ordinal);
@@ -157,7 +157,7 @@ namespace KingdomTycoon.Infrastructure.Combat
                 current = new P05ToP06ContentMigration(clock).Apply(current);
                 needsWrite = true;
             }
-            else if (current.Value<string>("contentVersion") is not (CompileTimeActiveContentVersionProvider.P06ContentVersion or CompileTimeActiveContentVersionProvider.P07ContentVersion))
+            else if (current.Value<string>("contentVersion") is not (CompileTimeActiveContentVersionProvider.P06ContentVersion or CompileTimeActiveContentVersionProvider.P07ContentVersion or CompileTimeActiveContentVersionProvider.P08ContentVersion))
             {
                 throw new CombatDomainException("P06_CONTENT_VERSION_UNSUPPORTED");
             }

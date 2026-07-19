@@ -1,0 +1,26 @@
+{
+  "operationId": "018f0000-0000-7000-8000-000000000902",
+  "revisionBefore": 13,
+  "revisionAfter": 14,
+  "mercenaryInstanceId": "018f0000-0000-7000-8000-000000000101",
+  "totalPersonalGoldDelta": 40,
+  "stockVersionAfter": 1,
+  "lines": [
+    {
+      "kind": "EQUIPMENT",
+      "id": "018f0000-0000-7000-8000-000000000201",
+      "quantity": 1,
+      "unitPrice": 25,
+      "lineTotal": 25
+    },
+    {
+      "kind": "ITEM",
+      "id": "MAT_R01_WILD_HERB",
+      "quantity": 3,
+      "unitPrice": 5,
+      "lineTotal": 15
+    }
+  ],
+  "replayed": false,
+  "resultDigest": "e10155a91a633d0b856ee52ba6e5bbeb2a72cee351230558b1e99c308d05c823"
+}

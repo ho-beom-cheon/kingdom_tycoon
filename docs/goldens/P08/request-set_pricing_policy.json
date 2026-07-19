@@ -1,0 +1,7 @@
+{
+  "commandType": "SET_PRICING_POLICY",
+  "operationId": "018f0000-0000-7000-8000-000000000901",
+  "expectedRevision": 12,
+  "policyId": "HIGH",
+  "requestHash": "3d34c69127d7a2edf67e263a13f674e2567fed839a279be67536cc2b28a43b7f"
+}

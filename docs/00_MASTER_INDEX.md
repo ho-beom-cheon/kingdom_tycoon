@@ -54,3 +54,7 @@
 ## 단계별 구현
 
 `phases/P00`부터 `P17`까지 순서대로 진행한다. 한 Phase를 완료·검증하기 전 다음 Phase로 이동하지 않는다.
+
+### 완료 보고서
+
+- `reports/P08_ECONOMY_STORE_REPORT.md`: P08 경제·상점·자율 거래, Save content.6, UI, Android 검증

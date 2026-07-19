@@ -53,13 +53,23 @@ namespace KingdomTycoon.Infrastructure.Save
         }
 
         public SaveDocumentValidator(string legacySchemaJson, string content5SchemaJson)
+            : this(legacySchemaJson, content5SchemaJson, null)
+        {
+        }
+
+        public SaveDocumentValidator(string legacySchemaJson, string content5SchemaJson, string content6SchemaJson)
         {
             schema = StrictJson.ParseObject(legacySchemaJson ?? throw new ArgumentNullException(nameof(legacySchemaJson)));
             var content5 = StrictJson.ParseObject(content5SchemaJson ?? throw new ArgumentNullException(nameof(content5SchemaJson)));
-            versionSchemas = new Dictionary<string, JObject>(StringComparer.Ordinal)
+            var schemas = new Dictionary<string, JObject>(StringComparer.Ordinal)
             {
                 ["1.0.0-content.5"] = content5
             };
+            if (content6SchemaJson != null)
+            {
+                schemas["1.0.0-content.6"] = StrictJson.ParseObject(content6SchemaJson);
+            }
+            versionSchemas = schemas;
         }
 
         public SaveValidationResult ParseAndValidate(string json, string source)
@@ -104,6 +114,7 @@ namespace KingdomTycoon.Infrastructure.Save
             ValidateRecruitment(document, source, report);
             ValidateJournal(document, source, report);
             ValidateRewardSnapshots(document, source, report);
+            ValidateEconomy(document, source, report);
             return report;
         }
 
@@ -484,6 +495,13 @@ namespace KingdomTycoon.Infrastructure.Save
                     report.AddError("SAVE_OPERATION_RESULT_DIGEST_INVALID", source, "/payload/operationJournal", "Only committed operations require resultDigest.", entry.Value<string>("operationId"));
                 }
 
+                bool hasResultPayload = entry.TryGetValue("resultPayload", out JToken resultPayload) && resultPayload.Type != JTokenType.Null;
+                bool requiresResultPayload = operationType == "STORE_TRANSACTION" && status is "COMMITTED" or "ACKNOWLEDGED";
+                if (hasResultPayload != requiresResultPayload)
+                {
+                    report.AddError("SAVE_OPERATION_RESULT_PAYLOAD_INVALID", source, "/payload/operationJournal", "Only committed store transactions require resultPayload.", entry.Value<string>("operationId"));
+                }
+
                 bool hasErrorCode = entry["errorCode"].Type != JTokenType.Null;
                 if ((status == "FAILED_PERMANENT") != hasErrorCode)
                 {
@@ -496,6 +514,66 @@ namespace KingdomTycoon.Infrastructure.Save
                 {
                     report.AddError("SAVE_OFFLINE_FAILURE_RESOLUTION_INVALID", source, "/payload/operationJournal", "Failure resolution fields must occur together on FAILED_PERMANENT entries.", entry.Value<string>("operationId"));
                 }
+            }
+        }
+
+        private static void ValidateEconomy(JObject document, string source, ValidationReport report)
+        {
+            if (document.Value<string>("contentVersion") != "1.0.0-content.6") return;
+            JObject economy = (JObject)document["payload"]?["economy"];
+            if (economy == null) return;
+            JObject store = (JObject)economy["store"];
+            var stockIds = new HashSet<string>(StringComparer.Ordinal);
+            foreach (JObject line in store["stackLines"].Children<JObject>())
+            {
+                string expected = $"STACK:{line.Value<string>("productKind")}:{line.Value<string>("productId")}:{line.Value<string>("sourceType")}";
+                string actual = line.Value<string>("stockLineId");
+                if (!string.Equals(expected, actual, StringComparison.Ordinal) || !stockIds.Add(actual))
+                {
+                    report.AddError("P08_STOCK_INVALID", source, "/payload/economy/store/stackLines", "Stock line identity is invalid or duplicated.", actual);
+                }
+            }
+
+            var ownedEquipment = new HashSet<string>(document["payload"]!["inventory"]!["equipment"]!.Children<JObject>()
+                .Select(value => value.Value<string>("instanceId")), StringComparer.Ordinal);
+            foreach (JObject equipment in store["equipment"].Children<JObject>())
+            {
+                string instanceId = equipment.Value<string>("instanceId");
+                if (!ownedEquipment.Add(instanceId))
+                {
+                    report.AddError("P08_EQUIPMENT_OWNERSHIP_CONFLICT", source, "/payload/economy/store/equipment", "Equipment must have exactly one owner.", instanceId);
+                }
+            }
+
+            JObject facility = document["payload"]!["facilities"]!.Children<JObject>()
+                .Single(value => value.Value<string>("facilityId") == "FAC_STORE");
+            if (facility["storage"]!.Any())
+            {
+                report.AddError("P08_STORE_STORAGE_CONFLICT", source, "/payload/facilities", "FAC_STORE.storage must remain empty in P08.");
+            }
+
+            JObject ledger = (JObject)store["ledger"];
+            long expectedSequence = ledger.Value<long>("prunedThroughSequence") + 1;
+            var operationIds = new HashSet<string>(StringComparer.Ordinal);
+            foreach (JObject entry in ledger["entries"].Children<JObject>())
+            {
+                if (entry.Value<long>("sequence") != expectedSequence++ || !operationIds.Add(entry.Value<string>("operationId")))
+                {
+                    report.AddError("P08_LEDGER_CORRUPT", source, "/payload/economy/store/ledger", "Ledger sequence or operation identity is invalid.");
+                    break;
+                }
+                JObject journal = document["payload"]!["operationJournal"]!.Children<JObject>()
+                    .SingleOrDefault(value => value.Value<string>("operationId") == entry.Value<string>("operationId"));
+                if (journal == null || journal.Value<string>("operationType") != "STORE_TRANSACTION" ||
+                    journal.Value<string>("requestHash") != entry.Value<string>("requestHash") ||
+                    journal.Value<string>("resultDigest") != entry.Value<string>("resultDigest"))
+                {
+                    report.AddError("P08_LEDGER_CORRUPT", source, "/payload/economy/store/ledger", "Ledger entry does not reconcile with the operation journal.", entry.Value<string>("operationId"));
+                }
+            }
+            if (ledger.Value<long>("nextSequence") != expectedSequence)
+            {
+                report.AddError("P08_LEDGER_CORRUPT", source, "/payload/economy/store/ledger/nextSequence", "Ledger nextSequence is not contiguous.");
             }
         }
 

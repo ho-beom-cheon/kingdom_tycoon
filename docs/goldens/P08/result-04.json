@@ -1,0 +1,41 @@
+{
+  "operationId": "018f0000-0000-7000-8000-000000000904",
+  "revisionBefore": 15,
+  "revisionAfter": 16,
+  "epoch": 2,
+  "addedLines": [
+    {
+      "kind": "EQUIPMENT",
+      "id": "EQ_T1_ARCHER_WEAPON",
+      "quantity": 1
+    },
+    {
+      "kind": "EQUIPMENT",
+      "id": "EQ_T1_CLERIC_WEAPON",
+      "quantity": 1
+    },
+    {
+      "kind": "EQUIPMENT",
+      "id": "EQ_T1_GUARDIAN_WEAPON",
+      "quantity": 1
+    },
+    {
+      "kind": "EQUIPMENT",
+      "id": "EQ_T1_MAGE_WEAPON",
+      "quantity": 1
+    },
+    {
+      "kind": "EQUIPMENT",
+      "id": "EQ_T1_WARRIOR_WEAPON",
+      "quantity": 1
+    },
+    {
+      "kind": "POTION",
+      "id": "POT_HEAL_SMALL",
+      "quantity": 8
+    }
+  ],
+  "stockVersionAfter": 3,
+  "replayed": false,
+  "resultDigest": "a8ed4a9ec17e0e3b1acbfaceec7dca81060216259d708673f1bf2e22a00bee62"
+}

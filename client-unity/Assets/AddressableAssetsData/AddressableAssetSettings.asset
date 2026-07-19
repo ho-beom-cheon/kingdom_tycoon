@@ -65,6 +65,7 @@ MonoBehaviour:
   m_GroupAssets:
   - {fileID: 11400000, guid: 40f7fc2f2ed9a4f40a3a2e215c230bc9, type: 2}
   - {fileID: 11400000, guid: 292da8314dbf3ec4aaaf82ccdb8556bd, type: 2}
+  - {fileID: 11400000, guid: 67aae3055f5e80f44a2c32d43745e239, type: 2}
   - {fileID: 11400000, guid: 3aa7ce117cd168a4ab0b642cf9a5a7b1, type: 2}
   - {fileID: 11400000, guid: 807b2ea224167f841acaa2c31d19ac7a, type: 2}
   - {fileID: 11400000, guid: 2ac47935ac273fd49a664cd915238134, type: 2}
@@ -119,6 +120,12 @@ MonoBehaviour:
     - P04-Kingdom
     - P06-Combat
     - P07-Inventory
+    - P08_STORE
+    - P08_CURRENCY
+    - P08_STATE
+    - P08_POLICY
+    - P08_TRANSACTION
+    - P08_MERCHANT
   m_SchemaTemplates: []
   m_GroupTemplateObjects:
   - {fileID: 11400000, guid: 26f94d93cbbe37e468cc99f5c15ec58e, type: 2}

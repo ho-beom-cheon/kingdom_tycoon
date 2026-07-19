@@ -85,7 +85,7 @@ namespace KingdomTycoon.Infrastructure.Content
             // Runtime evaluation filters by enabled after the catalog shape has been verified.
             List<IReadOnlyDictionary<string, string>> rows = table.Rows.ToList();
             HashSet<string> states = rows.Select(row => row["state"]).ToHashSet(StringComparer.Ordinal);
-            bool valid = rows.Count == 37 && states.Count == 17;
+            bool valid = rows.Count is 37 or 38 && states.Count == 17;
             foreach (IGrouping<string, IReadOnlyDictionary<string, string>> group in rows.GroupBy(row => row["state"], StringComparer.Ordinal))
             {
                 valid &= group.Select(row => row["priority"]).Distinct(StringComparer.Ordinal).Count() == group.Count();
@@ -95,7 +95,7 @@ namespace KingdomTycoon.Infrastructure.Content
 
             if (!valid)
             {
-                report.AddError("CSV_AUTONOMY_RULE_INVALID", table.FileName, "/", "Autonomy catalog must contain 17 states, 37 rules, unique priorities, and one fallback per state.");
+                report.AddError("CSV_AUTONOMY_RULE_INVALID", table.FileName, "/", "Autonomy catalog must contain 17 states, 37 or 38 phase-valid rules, unique priorities, and one fallback per state.");
             }
         }
 

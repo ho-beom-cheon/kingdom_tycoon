@@ -22,6 +22,13 @@
       ],
       "schemaFile": "save.content.5.schema.json",
       "sha256": "d306ae8c05d11f9225bfb988db3d3388f56177807b176ed7e44caa9ee6bc8392"
+    },
+    {
+      "contentVersions": [
+        "1.0.0-content.6"
+      ],
+      "schemaFile": "save.content.6.schema.json",
+      "sha256": "6a776d04768d6d92a23177efe61c9a2359760840d57caefcc57e1b08b1f31980"
     }
   ]
 }
