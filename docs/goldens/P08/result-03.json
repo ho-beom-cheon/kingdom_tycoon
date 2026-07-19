@@ -1,0 +1,20 @@
+{
+  "operationId": "018f0000-0000-7000-8000-000000000903",
+  "revisionBefore": 14,
+  "revisionAfter": 15,
+  "mercenaryInstanceId": "018f0000-0000-7000-8000-000000000101",
+  "totalPersonalGoldDelta": -92,
+  "totalKingdomGoldDelta": 92,
+  "stockVersionAfter": 2,
+  "lines": [
+    {
+      "kind": "POTION",
+      "id": "POT_HEAL_SMALL",
+      "quantity": 2,
+      "unitPrice": 46,
+      "lineTotal": 92
+    }
+  ],
+  "replayed": false,
+  "resultDigest": "e6fe22f0dfbf43da0037621615b86f9039c2e323a518625bc34f94de4ac3517a"
+}

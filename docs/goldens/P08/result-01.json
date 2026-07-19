@@ -1,0 +1,8 @@
+{
+  "operationId": "018f0000-0000-7000-8000-000000000901",
+  "revisionBefore": 12,
+  "revisionAfter": 13,
+  "policyId": "HIGH",
+  "replayed": false,
+  "resultDigest": "28098bf5c3f27d8be19aa4d2a126d986147ab133344b57655722de50b6a6141e"
+}

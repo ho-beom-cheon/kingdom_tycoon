@@ -1,0 +1,7 @@
+{
+  "commandType": "REFRESH_SYSTEM_STORE_SUPPLY",
+  "operationId": "018f0000-0000-7000-8000-000000000904",
+  "expectedRevision": 15,
+  "targetEpoch": 1,
+  "requestHash": "2ffb5e188780d12d186c48e48ccc9a8035ffe4ea07ca680fb959c86843e3919b"
+}

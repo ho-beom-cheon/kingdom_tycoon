@@ -150,12 +150,12 @@ namespace KingdomTycoon.Infrastructure.Content
             int schemaSetVersion = root.Value<int?>("csvSchemaSetVersion") ?? -1;
             if (root.Value<string>("schemaId") != "urn:tycoon:content-manifest:v2" ||
                 root.Value<int?>("contractVersion") != 2 ||
-                schemaSetVersion is not (2 or 3))
+                schemaSetVersion is not (2 or 3 or 4))
             {
                 throw new ContentManifestException(
                     "CONTENT_MANIFEST_SCHEMA_SET_UNSUPPORTED",
                     "/csvSchemaSetVersion",
-                    "Only content manifest contract v2/schema set v2 or v3 is supported.");
+                    "Only content manifest contract v2/schema set v2, v3, or v4 is supported.");
             }
             string contentVersion = root.Value<string>("contentVersion");
             if (!ContentVersionPattern.IsMatch(contentVersion ?? string.Empty))
