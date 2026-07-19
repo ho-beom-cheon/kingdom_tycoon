@@ -1,7 +1,15 @@
 using System;
 using System.IO;
 using System.Linq;
+using KingdomTycoon.Presentation.EquipmentGrowth;
+using KingdomTycoon.Presentation.Mercenaries;
+using KingdomTycoon.Presentation.Navigation;
 using KingdomTycoon.Presentation.OfflineTutorial;
+using KingdomTycoon.Presentation.Production;
+using KingdomTycoon.Presentation.Progression;
+using KingdomTycoon.Presentation.Raids;
+using KingdomTycoon.Presentation.Recruitment;
+using KingdomTycoon.Presentation.Regions;
 using KingdomTycoon.UI;
 using TMPro;
 using UnityEditor;
@@ -22,7 +30,7 @@ namespace KingdomTycoon.Editor
         public const string ScreenPath = Root + "/Prefabs/P15_OFFLINE_TUTORIAL_HUB.prefab";
         public const string MarkerPath = Root + "/P15OfflineTutorial.marker.asset";
         public const string BootstrapScenePath = "Assets/KingdomTycoon/Scenes/Bootstrap.unity";
-        public const string Fingerprint = "P15-OFFLINE-TUTORIAL-UI-v1.0.0";
+        public const string Fingerprint = "P15-INTEGRATION-STABILIZATION-UI-v1.1.0";
         public static readonly string[] RequiredIds = { "P15_OFFLINE_TUTORIAL_HUB", "P15_HEADER", "P15_CLOSE", "P15_STATUS", "P15_REWARDS", "P15_JOURNEY", "P15_ACTION", "P15_ADVANCE", "P15_SKIP", "P15_SKIP_ALL" };
 
         [MenuItem("Kingdom Tycoon/P15/Generate Offline Tutorial Assets")]
@@ -55,9 +63,9 @@ namespace KingdomTycoon.Editor
             Image background = Panel("Background", root.transform, new Color32(8, 16, 20, 255)); Stretch(background.rectTransform);
             Image glow = Panel("BronzeGlow", background.transform, new Color32(56, 43, 27, 255)); Rect(glow.rectTransform, new Vector2(0, .91f), Vector2.one);
             Image safe = Panel("SafeArea", root.transform, new Color32(15, 26, 29, 250)); Rect(safe.rectTransform, new Vector2(.018f, .028f), new Vector2(.982f, .972f));
-            Text("Eyebrow", safe.transform, "KINGDOM OPERATIONS  ·  RELEASE 1.0 READINESS", 17, TextAlignmentOptions.Left, new Vector2(.025f, .938f), new Vector2(.65f, .988f), new Color32(121, 184, 170, 255));
+            Text("Eyebrow", safe.transform, "왕국 운영  ·  정식 출시 준비", 17, TextAlignmentOptions.Left, new Vector2(.025f, .938f), new Vector2(.65f, .988f), new Color32(121, 184, 170, 255));
             Text("P15_HEADER", safe.transform, "돌아온 영주를 위한 왕국 보고", 41, TextAlignmentOptions.Left, new Vector2(.025f, .86f), new Vector2(.74f, .945f), new Color32(224, 183, 104, 255));
-            Text("Release", safe.transform, "CONTENT.13  ·  SAVE.11  ·  OFFLINE 8H", 18, TextAlignmentOptions.Right, new Vector2(.55f, .875f), new Vector2(.935f, .94f), new Color32(145, 163, 159, 255));
+            Text("Release", safe.transform, "콘텐츠 13  ·  저장 형식 11  ·  오프라인 8시간", 18, TextAlignmentOptions.Right, new Vector2(.55f, .875f), new Vector2(.935f, .94f), new Color32(145, 163, 159, 255));
             Button close = Button("P15_CLOSE", safe.transform, "×", new Color32(76, 58, 42, 255), 34); Rect(close.GetComponent<RectTransform>(), new Vector2(.94f, .885f), new Vector2(.985f, .972f));
 
             Image offline = Panel("OfflineCard", safe.transform, new Color32(27, 41, 43, 255)); Rect(offline.rectTransform, new Vector2(.025f, .10f), new Vector2(.40f, .84f));
@@ -65,7 +73,7 @@ namespace KingdomTycoon.Editor
             TMP_Text status = Text("P15_STATUS", offline.transform, "<color=#79B8AA>정산 완료</color>  ·  1시간 00분 적용", 21, TextAlignmentOptions.Left, new Vector2(.06f, .78f), new Vector2(.94f, .87f));
             Image divider = Panel("OfflineDivider", offline.transform, new Color32(80, 101, 97, 150)); Rect(divider.rectTransform, new Vector2(.06f, .755f), new Vector2(.94f, .759f));
             TMP_Text rewards = Text("P15_REWARDS", offline.transform,
-                "자동 사냥 수익                         +1,080\n\n회복 물약 사용                           -2\n\n시설 생산 진행                         +27,000 tick\n\n관리인 숙련도                           +9\n\n부상 회복                                 1명\n\n승급 심사 완료                           0명",
+                "자동 사냥 수익                         +1,080\n\n회복 물약 사용                           -2\n\n시설 생산 진행                         +27,000회\n\n관리인 숙련도                           +9\n\n부상 회복                                 1명\n\n승급 심사 완료                           0명",
                 20, TextAlignmentOptions.TopLeft, new Vector2(.06f, .25f), new Vector2(.94f, .735f), new Color32(225, 220, 207, 255));
             Text("OfflineRule", offline.transform, "최대 8시간 · 요약 정산 · 레이드 제외", 17, TextAlignmentOptions.Left, new Vector2(.06f, .08f), new Vector2(.94f, .19f), new Color32(139, 159, 154, 255));
 
@@ -78,9 +86,9 @@ namespace KingdomTycoon.Editor
             Image action = Panel("ActionCard", safe.transform, new Color32(29, 43, 43, 255)); Rect(action.rectTransform, new Vector2(.715f, .10f), new Vector2(.975f, .84f));
             Text("ActionTitle", action.transform, "영주의 다음 명령", 28, TextAlignmentOptions.Left, new Vector2(.07f, .885f), new Vector2(.93f, .97f), new Color32(224, 183, 104, 255));
             Image seal = Panel("Seal", action.transform, new Color32(41, 82, 74, 255)); Rect(seal.rectTransform, new Vector2(.12f, .57f), new Vector2(.88f, .82f));
-            Text("SealGlyph", seal.transform, "KT\n<size=18>ROYAL GUIDANCE</size>", 55, TextAlignmentOptions.Center, Vector2.zero, Vector2.one, new Color32(238, 200, 112, 255));
-            TMP_Text actionText = Text("P15_ACTION", action.transform, "<b>다음 목표</b>  자동 사냥 관찰\n대상: REGION_R01", 21, TextAlignmentOptions.TopLeft, new Vector2(.07f, .40f), new Vector2(.93f, .55f));
-            Button advance = Button("P15_ADVANCE", action.transform, "목표 완료로 진행", new Color32(49, 119, 98, 255), 22); Rect(advance.GetComponent<RectTransform>(), new Vector2(.07f, .27f), new Vector2(.93f, .38f));
+            Text("SealGlyph", seal.transform, "왕국\n<size=18>영주의 길잡이</size>", 55, TextAlignmentOptions.Center, Vector2.zero, Vector2.one, new Color32(238, 200, 112, 255));
+            TMP_Text actionText = Text("P15_ACTION", action.transform, "<b>다음 목표</b>  자동 사냥 관찰\n왕국 외곽 초원으로 이동하세요.", 21, TextAlignmentOptions.TopLeft, new Vector2(.07f, .40f), new Vector2(.93f, .55f));
+            Button advance = Button("P15_ADVANCE", action.transform, "해당 기능으로 이동", new Color32(49, 119, 98, 255), 22); Rect(advance.GetComponent<RectTransform>(), new Vector2(.07f, .27f), new Vector2(.93f, .38f));
             Button skip = Button("P15_SKIP", action.transform, "이 단계 건너뛰기", new Color32(64, 76, 73, 255), 19); Rect(skip.GetComponent<RectTransform>(), new Vector2(.07f, .15f), new Vector2(.93f, .25f));
             Button skipAll = Button("P15_SKIP_ALL", action.transform, "가이드 전체 종료", new Color32(69, 50, 44, 255), 18); Rect(skipAll.GetComponent<RectTransform>(), new Vector2(.07f, .035f), new Vector2(.93f, .135f));
 
@@ -103,12 +111,114 @@ namespace KingdomTycoon.Editor
             GameObject root = (GameObject)PrefabUtility.InstantiatePrefab(prefab, screens); root.name = "P15_OFFLINE_TUTORIAL_HUB"; PrepareRoot(root);
             OfflineTutorialHubPresenter presenter = root.GetComponent<OfflineTutorialHubPresenter>(); root.SetActive(false);
             Transform hud = common.transform.Find("HudCanvas/SafeArea") ?? throw new BuildFailedException("P15_HUD_SAFE_AREA_MISSING");
-            Transform existing = hud.Find("P15_JOURNEY_NAV_BUTTON"); if (existing != null) Object.DestroyImmediate(existing.gameObject);
-            Button button = Button("P15_JOURNEY_NAV_BUTTON", hud, "왕국 보고", new Color32(55, 108, 94, 255), 21);
-            RectTransform rect = button.GetComponent<RectTransform>(); rect.anchorMin = rect.anchorMax = new Vector2(.89f, 0); rect.offsetMin = new Vector2(0, 110); rect.offsetMax = new Vector2(182, 190);
-            OfflineTutorialEntryButton entry = button.gameObject.AddComponent<OfflineTutorialEntryButton>(); entry.Configure(presenter);
-            UnityEventTools.AddPersistentListener(button.onClick, entry.OpenHub);
+            Transform existing = hud.Find("P15_JOURNEY_NAV_BUTTON");
+            Button legacyButton;
+            OfflineTutorialEntryButton entry;
+            if (existing == null)
+            {
+                legacyButton = Button("P15_JOURNEY_NAV_BUTTON", hud, "왕국 보고", new Color32(55, 108, 94, 255), 21);
+                entry = legacyButton.gameObject.AddComponent<OfflineTutorialEntryButton>();
+                UnityEventTools.AddPersistentListener(legacyButton.onClick, entry.OpenHub);
+            }
+            else
+            {
+                legacyButton = existing.GetComponent<Button>();
+                entry = existing.GetComponent<OfflineTutorialEntryButton>();
+            }
+            entry.Configure(presenter);
+            legacyButton.gameObject.SetActive(false);
+            IntegrateUnifiedNavigation(hud, presenter);
             EditorSceneManager.MarkSceneDirty(scene); EditorSceneManager.SaveScene(scene);
+        }
+
+        private static void IntegrateUnifiedNavigation(Transform hud, OfflineTutorialHubPresenter report)
+        {
+            Transform previous = hud.Find("P15_UNIFIED_NAVIGATION");
+            if (previous != null)
+            {
+                UnifiedNavigationMenu oldMenu = previous.GetComponent<UnifiedNavigationMenu>();
+                foreach (Button button in hud.GetComponentsInChildren<Button>(true)) RemovePersistentTarget(button, oldMenu);
+                Object.DestroyImmediate(previous.gameObject);
+            }
+
+            string[] inactive = { "NAV_HUNT", "P10_GROWTH_NAV_BUTTON", "P11_PROGRESSION_NAV_BUTTON", "P14_RAID_NAV_BUTTON", "P15_JOURNEY_NAV_BUTTON" };
+            foreach (string name in inactive)
+            {
+                Transform value = hud.Find(name);
+                if (value != null) value.gameObject.SetActive(false);
+            }
+
+            string[] primary = { "NAV_KINGDOM", "NAV_MERCENARIES", "P09_CRAFT_NAV_BUTTON", "P12_REGION_MAP_NAV_BUTTON", "P13_RECRUITMENT_NAV_BUTTON" };
+            string[] labels = { "왕국", "용병", "제작", "지역", "모집" };
+            for (int index = 0; index < primary.Length; index++)
+            {
+                Transform item = hud.Find(primary[index]) ?? throw new BuildFailedException("P15_PRIMARY_NAV_MISSING: " + primary[index]);
+                item.gameObject.SetActive(true); LayoutPrimary(item.GetComponent<RectTransform>(), index); SetButtonLabel(item, labels[index]);
+            }
+
+            var navigationRoot = new GameObject("P15_UNIFIED_NAVIGATION", typeof(RectTransform), typeof(UnifiedNavigationMenu));
+            navigationRoot.transform.SetParent(hud, false); Stretch(navigationRoot.GetComponent<RectTransform>());
+            UnifiedNavigationMenu menu = navigationRoot.GetComponent<UnifiedNavigationMenu>();
+            Image panel = Panel("P15_MENU_PANEL", navigationRoot.transform, new Color32(20, 31, 33, 252)); Rect(panel.rectTransform, new Vector2(.67f, .13f), new Vector2(.98f, .66f));
+            Text("P15_MENU_TITLE", panel.transform, "왕국 관리 메뉴", 28, TextAlignmentOptions.Left, new Vector2(.07f, .84f), new Vector2(.73f, .96f), new Color32(224, 183, 104, 255));
+            Button close = Button("P15_MENU_CLOSE", panel.transform, "닫기", new Color32(74, 63, 52, 255), 19); Rect(close.GetComponent<RectTransform>(), new Vector2(.75f, .84f), new Vector2(.94f, .96f));
+            Button inventory = Button("P15_MENU_INVENTORY", panel.transform, "창고", new Color32(55, 83, 104, 255), 20); Rect(inventory.GetComponent<RectTransform>(), new Vector2(.07f, .64f), new Vector2(.48f, .78f));
+            Button store = Button("P15_MENU_STORE", panel.transform, "상점", new Color32(130, 91, 46, 255), 20); Rect(store.GetComponent<RectTransform>(), new Vector2(.52f, .64f), new Vector2(.93f, .78f));
+            Button growth = Button("P15_MENU_GROWTH", panel.transform, "장비 공방", new Color32(50, 104, 93, 255), 20); Rect(growth.GetComponent<RectTransform>(), new Vector2(.07f, .47f), new Vector2(.48f, .61f));
+            Button progression = Button("P15_MENU_PROGRESSION", panel.transform, "승급 심사", new Color32(137, 82, 37, 255), 20); Rect(progression.GetComponent<RectTransform>(), new Vector2(.52f, .47f), new Vector2(.93f, .61f));
+            Button raid = Button("P15_MENU_RAID", panel.transform, "레이드", new Color32(124, 57, 48, 255), 20); Rect(raid.GetComponent<RectTransform>(), new Vector2(.07f, .30f), new Vector2(.48f, .44f));
+            Button reportButton = Button("P15_MENU_REPORT", panel.transform, "왕국 보고", new Color32(55, 108, 94, 255), 20); Rect(reportButton.GetComponent<RectTransform>(), new Vector2(.52f, .30f), new Vector2(.93f, .44f));
+
+            Button menuButton = Button("P15_MENU_NAV_BUTTON", navigationRoot.transform, "메뉴", new Color32(70, 57, 82, 255), 22); LayoutPrimary(menuButton.GetComponent<RectTransform>(), 5);
+            MercenaryRosterPresenter mercenaries = Object.FindFirstObjectByType<MercenaryRosterPresenter>(FindObjectsInactive.Include);
+            ProductionScreenPresenter production = Object.FindFirstObjectByType<ProductionScreenPresenter>(FindObjectsInactive.Include);
+            EquipmentGrowthScreenPresenter equipmentGrowth = Object.FindFirstObjectByType<EquipmentGrowthScreenPresenter>(FindObjectsInactive.Include);
+            ProgressionScreenPresenter progressionScreen = Object.FindFirstObjectByType<ProgressionScreenPresenter>(FindObjectsInactive.Include);
+            RegionMapScreenPresenter regions = Object.FindFirstObjectByType<RegionMapScreenPresenter>(FindObjectsInactive.Include);
+            RecruitmentScreenPresenter recruitment = Object.FindFirstObjectByType<RecruitmentScreenPresenter>(FindObjectsInactive.Include);
+            RaidScreenPresenter raids = Object.FindFirstObjectByType<RaidScreenPresenter>(FindObjectsInactive.Include);
+            if (new Object[] { mercenaries, production, equipmentGrowth, progressionScreen, regions, recruitment, raids, report }.Any(value => value == null))
+                throw new BuildFailedException("P15_NAVIGATION_SCREEN_MISSING");
+            GameObject[] primaryItems = primary.Select(name => hud.Find(name).gameObject).Append(menuButton.gameObject).ToArray();
+            menu.Configure(panel.gameObject, primaryItems, mercenaries, production, equipmentGrowth, progressionScreen, regions, recruitment, raids, report);
+
+            UnityEventTools.AddPersistentListener(menuButton.onClick, menu.ToggleMenu);
+            UnityEventTools.AddPersistentListener(close.onClick, menu.CloseMenu);
+            UnityEventTools.AddPersistentListener(inventory.onClick, menu.OpenInventory);
+            UnityEventTools.AddPersistentListener(store.onClick, menu.OpenStore);
+            UnityEventTools.AddPersistentListener(growth.onClick, menu.OpenEquipmentGrowth);
+            UnityEventTools.AddPersistentListener(progression.onClick, menu.OpenProgression);
+            UnityEventTools.AddPersistentListener(raid.onClick, menu.OpenRaids);
+            UnityEventTools.AddPersistentListener(reportButton.onClick, menu.OpenReport);
+            UnityEventTools.AddPersistentListener(hud.Find("NAV_KINGDOM").GetComponent<Button>().onClick, menu.CloseAll);
+            UnityEventTools.AddPersistentListener(hud.Find("NAV_MERCENARIES").GetComponent<Button>().onClick, menu.PrepareMercenaries);
+            UnityEventTools.AddPersistentListener(hud.Find("P09_CRAFT_NAV_BUTTON").GetComponent<Button>().onClick, menu.PrepareProduction);
+            UnityEventTools.AddPersistentListener(hud.Find("P12_REGION_MAP_NAV_BUTTON").GetComponent<Button>().onClick, menu.PrepareRegions);
+            UnityEventTools.AddPersistentListener(hud.Find("P13_RECRUITMENT_NAV_BUTTON").GetComponent<Button>().onClick, menu.PrepareRecruitment);
+        }
+
+        private static void LayoutPrimary(RectTransform rect, int index)
+        {
+            const float start = .02f;
+            const float end = .98f;
+            const float gap = .008f;
+            float width = (end - start - gap * 5) / 6f;
+            float min = start + index * (width + gap);
+            rect.anchorMin = new Vector2(min, 0); rect.anchorMax = new Vector2(min + width, 0);
+            rect.offsetMin = new Vector2(0, 16); rect.offsetMax = new Vector2(0, 96);
+        }
+
+        private static void SetButtonLabel(Transform button, string label)
+        {
+            TMP_Text text = button.GetComponentInChildren<TMP_Text>(true);
+            if (text != null) text.text = label;
+        }
+
+        private static void RemovePersistentTarget(Button button, Object target)
+        {
+            if (button == null || target == null) return;
+            for (int index = button.onClick.GetPersistentEventCount() - 1; index >= 0; index--)
+                if (button.onClick.GetPersistentTarget(index) == target) UnityEventTools.RemovePersistentListener(button.onClick, index);
         }
 
         internal static void PrepareRoot(GameObject root)

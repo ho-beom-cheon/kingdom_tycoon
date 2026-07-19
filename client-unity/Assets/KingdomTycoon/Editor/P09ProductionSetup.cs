@@ -61,17 +61,17 @@ namespace KingdomTycoon.Editor
 
             Image header = Panel("P09_HEADER", safe.transform, new Color32(66, 43, 29, 255)); SetRect(header.rectTransform, new Vector2(0, .86f), Vector2.one, Vector2.zero, Vector2.zero);
             Text("Title", header.transform, "왕국 생산", 44, TextAlignmentOptions.Left, new Vector2(.025f, .12f), new Vector2(.32f, .9f), new Color32(242, 212, 122, 255));
-            Text("Subtitle", header.transform, "재료 → 제작 → 상점 입고 · NPC 숙련 성장", 23, TextAlignmentOptions.Left, new Vector2(.22f, .15f), new Vector2(.65f, .84f), new Color32(202, 192, 177, 255));
-            TMP_Text meta = Text("P09_META", header.transform, "content.7 · tick 0 · r0", 23, TextAlignmentOptions.Right, new Vector2(.63f, .15f), new Vector2(.88f, .84f));
+            Text("Subtitle", header.transform, "재료 → 제작 → 상점 입고 · 관리인 숙련 성장", 23, TextAlignmentOptions.Left, new Vector2(.22f, .15f), new Vector2(.65f, .84f), new Color32(202, 192, 177, 255));
+            TMP_Text meta = Text("P09_META", header.transform, "콘텐츠 7 · 생산 진행 0 · 저장 0", 23, TextAlignmentOptions.Right, new Vector2(.63f, .15f), new Vector2(.88f, .84f));
             Button close = Button("P09_CLOSE", header.transform, "닫기", new Color32(86, 70, 57, 255)); SetRect(close.GetComponent<RectTransform>(), new Vector2(.89f, .14f), new Vector2(.98f, .86f), Vector2.zero, Vector2.zero);
 
             Image facilities = Panel("P09_FACILITY_LIST", safe.transform, new Color32(40, 36, 31, 255)); SetRect(facilities.rectTransform, new Vector2(0, .13f), new Vector2(.32f, .85f), Vector2.zero, Vector2.zero);
-            Text("FacilityHeading", facilities.transform, "시설과 담당 NPC", 28, TextAlignmentOptions.Left, new Vector2(.05f, .9f), new Vector2(.95f, .99f), new Color32(242, 212, 122, 255));
+            Text("FacilityHeading", facilities.transform, "시설과 담당 관리인", 28, TextAlignmentOptions.Left, new Vector2(.05f, .9f), new Vector2(.95f, .99f), new Color32(242, 212, 122, 255));
             var facilityTexts = new TMP_Text[3]; string[] facilityIds = { "P09_FAC_BLACKSMITH", "P09_FAC_ALCHEMY", "P09_FAC_INFIRMARY" }; string[] facilityNames = { "대장간", "연금 공방", "진료소" };
             for (int index = 0; index < 3; index++)
             {
                 float top = .88f - index * .285f; Image card = Panel(facilityIds[index], facilities.transform, new Color32(55, 50, 43, 255)); SetRect(card.rectTransform, new Vector2(.04f, top - .255f), new Vector2(.96f, top), Vector2.zero, Vector2.zero);
-                facilityTexts[index] = Text("Status", card.transform, $"<size=30><color=#F2D47A>{facilityNames[index]}</color></size>  Lv.1\n담당 NPC 없음\n큐 0/4 · 남은 tick 0\n<color=#E7A74C>시설을 먼저 건설하세요</color>", 21, TextAlignmentOptions.TopLeft, new Vector2(.045f, .06f), new Vector2(.96f, .94f));
+                facilityTexts[index] = Text("Status", card.transform, $"<size=30><color=#F2D47A>{facilityNames[index]}</color></size>  1레벨\n담당 관리인 없음\n대기열 0/4 · 남은 진행 0\n<color=#E7A74C>시설을 먼저 건설하세요</color>", 21, TextAlignmentOptions.TopLeft, new Vector2(.045f, .06f), new Vector2(.96f, .94f));
             }
 
             Image queuePanel = Panel("P09_QUEUE_PANEL", safe.transform, new Color32(47, 43, 37, 255)); SetRect(queuePanel.rectTransform, new Vector2(.33f, .31f), new Vector2(.66f, .85f), Vector2.zero, Vector2.zero);
@@ -80,7 +80,7 @@ namespace KingdomTycoon.Editor
 
             Image targetPanel = Panel("P09_TARGET_PANEL", safe.transform, new Color32(48, 43, 36, 255)); SetRect(targetPanel.rectTransform, new Vector2(.67f, .13f), new Vector2(1f, .85f), Vector2.zero, Vector2.zero);
             Text("TargetHeading", targetPanel.transform, "상점 재고 목표", 30, TextAlignmentOptions.Left, new Vector2(.055f, .89f), new Vector2(.94f, .98f), new Color32(242, 212, 122, 255));
-            TMP_Text targetList = Text("P09_TARGET_LIST", targetPanel.transform, "▶ 소형 회복 물약  0+0/8 AUTO\n  전사 무기       0+0/1 AUTO\n  수호자 무기     0+0/1 AUTO\n  궁수 무기       0+0/1 AUTO\n  마법사 무기     0+0/1 AUTO\n  성직자 무기     0+0/1 AUTO", 22, TextAlignmentOptions.TopLeft, new Vector2(.055f, .47f), new Vector2(.95f, .88f));
+            TMP_Text targetList = Text("P09_TARGET_LIST", targetPanel.transform, "▶ 소형 회복 물약  0+0/8 자동\n  전사 무기       0+0/1 자동\n  수호자 무기     0+0/1 자동\n  궁수 무기       0+0/1 자동\n  마법사 무기     0+0/1 자동\n  성직자 무기     0+0/1 자동", 22, TextAlignmentOptions.TopLeft, new Vector2(.055f, .47f), new Vector2(.95f, .88f));
             var targetButtons = new Button[6];
             for (int index = 0; index < 6; index++)
             {
@@ -94,16 +94,16 @@ namespace KingdomTycoon.Editor
 
             Image actions = Panel("P09_ACTION_BAR", safe.transform, new Color32(52, 44, 35, 255)); SetRect(actions.rectTransform, new Vector2(.33f, .13f), new Vector2(.66f, .3f), Vector2.zero, Vector2.zero);
             Button automate = Button("P09_AUTOMATE", actions.transform, "자동 보충 1회", new Color32(172, 109, 47, 255)); SetRect(automate.GetComponent<RectTransform>(), new Vector2(.04f, .52f), new Vector2(.96f, .94f), Vector2.zero, Vector2.zero);
-            Button advance = Button("P09_ADVANCE_TICKS", actions.transform, "생산 10 tick 진행", new Color32(80, 106, 75, 255)); SetRect(advance.GetComponent<RectTransform>(), new Vector2(.04f, .06f), new Vector2(.96f, .48f), Vector2.zero, Vector2.zero);
+            Button advance = Button("P09_ADVANCE_TICKS", actions.transform, "생산 10회 진행", new Color32(80, 106, 75, 255)); SetRect(advance.GetComponent<RectTransform>(), new Vector2(.04f, .06f), new Vector2(.96f, .48f), Vector2.zero, Vector2.zero);
 
             Image hint = Panel("P09_HINT", safe.transform, new Color32(42, 38, 33, 255)); SetRect(hint.rectTransform, new Vector2(0, 0), new Vector2(1, .12f), Vector2.zero, Vector2.zero);
-            Text("HintText", hint.transform, "중단 사유를 확인하고 시설 건설 → NPC 배치 → 재료 확보 순으로 해결하세요.  강화·제련·분해는 P10에서 열립니다.", 22, TextAlignmentOptions.Center, new Vector2(.03f, .1f), new Vector2(.97f, .9f), new Color32(202, 192, 177, 255));
+            Text("HintText", hint.transform, "중단 사유를 확인하고 시설 건설 → 관리인 배치 → 재료 확보 순으로 해결하세요. 강화·제련·분해는 장비 공방에서 할 수 있습니다.", 22, TextAlignmentOptions.Center, new Vector2(.03f, .1f), new Vector2(.97f, .9f), new Color32(202, 192, 177, 255));
 
             Image state = Panel("P09_STATE_PANEL", viewObject.transform, new Color32(45, 39, 33, 252)); SetRect(state.rectTransform, new Vector2(.27f, .28f), new Vector2(.73f, .7f), Vector2.zero, Vector2.zero);
             TMP_Text stateTitle = Text("StateTitle", state.transform, "생산 현황을 불러오는 중", 37, TextAlignmentOptions.Center, new Vector2(.07f, .65f), new Vector2(.93f, .88f), new Color32(242, 212, 122, 255));
             TMP_Text stateBody = Text("StateBody", state.transform, "대기열과 상점 재고를 검증하고 있습니다.", 25, TextAlignmentOptions.Center, new Vector2(.08f, .2f), new Vector2(.92f, .62f));
             Image toast = Panel("P09_RESULT_TOAST", viewObject.transform, new Color32(47, 91, 61, 252)); SetRect(toast.rectTransform, new Vector2(.34f, .04f), new Vector2(.66f, .13f), Vector2.zero, Vector2.zero);
-            TMP_Text toastText = Text("ToastText", toast.transform, "생산 tick을 진행했습니다.", 24, TextAlignmentOptions.Center, new Vector2(.04f, .08f), new Vector2(.96f, .92f)); toast.gameObject.SetActive(false);
+            TMP_Text toastText = Text("ToastText", toast.transform, "생산을 진행했습니다.", 24, TextAlignmentOptions.Center, new Vector2(.04f, .08f), new Vector2(.96f, .92f)); toast.gameObject.SetActive(false);
 
             ProductionScreenView view = viewObject.GetComponent<ProductionScreenView>(); view.Configure(group, meta, facilityTexts, queueText, targetList, selectedText, state.gameObject, stateTitle, stateBody, toast.gameObject, toastText, close, automate, advance, minus, plus, targetButtons);
             root.GetComponent<ProductionScreenPresenter>().Configure(view); PrefabUtility.SaveAsPrefabAsset(root, ScreenPath); Object.DestroyImmediate(root);
@@ -154,7 +154,8 @@ namespace KingdomTycoon.Editor
             ProductionEntryButton[] entries = scene.GetRootGameObjects().SelectMany(value => value.GetComponentsInChildren<ProductionEntryButton>(true)).ToArray();
             if (screens.Length != 1 || entries.Length != 1) throw new BuildFailedException($"P09_SCENE_ENTRY_INVALID: screens={screens.Length}, entries={entries.Length}");
             ProductionEntryButton entry = Object.FindFirstObjectByType<ProductionEntryButton>(FindObjectsInactive.Include); Button button = entry.GetComponent<Button>();
-            if (button == null || button.onClick.GetPersistentEventCount() != 1 || button.onClick.GetPersistentTarget(0) != entry || button.onClick.GetPersistentMethodName(0) != nameof(ProductionEntryButton.OpenProduction)) throw new BuildFailedException("P09_SCENE_ENTRY_BINDING_INVALID");
+            bool hasEntryBinding = button != null && Enumerable.Range(0, button.onClick.GetPersistentEventCount()).Any(index => button.onClick.GetPersistentTarget(index) == entry && button.onClick.GetPersistentMethodName(index) == nameof(ProductionEntryButton.OpenProduction));
+            if (!hasEntryBinding) throw new BuildFailedException("P09_SCENE_ENTRY_BINDING_INVALID");
         }
     }
 

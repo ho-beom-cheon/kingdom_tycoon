@@ -166,6 +166,31 @@ namespace KingdomTycoon.Infrastructure.OfflineTutorial
             return new TutorialCommand(draft.OperationId, draft.ExpectedRevision, new TutorialRequestHasher().Compute(draft), draft.Mode, draft.ActionType, draft.TargetId);
         }
 
+        public bool CompleteObservedKingdomView()
+        {
+            OfflineTutorialOverviewDto overview = GetOverview();
+            TutorialStepDto current = overview.CurrentStep;
+            if (current == null || current.ActionType != "VIEW_KINGDOM") return false;
+            Execute(CreateCurrentActionCommand("OBSERVE"));
+            return true;
+        }
+
+        public int RefreshTutorialProgress()
+        {
+            int completed = 0;
+            while (completed < catalog.Steps.Count)
+            {
+                OfflineTutorialOverviewDto overview = GetOverview();
+                TutorialStepDto current = overview.CurrentStep;
+                if (current == null) break;
+                P15OfflineTutorialCatalog.TutorialStep definition = catalog.Steps.Single(value => value.Id == current.Id);
+                if (!IsGoalSatisfied(game.Snapshot(), definition)) break;
+                Execute(CreateCurrentActionCommand("COMPLETE"));
+                completed++;
+            }
+            return completed;
+        }
+
         public TutorialOperationResult Execute(TutorialCommand command)
         {
             EnsureReady(); if (command == null) throw new ArgumentNullException(nameof(command));
@@ -184,7 +209,9 @@ namespace KingdomTycoon.Infrastructure.OfflineTutorial
                 JObject tutorial = (JObject)draft["payload"]!["tutorial"]!; string currentId = tutorial.Value<string>("currentStepId");
                 P15OfflineTutorialCatalog.TutorialStep current = catalog.Steps.SingleOrDefault(value => value.Id == currentId) ?? throw new OfflineTutorialDomainException("P15_TUTORIAL_COMPLETE");
                 Require(command.ActionType == current.ActionType, "P15_TUTORIAL_ACTION_MISMATCH"); Require(command.TargetId == current.TargetId, "P15_TUTORIAL_TARGET_MISMATCH");
-                bool skipAll = command.Mode == "SKIP_ALL"; Require(command.Mode is "COMPLETE" or "SKIP" or "SKIP_ALL", "P15_TUTORIAL_MODE_INVALID");
+                bool skipAll = command.Mode == "SKIP_ALL"; Require(command.Mode is "COMPLETE" or "OBSERVE" or "SKIP" or "SKIP_ALL", "P15_TUTORIAL_MODE_INVALID");
+                if (command.Mode == "COMPLETE") Require(IsGoalSatisfied(source, current), "P15_TUTORIAL_GOAL_NOT_MET");
+                if (command.Mode == "OBSERVE") Require(current.ActionType == "VIEW_KINGDOM", "P15_TUTORIAL_OBSERVATION_INVALID");
                 if (command.Mode == "SKIP") Require(current.Skippable, "P15_TUTORIAL_STEP_NOT_SKIPPABLE");
                 DateTimeOffset now = clock.UtcNow; var applied = new List<P15OfflineTutorialCatalog.TutorialStep>();
                 if (skipAll) applied.AddRange(catalog.Steps.Where(value => value.Order >= current.Order)); else applied.Add(current);
@@ -194,18 +221,56 @@ namespace KingdomTycoon.Infrastructure.OfflineTutorial
                 }
                 tutorial["completedStepIds"] = new JArray(tutorial["completedStepIds"]!.Values<string>().OrderBy(value => value, StringComparer.Ordinal));
                 int nextOrder = skipAll ? int.MaxValue : current.Order + 1; P15OfflineTutorialCatalog.TutorialStep next = catalog.Steps.FirstOrDefault(value => value.Order == nextOrder);
-                tutorial["currentStepId"] = next == null ? JValue.CreateNull() : next.Id; tutorial["skipped"] = tutorial.Value<bool>("skipped") || command.Mode != "COMPLETE";
+                bool completedMode = command.Mode is "COMPLETE" or "OBSERVE";
+                tutorial["currentStepId"] = next == null ? JValue.CreateNull() : next.Id; tutorial["skipped"] = tutorial.Value<bool>("skipped") || !completedMode;
                 tutorial["startedAtUtc"] = tutorial["startedAtUtc"]!.Type == JTokenType.Null ? Format(now) : tutorial["startedAtUtc"]!.DeepClone();
                 tutorial["lastAdvancedAtUtc"] = Format(now); tutorial["completedAtUtc"] = next == null ? Format(now) : JValue.CreateNull(); tutorial["lastOperationId"] = command.OperationId.ToString("D");
                 JArray receipts = (JArray)tutorial["actionReceipts"]!; while (receipts.Count >= 32) receipts.RemoveAt(0);
                 receipts.Add(new JObject { ["operationId"] = command.OperationId.ToString("D"), ["stepId"] = current.Id, ["actionType"] = command.ActionType,
-                    ["targetId"] = command.TargetId, ["requestHash"] = command.RequestHash, ["appliedAtUtc"] = Format(now), ["result"] = command.Mode == "COMPLETE" ? "COMPLETED" : "SKIPPED" });
-                JObject result = new() { ["operationId"] = command.OperationId.ToString("D"), ["resultCode"] = next == null ? "P15_TUTORIAL_COMPLETED" : command.Mode == "COMPLETE" ? "P15_TUTORIAL_STEP_COMPLETED" : "P15_TUTORIAL_STEP_SKIPPED", ["stepId"] = current.Id, ["nextStepId"] = next == null ? JValue.CreateNull() : next.Id };
+                    ["targetId"] = command.TargetId, ["requestHash"] = command.RequestHash, ["appliedAtUtc"] = Format(now), ["result"] = completedMode ? "COMPLETED" : "SKIPPED" });
+                JObject result = new() { ["operationId"] = command.OperationId.ToString("D"), ["resultCode"] = next == null ? "P15_TUTORIAL_COMPLETED" : completedMode ? "P15_TUTORIAL_STEP_COMPLETED" : "P15_TUTORIAL_STEP_SKIPPED", ["stepId"] = current.Id, ["nextStepId"] = next == null ? JValue.CreateNull() : next.Id };
                 string digest = Rfc8785Canonicalizer.ComputeSha256(result); AppendJournal(draft, command.OperationId, "TUTORIAL_COMMAND", command.RequestHash, result, now, digest);
                 Commit(draft, now); Changed?.Invoke(this, EventArgs.Empty);
                 return new TutorialOperationResult(command.OperationId, game.Revision, result.Value<string>("resultCode"), current.Id, false);
             }
             finally { gate.Release(); }
+        }
+
+        private static bool IsGoalSatisfied(JObject document, P15OfflineTutorialCatalog.TutorialStep step)
+        {
+            JToken payload = document["payload"];
+            return step.ActionType switch
+            {
+                "RECRUIT_FROM_POOL" => payload?["recruitmentMockState"]?["history"]?.Children<JObject>().Any() == true,
+                "SET_REGION_PERMISSION" => payload?["regions"]?["events"]?.Children<JObject>().Any(value =>
+                    value.Value<string>("eventType") == "AccessPolicyChanged" && value.Value<string>("regionId") == step.TargetId && value.Value<bool?>("allowedAfter") == true) == true,
+                "OBSERVE_AUTONOMY_HUNT" => payload?["mercenaries"]?.Children<JObject>().Any(value =>
+                    value["autonomy"]?.Value<string>("currentRegionId") == step.TargetId && IsHuntingState(value["autonomy"]?.Value<string>("state"))) == true
+                    || payload?["regions"]?["events"]?.Children<JObject>().Any(value => value.Value<string>("eventType") == "HuntSettled" && value.Value<string>("regionId") == step.TargetId) == true,
+                "RETURN_AND_SELL" => payload?["economy"]?["store"]?["ledger"]?["entries"]?.Children<JObject>().Any(value => value.Value<string>("transactionType") == "SELL_TO_STORE") == true,
+                "BUILD_FACILITY_AND_CRAFT_RECIPE" => CraftedTargetExists(payload, step.TargetId),
+                "WAIT_FOR_MERCENARY_BUY_AND_EQUIP" => payload?["inventory"]?["equipment"]?.Children<JObject>().Any(value =>
+                    value.Value<string>("equipmentTemplateId") == step.TargetId && value["equippedByMercenaryInstanceId"]?.Type != JTokenType.Null) == true,
+                "COMPLETE_PROMOTION" => payload?["mercenaries"]?.Children<JObject>().Any(value => value.Value<string>("rankId") == step.TargetId) == true,
+                "UNLOCK_REGION" => payload?["regions"]?["progress"]?.Children<JObject>().Any(value => value.Value<string>("regionId") == step.TargetId && value.Value<bool>("unlocked")) == true,
+                _ => false
+            };
+        }
+
+        private static bool CraftedTargetExists(JToken payload, string recipeId)
+        {
+            string outputId = recipeId switch
+            {
+                "REC_EQ_T1_WARRIOR_WEAPON" => "EQ_T1_WARRIOR_WEAPON",
+                "REC_POT_HEAL_SMALL" => "POT_HEAL_SMALL",
+                _ => null
+            };
+            if (outputId == null) return false;
+            bool equipment = payload?["economy"]?["store"]?["equipment"]?.Children<JObject>().Any(value =>
+                value.Value<string>("equipmentTemplateId") == outputId) == true;
+            bool stack = payload?["economy"]?["store"]?["stackLines"]?.Children<JObject>().Any(value =>
+                (value.Value<string>("itemId") == outputId || value.Value<string>("productId") == outputId) && value.Value<long>("quantity") > 0) == true;
+            return equipment || stack;
         }
 
         private JArray ApplySettlement(JObject draft, long eligibleSeconds, DateTimeOffset now)

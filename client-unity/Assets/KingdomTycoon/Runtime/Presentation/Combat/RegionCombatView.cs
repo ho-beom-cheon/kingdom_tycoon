@@ -55,13 +55,13 @@ namespace KingdomTycoon.Presentation.Combat
         {
             bool active = snapshot?.Active == true;
             encounterLabel.text = active
-                ? $"R01 · 전투 {snapshot.EncounterIndex + 1} · 적 {snapshot.HostileCount}"
+                ? $"왕국 외곽 초원 · 전투 {snapshot.EncounterIndex + 1} · 적 {snapshot.HostileCount}"
                 : "평온한 들판 초원 · 사냥 준비";
             autonomyLabel.text = active
-                ? $"Tick {snapshot.Tick} · {snapshot.State} · {snapshot.ReasonCode}"
+                ? $"진행 {snapshot.Tick} · {State(snapshot.State)} · {Reason(snapshot.ReasonCode)}"
                 : "활동 용병 1~4명을 선택해 사냥을 시작하세요.";
             partyLabel.text = active
-                ? string.Join("\n", snapshot.Members.Select(value => $"{value.InstanceId[^4..]}  HP {value.CurrentHp}/{value.MaxHp}  기여 {value.DamageDealt}"))
+                ? string.Join("\n", snapshot.Members.Select((value, index) => $"용병 {index + 1}  체력 {value.CurrentHp}/{value.MaxHp}  기여 {value.DamageDealt}"))
                 : "파티 미편성";
             startButton.gameObject.SetActive(!active);
             recallButton.gameObject.SetActive(active);
@@ -89,5 +89,17 @@ namespace KingdomTycoon.Presentation.Combat
         {
             pauseButton.GetComponentInChildren<TMP_Text>().text = paused ? "계속" : "일시정지";
         }
+
+        private static string State(string value) => value switch
+        {
+            "PREPARE" => "출정 준비", "TRAVEL_TO_REGION" => "지역 이동", "FIND_TARGET" => "적 탐색", "COMBAT" => "전투 중",
+            "LOOT" => "전리품 수습", "CONTINUE_DECISION" => "다음 행동 결정", "RETURN_TOWN" => "마을 귀환", _ => "자동 행동"
+        };
+
+        private static string Reason(string value) => value switch
+        {
+            "TARGET_FOUND" => "적 발견", "POLICY" => "파견 정책", "NONE" => "정상", "BAG_FULL" => "가방 가득 참",
+            "POTION_LOW" => "물약 부족", "HP_LOW" => "체력 부족", _ => "상황 판단"
+        };
     }
 }

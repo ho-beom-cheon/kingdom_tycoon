@@ -40,9 +40,9 @@ namespace KingdomTycoon.Presentation.Regions
                 RegionSummaryDto row = overview.Regions[selectedIndex]; Guid operationId = Guid.Parse(UuidV7.NewString(DateTimeOffset.UtcNow));
                 var draft = new SetRegionAccessPolicyCommand(operationId, overview.Revision, null, row.Id, !row.Allowed); string hash = new RegionRequestHasher().Compute(draft);
                 RegionPolicyOperationResult result = regions.SetAccessPolicy(new SetRegionAccessPolicyCommand(operationId, overview.Revision, hash, row.Id, !row.Allowed));
-                Refresh(); view.ShowToast("정책 반영 완료  ·  " + result.ResultCode);
+                Refresh(); view.ShowToast("파견 정책을 반영했습니다.");
             }
-            catch (Exception exception) { view.ShowToast("정책 변경 실패  ·  " + exception.Message); }
+            catch (Exception exception) { Debug.LogWarning(exception); view.ShowToast("파견 정책을 변경하지 못했습니다."); }
             finally { busy = false; }
         }
         private void StartHunt()
@@ -58,7 +58,7 @@ namespace KingdomTycoon.Presentation.Regions
                 StartHuntResult result = combat.StartHunt(new StartHuntCommand(operationId, huntId, combat.Revision, hash, row.Id, party.Select(Guid.Parse)));
                 Refresh(); view.ShowToast($"{row.Name} 파견 시작  ·  {result.PartyMercenaryInstanceIds.Count}명");
             }
-            catch (Exception exception) { view.ShowToast("사냥 시작 실패  ·  " + exception.Message); }
+            catch (Exception exception) { Debug.LogWarning(exception); view.ShowToast("사냥을 시작하지 못했습니다. 파견 조건을 확인해 주세요."); }
             finally { busy = false; }
         }
         private IEnumerator FadeIn() { const float duration = .22f; float elapsed = 0; view.CanvasGroup.alpha = 0; while (elapsed < duration) { elapsed += Time.unscaledDeltaTime; float t = Mathf.Clamp01(elapsed / duration); view.CanvasGroup.alpha = 1f - Mathf.Pow(1f - t, 3f); yield return null; } view.CanvasGroup.alpha = 1; }

@@ -113,10 +113,10 @@ namespace KingdomTycoon.Editor
             Image top = Image("TopBar", content.transform, new Color32(34, 45, 51, 255)); SetRect(top.rectTransform, new Vector2(0, 1), Vector2.one, Vector2.zero, new Vector2(0, 96));
             Text("P06_UI_REGION_TITLE", top.transform, "왕국 외곽 초원", 38, TextAlignmentOptions.Left, new Vector2(0.02f, 0), new Vector2(0.45f, 1));
             Button pause = Button("P06_UI_PAUSE", top.transform, "일시정지", new Color32(77, 91, 102, 255)); SetButtonRect(pause.GetComponent<RectTransform>(), new Vector2(0.88f, 0.5f), new Vector2(230, 72));
-            GameObject offline = Text("P06_UI_OFFLINE_BADGE", top.transform, "OFFLINE", 24, TextAlignmentOptions.Center, new Vector2(0.68f, 0.16f), new Vector2(0.8f, 0.84f)).gameObject; offline.SetActive(false);
+            GameObject offline = Text("P06_UI_OFFLINE_BADGE", top.transform, "오프라인", 24, TextAlignmentOptions.Center, new Vector2(0.68f, 0.16f), new Vector2(0.8f, 0.84f)).gameObject; offline.SetActive(false);
 
             Image world = Image("WorldViewport", content.transform, new Color32(64, 89, 65, 255)); SetRect(world.rectTransform, new Vector2(0.24f, 0.14f), new Vector2(1, 0.9f), new Vector2(8, 8), new Vector2(-16, -8));
-            TMP_Text encounter = Text("P06_UI_ENCOUNTER", world.transform, "R01 · 전투 준비", 28, TextAlignmentOptions.Center, new Vector2(0.2f, 0.86f), new Vector2(0.8f, 0.98f));
+            TMP_Text encounter = Text("P06_UI_ENCOUNTER", world.transform, "왕국 외곽 초원 · 전투 준비", 28, TextAlignmentOptions.Center, new Vector2(0.2f, 0.86f), new Vector2(0.8f, 0.98f));
             Image grid = Image("P06_UI_GRID", world.transform, new Color32(80, 112, 74, 180)); SetRect(grid.rectTransform, new Vector2(0.06f, 0.1f), new Vector2(0.94f, 0.84f), Vector2.zero, Vector2.zero);
 
             Image party = Image("PartyPanel", content.transform, new Color32(31, 42, 49, 255)); SetRect(party.rectTransform, new Vector2(0, 0.14f), new Vector2(0.24f, 0.9f), new Vector2(16, 8), new Vector2(-8, -8));
@@ -244,20 +244,20 @@ namespace KingdomTycoon.Editor
             SetBase(partyModal, recallModal, result, overlay, offline, start, recall, encounter, autonomy, members, pause);
             Capture(root, output, "p06_01_region_start.png", 1920, 1080);
             partyModal.SetActive(false); start.gameObject.SetActive(false); recall.gameObject.SetActive(true);
-            encounter.text = "R01 · 경로 탐색 · Tick 32"; autonomy.text = "FIND_TARGET · TARGET_FOUND";
+            encounter.text = "왕국 외곽 초원 · 경로 탐색 · 진행 32"; autonomy.text = "적 탐색 · 적 발견";
             Capture(root, output, "p06_02_path.png", 1920, 1080);
-            encounter.text = "R01 · 전투 1 · 적 4"; autonomy.text = "COMBAT · TARGET_FOUND · Tick 87";
-            members.text = "0001  HP 182/220  기여 96\n0002  HP 240/260  기여 42\n0003  HP 138/160  기여 121\n0004  HP 150/170  기여 28";
+            encounter.text = "왕국 외곽 초원 · 전투 1 · 적 4"; autonomy.text = "전투 중 · 적 발견 · 진행 87";
+            members.text = "0001  생명력 182/220  기여 96\n0002  생명력 240/260  기여 42\n0003  생명력 138/160  기여 121\n0004  생명력 150/170  기여 28";
             Capture(root, output, "p06_03_combat.png", 1920, 1080);
-            autonomy.text = "COMBAT · TAUNT · 위협 대상 고정"; members.text = "가디언  HP 211/260  방벽 · 도발\n전사  HP 182/220  기여 128\n궁수  HP 138/160  기여 154\n성직자  HP 150/170  기여 36";
+            autonomy.text = "전투 · 도발 · 위협 대상 고정"; members.text = "가디언  생명력 211/260  방벽 · 도발\n전사  생명력 182/220  기여 128\n궁수  생명력 138/160  기여 154\n성직자  생명력 150/170  기여 36";
             Capture(root, output, "p06_04_taunt.png", 1920, 1080);
-            autonomy.text = "COMBAT · HEAL · 유효 회복 48"; members.text = "성직자  HP 150/170  회복 48\n가디언  HP 259/260  방벽\n전사  HP 204/220  기여 168\n궁수  HP 142/160  기여 181";
+            autonomy.text = "전투 · 회복 · 유효 회복 48"; members.text = "성직자  생명력 150/170  회복 48\n가디언  생명력 259/260  방벽\n전사  생명력 204/220  기여 168\n궁수  생명력 142/160  기여 181";
             Capture(root, output, "p06_05_heal.png", 1920, 1080);
             recallModal.SetActive(true); autonomy.text = "RETURN_TOWN · PLAYER_RECALL";
             Capture(root, output, "p06_06_recall.png", 1920, 1080);
             recallModal.SetActive(false); overlay.SetActive(true); state.text = "전투 정보를 표시할 수 없습니다.\nP06_CONTENT_MISSING";
             Capture(root, output, "p06_07_error.png", 1920, 1080);
-            overlay.SetActive(false); offline.SetActive(true); autonomy.text = "OFFLINE · 로컬 상태 표시";
+            overlay.SetActive(false); offline.SetActive(true); autonomy.text = "오프라인 · 기기 저장 상태 표시";
             Capture(root, output, "p06_08_20x9.png", 2400, 1080);
             Debug.Log($"P06_CAPTURES={output}; count=8");
         }
@@ -266,7 +266,7 @@ namespace KingdomTycoon.Editor
         {
             partyModal.SetActive(true); recallModal.SetActive(false); result.SetActive(false); overlay.SetActive(false); offline.SetActive(false);
             start.gameObject.SetActive(true); recall.gameObject.SetActive(false); pause.text = "일시정지";
-            encounter.text = "R01 · 전투 준비"; autonomy.text = "활동 용병 1~4명을 선택해 사냥을 시작하세요."; members.text = "파티 미편성";
+            encounter.text = "왕국 외곽 초원 · 전투 준비"; autonomy.text = "활동 용병 1~4명을 선택해 사냥을 시작하세요."; members.text = "파티 미편성";
         }
 
         private static GameObject Find(IEnumerable<Transform> nodes, string name) => nodes.Single(value => value.name == name).gameObject;

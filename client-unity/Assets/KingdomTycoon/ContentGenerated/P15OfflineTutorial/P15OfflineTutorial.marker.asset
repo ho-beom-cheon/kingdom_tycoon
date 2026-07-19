@@ -12,4 +12,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f1500000000000000000000000000020, type: 3}
   m_Name: P15OfflineTutorial.marker
   m_EditorClassIdentifier: KingdomTycoon.Editor::KingdomTycoon.Editor.P15GeneratedAssetMarker
-  fingerprint: P15-OFFLINE-TUTORIAL-UI-v1.0.0
+  fingerprint: P15-INTEGRATION-STABILIZATION-UI-v1.1.0

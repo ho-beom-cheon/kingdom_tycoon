@@ -40,6 +40,8 @@ namespace KingdomTycoon.Bootstrap
 
         public CommonUiRoot CommonUiRoot => GetComponentInChildren<CommonUiRoot>(true);
 
+        public static string TestPersistentDataPath { get; set; }
+
         private void Awake()
         {
             if (Instance != null && Instance != this)
@@ -92,7 +94,9 @@ namespace KingdomTycoon.Bootstrap
             if (p13SaveSchema == null) throw new InvalidOperationException("P13 save schema resource is missing.");
             if (p14SaveSchema == null) throw new InvalidOperationException("P14 save schema resource is missing.");
             if (p15SaveSchema == null) throw new InvalidOperationException("P15 save schema resource is missing.");
-            Services.Register(new SaveService(UnityEngine.Application.persistentDataPath, saveSchema.text, p07SaveSchema.text, p08SaveSchema.text, p09SaveSchema.text, p10SaveSchema.text, p11SaveSchema.text, p12SaveSchema.text, p13SaveSchema.text, p14SaveSchema.text, p15SaveSchema.text));
+            string persistentDataPath = UnityEngine.Application.persistentDataPath;
+            if (!string.IsNullOrWhiteSpace(TestPersistentDataPath)) persistentDataPath = TestPersistentDataPath;
+            Services.Register(new SaveService(persistentDataPath, saveSchema.text, p07SaveSchema.text, p08SaveSchema.text, p09SaveSchema.text, p10SaveSchema.text, p11SaveSchema.text, p12SaveSchema.text, p13SaveSchema.text, p14SaveSchema.text, p15SaveSchema.text));
             IStreamingAssetReader contentReader = UnityEngine.Application.platform == RuntimePlatform.Android
                 ? new AndroidStreamingAssetReader(UnityEngine.Application.streamingAssetsPath)
                 : new LocalStreamingAssetReader(UnityEngine.Application.streamingAssetsPath);

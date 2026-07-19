@@ -43,9 +43,9 @@ namespace KingdomTycoon.Presentation.Progression
                     var draft = new StartPromotionReviewCommand(id, overview.Revision, null, row.Id); string hash = new ProgressionRequestHasher().Compute(draft);
                     result = service.StartReview(new StartPromotionReviewCommand(id, overview.Revision, hash, row.Id));
                 }
-                Refresh(); view.ShowToast("처리 완료 · " + result.ResultCode);
+                Refresh(); view.ShowToast("승급 상태를 저장했습니다.");
             }
-            catch (Exception exception) { view.ShowToast("처리 실패 · " + exception.Message); }
+            catch (Exception exception) { Debug.LogWarning(exception); view.ShowToast("승급 조건을 충족하지 못했습니다."); }
             finally { busy = false; }
         }
         private IEnumerator FadeIn() { const float duration = .22f; float elapsed = 0; view.CanvasGroup.alpha = 0; while (elapsed < duration) { elapsed += Time.unscaledDeltaTime; float t = Mathf.Clamp01(elapsed / duration); view.CanvasGroup.alpha = 1f - Mathf.Pow(1f - t, 3f); yield return null; } view.CanvasGroup.alpha = 1; }

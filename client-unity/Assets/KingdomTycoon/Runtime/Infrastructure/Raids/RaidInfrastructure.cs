@@ -252,7 +252,18 @@ namespace KingdomTycoon.Infrastructure.Raids
         }
         private static void AppendJournal(JObject draft, ResolveRaidCommand command, JObject payload, string digest, DateTimeOffset now)
         { string timestamp = Format(now); ((JArray)draft["payload"]!["operationJournal"]!).Add(new JObject { ["operationId"] = command.OperationId.ToString("D"), ["operationType"] = "RAID_RESOLVE", ["facilityJobType"] = null, ["requestHash"] = command.RequestHash, ["status"] = "COMMITTED", ["createdAtUtc"] = timestamp, ["updatedAtUtc"] = timestamp, ["completedAtUtc"] = timestamp, ["serverReceiptId"] = null, ["errorCode"] = null, ["resultDigest"] = digest, ["failureResolution"] = null, ["resolvedAtUtc"] = null, ["resultPayload"] = payload.DeepClone() }); }
-        private static RaidOperationResult FromPayload(Guid id, long revision, JObject payload, bool replayed) => new(id, revision, payload.Value<string>("resultCode"), payload.Value<bool>("success"), payload.Value<long>("durationMs"), payload["brokenPartIds"]!.Values<string>().ToArray(), payload["injuredMercenaryInstanceIds"]!.Values<string>().ToArray(), payload["rewards"]!.Children<JObject>().Select(value => value.Value<string>("rewardType") + ":" + value.Value<string>("rewardId") + " x" + value.Value<long>("quantity")).ToArray(), payload["trace"]?.Children<JObject>().Select(value => $"{value.Value<int>("tick") / 10.0:0.0}s {value.Value<string>("phase")} HP {value.Value<int>("bossHp")}").ToArray() ?? Array.Empty<string>(), replayed);
+        private static RaidOperationResult FromPayload(Guid id, long revision, JObject payload, bool replayed) => new(id, revision, payload.Value<string>("resultCode"), payload.Value<bool>("success"), payload.Value<long>("durationMs"), payload["brokenPartIds"]!.Values<string>().ToArray(), payload["injuredMercenaryInstanceIds"]!.Values<string>().ToArray(), payload["rewards"]!.Children<JObject>().Select(value => $"{RewardName(value.Value<string>("rewardId"))} {value.Value<long>("quantity")}개").ToArray(), payload["trace"]?.Children<JObject>().Select(value => $"{value.Value<int>("tick") / 10.0:0.0}초 {PhaseName(value.Value<string>("phase"))} 생명력 {value.Value<int>("bossHp"):N0}").ToArray() ?? Array.Empty<string>(), replayed);
+        private static string PhaseName(string value) => value switch
+        {
+            "VENOM_BITE" => "맹독 이빨", "POISON_BREATH" => "독성 숨결", "MULTIHEAD_ENRAGE" => "다두 격노",
+            "ASH_CLAW" => "잿빛 발톱", "FLYING_CHARGE" => "비행 돌진", "ASH_STORM" => "잿빛 폭풍", _ => "전투 단계"
+        };
+        private static string RewardName(string value) => value switch
+        {
+            "REGION_R05" => "마왕성 외곽 해금", "FLAG_V1_ENDING" => "왕국 결말 해금", "FLAG_RAID_DRAGON_VARIANTS" => "고룡 변형 레이드 해금",
+            "MAT_BOSS_HYDRA_VENOM" => "히드라 맹독", "MAT_BOSS_HYDRA_SCALE" => "히드라 비늘", "MAT_BOSS_HYDRA_HEART" => "히드라 심장",
+            "MAT_BOSS_DRAGON_HORN" => "고룡의 뿔", "MAT_BOSS_ASH_CORE" => "잿빛 핵", "MAT_BOSS_DRAGON_SCALE" => "고룡의 비늘", "MAT_BOSS_DRAGON_HEART" => "고룡의 심장", _ => "레이드 보상"
+        };
         private static JObject Progress(JObject document, string raid, string difficulty) => document["payload"]!["regions"]!["raids"]!.Children<JObject>().Single(value => value.Value<string>("raidId") == raid && value.Value<string>("difficulty") == difficulty);
         private static JObject FindJournal(JObject document, Guid id) => document["payload"]!["operationJournal"]!.Children<JObject>().SingleOrDefault(value => value.Value<string>("operationId") == id.ToString("D"));
         private static void AddItem(JObject document, string id, long quantity) { JArray stacks = (JArray)document["payload"]!["inventory"]!["itemStacks"]!; JObject stack = stacks.Children<JObject>().SingleOrDefault(value => value.Value<string>("itemId") == id); if (stack == null) stacks.Add(new JObject { ["itemId"] = id, ["quantity"] = quantity }); else stack["quantity"] = checked(stack.Value<long>("quantity") + quantity); }

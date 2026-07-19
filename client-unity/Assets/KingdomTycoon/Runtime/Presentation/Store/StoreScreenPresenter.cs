@@ -5,6 +5,7 @@ using KingdomTycoon.Bootstrap;
 using KingdomTycoon.Infrastructure.Economy;
 using KingdomTycoon.Infrastructure.Save;
 using KingdomTycoon.Presentation.Kingdom.Views;
+using KingdomTycoon.Presentation.Navigation;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -34,6 +35,7 @@ namespace KingdomTycoon.Presentation.Store
 
         public void Open()
         {
+            FindFirstObjectByType<UnifiedNavigationMenu>(FindObjectsInactive.Include)?.SetNavigationVisible(false);
             gameObject.SetActive(true); view.ShowState(StoreUiState.Loading); EnsureBound();
             if (service == null) return;
             try
@@ -45,7 +47,13 @@ namespace KingdomTycoon.Presentation.Store
             catch (Exception exception) { view.ShowState(StoreUiState.Error, exception.Message); }
         }
 
-        public void Close() { if (!busy) { view.Modal.Hide(); gameObject.SetActive(false); } }
+        public void Close()
+        {
+            if (busy) return;
+            view.Modal.Hide();
+            gameObject.SetActive(false);
+            FindFirstObjectByType<UnifiedNavigationMenu>(FindObjectsInactive.Include)?.SetNavigationVisible(true);
+        }
 
         private void EnsureBound()
         {

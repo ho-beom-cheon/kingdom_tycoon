@@ -52,14 +52,16 @@ namespace KingdomTycoon.Presentation.OfflineTutorial
             TutorialStepDto current = value.CurrentStep;
             actionText.text = value.TutorialCompleted
                 ? "<color=#79B8AA><b>왕국 운영 준비 완료</b></color>\n자동 사냥·시설·성장·레이드까지 자유롭게 운영할 수 있습니다."
-                : $"<b>다음 목표</b>  {StepName(current?.ActionType)}\n대상: {current?.TargetId ?? "-"}";
-            advanceButton.interactable = !value.TutorialCompleted;
+                : $"<b>다음 목표</b>  {StepName(current?.ActionType)}\n{GoalGuide(current)}";
+            advanceButton.interactable = true;
+            TMP_Text advanceLabel = advanceButton.GetComponentInChildren<TMP_Text>(true);
+            if (advanceLabel != null) advanceLabel.text = value.TutorialCompleted ? "왕국으로 돌아가기" : "해당 기능으로 이동";
             skipButton.interactable = current?.Skippable == true;
             skipAllButton.interactable = !value.TutorialCompleted;
         }
 
-        public void ShowResult(string resultCode) => actionText.text = $"<color=#79B8AA><b>진행 반영 완료</b></color>\n{resultCode}";
-        public void ShowError(string code) => actionText.text = $"<color=#E98274><b>처리할 수 없습니다</b></color>\n{code}";
+        public void ShowResult(string resultCode) => actionText.text = $"<color=#79B8AA><b>진행 반영 완료</b></color>\n{ResultMessage(resultCode)}";
+        public void ShowError(string code) => actionText.text = $"<color=#E98274><b>처리할 수 없습니다</b></color>\n{ErrorMessage(code)}";
         public void SetVisible(bool visible) { gameObject.SetActive(visible); if (canvasGroup != null) { canvasGroup.alpha = visible ? 1 : 0; canvasGroup.interactable = visible; canvasGroup.blocksRaycasts = visible; } }
 
         private void Bind()
@@ -75,11 +77,11 @@ namespace KingdomTycoon.Presentation.OfflineTutorial
         {
             "HUNT" => $"자동 사냥 수익                         +{value.Quantity:N0}",
             "POTION_CONSUMPTION" => $"회복 물약 사용                           -{value.Quantity:N0}",
-            "FACILITY" => $"시설 생산 진행                         +{value.Quantity:N0} tick",
+            "FACILITY" => $"시설 생산 진행                         +{value.Quantity:N0}회",
             "NPC_PROFICIENCY" => $"관리인 숙련도                           +{value.Quantity:N0}",
             "INJURY_RECOVERY" => $"부상 회복                                 {value.Quantity:N0}명",
             "PROMOTION_REVIEW" => $"승급 심사 완료                           {value.Quantity:N0}명",
-            _ => $"{value.Type}  {value.Quantity:N0}"
+            _ => $"기타 정산                                 {value.Quantity:N0}"
         };
 
         private static string StepName(string action) => action switch
@@ -88,6 +90,41 @@ namespace KingdomTycoon.Presentation.OfflineTutorial
             "OBSERVE_AUTONOMY_HUNT" => "자동 사냥 관찰", "RETURN_AND_SELL" => "귀환 후 전리품 판매",
             "BUILD_FACILITY_AND_CRAFT_RECIPE" => "시설 건설 및 제작", "WAIT_FOR_MERCENARY_BUY_AND_EQUIP" => "용병 구매와 장비 장착",
             "COMPLETE_PROMOTION" => "첫 승급 완료", "UNLOCK_REGION" => "다음 지역 해금", _ => action ?? "완료"
+        };
+
+        private static string GoalGuide(TutorialStepDto step)
+        {
+            if (step == null) return "모든 목표를 완료했습니다.";
+            return step.ActionType switch
+            {
+                "VIEW_KINGDOM" => "왕국 화면을 둘러보세요.",
+                "RECRUIT_FROM_POOL" => "선술집에서 첫 용병을 고용하세요.",
+                "SET_REGION_PERMISSION" => "왕국 외곽 초원의 사냥 허가를 켜세요.",
+                "OBSERVE_AUTONOMY_HUNT" => "왕국 외곽 초원에 용병을 파견하세요.",
+                "RETURN_AND_SELL" => "귀환한 용병의 전리품을 상점에 판매하세요.",
+                "BUILD_FACILITY_AND_CRAFT_RECIPE" when step.TargetId == "REC_POT_HEAL_SMALL" => "연금 공방에서 소형 회복 물약을 제작하세요.",
+                "BUILD_FACILITY_AND_CRAFT_RECIPE" => "대장간을 건설한 뒤 초급 전사 무기를 제작하세요.",
+                "WAIT_FOR_MERCENARY_BUY_AND_EQUIP" => "상점에서 초급 전사 무기를 구매해 장착하세요.",
+                "COMPLETE_PROMOTION" => "용병 한 명을 정규 용병으로 승급하세요.",
+                "UNLOCK_REGION" => "안개 낀 고대림의 해금 조건을 달성하세요.",
+                _ => "표시된 목표를 실제 플레이로 완료하세요."
+            };
+        }
+
+        private static string ResultMessage(string code) => code switch
+        {
+            "P15_TUTORIAL_COMPLETED" => "왕국 여정을 모두 완료했습니다.",
+            "P15_TUTORIAL_STEP_COMPLETED" => "목표 달성을 확인하고 다음 단계로 이동했습니다.",
+            "P15_TUTORIAL_STEP_SKIPPED" => "이 단계를 건너뛰었습니다.",
+            _ => "진행 상태를 저장했습니다."
+        };
+
+        private static string ErrorMessage(string code) => code switch
+        {
+            "P15_TUTORIAL_GOAL_NOT_MET" => "아직 실제 게임 목표가 완료되지 않았습니다.",
+            "P15_SAVE_REVISION_CONFLICT" => "저장 상태가 변경되었습니다. 다시 확인해 주세요.",
+            "P15_TUTORIAL_COMPLETE" => "이미 모든 왕국 여정을 완료했습니다.",
+            _ => "잠시 후 다시 시도해 주세요."
         };
     }
 }

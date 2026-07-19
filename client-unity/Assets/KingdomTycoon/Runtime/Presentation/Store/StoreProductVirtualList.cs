@@ -34,11 +34,12 @@ namespace KingdomTycoon.Presentation.Store
                 rows[index].gameObject.SetActive(visible);
                 if (!visible) continue;
                 StoreProductDto item = products[index];
-                labels[index].text = $"{KindIcon(item.Kind)}  {item.Name}\n<size=20><color=#B9B0A3>{item.QualityId ?? item.SourceType} · 재고 {item.Quantity}</color></size>\n<color=#F2D47A>{item.UnitPrice:N0} G</color>";
+                labels[index].text = $"{KindIcon(item.Kind)}  {item.Name}\n<size=20><color=#B9B0A3>{Quality(item.QualityId)} · 재고 {item.Quantity}</color></size>\n<color=#F2D47A>{item.UnitPrice:N0} 골드</color>";
                 rows[index].GetComponent<Image>().color = index == selected ? new Color32(91, 67, 42, 255) : new Color32(48, 46, 42, 245);
             }
         }
 
         private static string KindIcon(string kind) => kind switch { "POTION" => "물약", "EQUIPMENT" => "장비", _ => "재료" };
+        private static string Quality(string value) => value switch { "QUALITY_COMMON" => "일반", "QUALITY_FINE" => "고급", "QUALITY_RARE" => "희귀", "QUALITY_LEGACY" => "영웅", "QUALITY_RELIC" => "유물", _ => "표준" };
     }
 }

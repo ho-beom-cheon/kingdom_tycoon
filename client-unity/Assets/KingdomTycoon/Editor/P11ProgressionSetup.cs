@@ -57,24 +57,24 @@ namespace KingdomTycoon.Editor
             Image header = Panel("P11_HEADER", safe.transform, new Color32(50, 38, 27, 255)); SetRect(header.rectTransform, new Vector2(0, .865f), Vector2.one, Vector2.zero, Vector2.zero);
             Text("Title", header.transform, "모험가 길드 · 성장 심사", 43, TextAlignmentOptions.Left, new Vector2(.025f, .17f), new Vector2(.43f, .88f), new Color32(245, 207, 111, 255));
             Text("Subtitle", header.transform, "수습부터 전설까지 · 실패 없는 승급", 21, TextAlignmentOptions.Left, new Vector2(.35f, .20f), new Vector2(.62f, .82f), new Color32(196, 189, 173, 255));
-            TMP_Text meta = Text("P11_META", header.transform, "content.9  ·  r0  ·  왕국 골드 5,000", 21, TextAlignmentOptions.Right, new Vector2(.60f, .17f), new Vector2(.88f, .84f));
+            TMP_Text meta = Text("P11_META", header.transform, "콘텐츠 9  ·  저장 0  ·  왕국 골드 5,000", 21, TextAlignmentOptions.Right, new Vector2(.60f, .17f), new Vector2(.88f, .84f));
             Button close = Button("P11_CLOSE", header.transform, "닫기", new Color32(80, 68, 57, 255), 23); SetRect(close.GetComponent<RectTransform>(), new Vector2(.89f, .14f), new Vector2(.98f, .86f), Vector2.zero, Vector2.zero);
 
-            TMP_Text guild = Text("P11_GUILD_STATUS", safe.transform, "모험가 길드 Lv.1  ·  <color=#82DEC5>심사 접수 중</color>", 23, TextAlignmentOptions.Left, new Vector2(.018f, .80f), new Vector2(.46f, .855f), new Color32(217, 207, 188, 255));
+            TMP_Text guild = Text("P11_GUILD_STATUS", safe.transform, "모험가 길드 1레벨  ·  <color=#82DEC5>심사 접수 중</color>", 23, TextAlignmentOptions.Left, new Vector2(.018f, .80f), new Vector2(.46f, .855f), new Color32(217, 207, 188, 255));
             Image card = Panel("P11_MERCENARY_CARD", safe.transform, new Color32(37, 43, 46, 255)); SetRect(card.rectTransform, new Vector2(0, .14f), new Vector2(.23f, .79f), Vector2.zero, Vector2.zero);
             Panel("CardAccent", card.transform, new Color32(200, 145, 54, 255)).rectTransform.anchorMax = new Vector2(.015f, 1);
-            Text("CardEyebrow", card.transform, "GUILD DOSSIER", 17, TextAlignmentOptions.Left, new Vector2(.07f, .86f), new Vector2(.93f, .95f), new Color32(112, 216, 194, 255));
-            TMP_Text mercenary = Text("MercenaryText", card.transform, "리안\n<size=24>B등급 · 수습 · Lv.20</size>\n<size=19>1/4 · 심사 준비</size>", 34, TextAlignmentOptions.TopLeft, new Vector2(.07f, .48f), new Vector2(.93f, .85f));
-            Text("PortraitSeal", card.transform, "GUILD\n<size=20>ADVENTURER</size>", 36, TextAlignmentOptions.Center, new Vector2(.22f, .25f), new Vector2(.78f, .49f), new Color32(224, 190, 101, 255));
+            Text("CardEyebrow", card.transform, "길드 기록", 17, TextAlignmentOptions.Left, new Vector2(.07f, .86f), new Vector2(.93f, .95f), new Color32(112, 216, 194, 255));
+            TMP_Text mercenary = Text("MercenaryText", card.transform, "리안\n<size=24>고급 등급 · 수습 · 20레벨</size>\n<size=19>1/4 · 심사 준비</size>", 34, TextAlignmentOptions.TopLeft, new Vector2(.07f, .48f), new Vector2(.93f, .85f));
+            Text("PortraitSeal", card.transform, "길드\n<size=20>모험가</size>", 36, TextAlignmentOptions.Center, new Vector2(.22f, .25f), new Vector2(.78f, .49f), new Color32(224, 190, 101, 255));
             Button previous = Button("P11_PREVIOUS", card.transform, "‹ 이전", new Color32(61, 71, 73, 255), 22); SetRect(previous.GetComponent<RectTransform>(), new Vector2(.07f, .07f), new Vector2(.47f, .20f), Vector2.zero, Vector2.zero);
             Button next = Button("P11_NEXT", card.transform, "다음 ›", new Color32(61, 71, 73, 255), 22); SetRect(next.GetComponent<RectTransform>(), new Vector2(.53f, .07f), new Vector2(.93f, .20f), Vector2.zero, Vector2.zero);
 
             Image journeyPanel = Panel("P11_RANK_JOURNEY", safe.transform, new Color32(32, 47, 48, 255)); SetRect(journeyPanel.rectTransform, new Vector2(.24f, .65f), new Vector2(1, .79f), Vector2.zero, Vector2.zero);
-            Text("JourneyLabel", journeyPanel.transform, "RANK JOURNEY", 16, TextAlignmentOptions.Left, new Vector2(.025f, .67f), new Vector2(.16f, .93f), new Color32(112, 216, 194, 255));
+            Text("JourneyLabel", journeyPanel.transform, "승급 여정", 16, TextAlignmentOptions.Left, new Vector2(.025f, .67f), new Vector2(.16f, .93f), new Color32(112, 216, 194, 255));
             TMP_Text journey = Text("JourneyText", journeyPanel.transform, "<color=#F3D071><b>수습</b></color>   ›   정식   ›   숙련   ›   정예   ›   영웅   ›   전설", 25, TextAlignmentOptions.Center, new Vector2(.15f, .12f), new Vector2(.98f, .88f));
 
             Image experiencePanel = Panel("P11_EXPERIENCE", safe.transform, new Color32(42, 39, 35, 255)); SetRect(experiencePanel.rectTransform, new Vector2(.24f, .40f), new Vector2(.48f, .64f), Vector2.zero, Vector2.zero);
-            TMP_Text experience = Text("ExperienceText", experiencePanel.transform, "현재 성장\n<size=35><color=#F4E6BD>Lv.20</color> / 20</size>\nEXP 0 / 0  ·  100%", 22, TextAlignmentOptions.TopLeft, new Vector2(.07f, .12f), new Vector2(.93f, .90f));
+            TMP_Text experience = Text("ExperienceText", experiencePanel.transform, "현재 성장\n<size=35><color=#F4E6BD>20레벨</color> / 20레벨</size>\n경험치 0 / 0  ·  100%", 22, TextAlignmentOptions.TopLeft, new Vector2(.07f, .12f), new Vector2(.93f, .90f));
             Image requirementsPanel = Panel("P11_REQUIREMENTS", safe.transform, new Color32(34, 45, 43, 255)); SetRect(requirementsPanel.rectTransform, new Vector2(.49f, .27f), new Vector2(.75f, .64f), Vector2.zero, Vector2.zero);
             Text("RequirementsTitle", requirementsPanel.transform, "승급 조건", 27, TextAlignmentOptions.Left, new Vector2(.07f, .82f), new Vector2(.93f, .96f), new Color32(129, 226, 199, 255));
             TMP_Text requirements = Text("RequirementsText", requirementsPanel.transform, "<color=#82DEC5>✓</color> 레벨  20 / 20\n<color=#82DEC5>✓</color> 기여도  120 / 100\n<color=#82DEC5>✓</color> 전투 실적  3 / 3\n<color=#82DEC5>✓</color> 길드 레벨  1 / 1", 21, TextAlignmentOptions.TopLeft, new Vector2(.07f, .12f), new Vector2(.94f, .79f));

@@ -56,13 +56,13 @@ namespace KingdomTycoon.Editor
 
             Image header = Panel("P12_HEADER", safe.transform, new Color32(54, 42, 29, 255)); SetRect(header.rectTransform, new Vector2(0, .865f), Vector2.one, Vector2.zero, Vector2.zero);
             Text("Title", header.transform, "왕국 개척 지도", 43, TextAlignmentOptions.Left, new Vector2(.025f, .18f), new Vector2(.35f, .88f), new Color32(247, 210, 120, 255));
-            Text("Subtitle", header.transform, "FIVE FRONTIERS  ·  지역 개방과 파견 통제", 19, TextAlignmentOptions.Left, new Vector2(.27f, .20f), new Vector2(.61f, .82f), new Color32(177, 198, 190, 255));
-            TMP_Text meta = Text("P12_META", header.transform, "content.10  ·  r0  ·  5개 지역", 20, TextAlignmentOptions.Right, new Vector2(.60f, .17f), new Vector2(.88f, .84f));
+            Text("Subtitle", header.transform, "다섯 개척지  ·  지역 개방과 파견 통제", 19, TextAlignmentOptions.Left, new Vector2(.27f, .20f), new Vector2(.61f, .82f), new Color32(177, 198, 190, 255));
+            TMP_Text meta = Text("P12_META", header.transform, "콘텐츠 10  ·  저장 0  ·  5개 지역", 20, TextAlignmentOptions.Right, new Vector2(.60f, .17f), new Vector2(.88f, .84f));
             Button close = Button("P12_CLOSE", header.transform, "닫기", new Color32(81, 68, 55, 255), 22); SetRect(close.GetComponent<RectTransform>(), new Vector2(.89f, .14f), new Vector2(.98f, .86f), Vector2.zero, Vector2.zero);
             TMP_Text kingdom = Text("P12_KINGDOM_STATUS", safe.transform, "초기 왕국  ·  개방 1/5  ·  파견 정책 정상", 22, TextAlignmentOptions.Left, new Vector2(.018f, .805f), new Vector2(.65f, .855f), new Color32(136, 225, 201, 255));
 
             Image map = Panel("P12_MAP_PANEL", safe.transform, new Color32(25, 38, 41, 255)); SetRect(map.rectTransform, new Vector2(0, .035f), new Vector2(.665f, .795f), Vector2.zero, Vector2.zero);
-            Text("MapEyebrow", map.transform, "ROYAL EXPLORATION ROUTE", 16, TextAlignmentOptions.Left, new Vector2(.035f, .91f), new Vector2(.36f, .98f), new Color32(114, 218, 193, 255));
+            Text("MapEyebrow", map.transform, "왕국 개척 경로", 16, TextAlignmentOptions.Left, new Vector2(.035f, .91f), new Vector2(.36f, .98f), new Color32(114, 218, 193, 255));
             Text("Compass", map.transform, "N\n↑", 18, TextAlignmentOptions.Center, new Vector2(.89f, .84f), new Vector2(.97f, .96f), new Color32(209, 177, 96, 255));
             Image route = Panel("ExpeditionRoute", map.transform, new Color32(113, 91, 57, 255)); SetRect(route.rectTransform, new Vector2(.12f, .485f), new Vector2(.88f, .502f), Vector2.zero, Vector2.zero);
             var nodes = new Button[5]; var nodeLabels = new TMP_Text[5];
@@ -78,7 +78,7 @@ namespace KingdomTycoon.Editor
 
             Image detail = Panel("P12_DETAIL_PANEL", safe.transform, new Color32(36, 39, 39, 255)); SetRect(detail.rectTransform, new Vector2(.675f, .035f), new Vector2(1, .855f), Vector2.zero, Vector2.zero);
             TMP_Text title = Text("RegionTitle", detail.transform, "왕국 외곽 초원", 34, TextAlignmentOptions.Left, new Vector2(.06f, .865f), new Vector2(.94f, .96f), new Color32(246, 211, 124, 255));
-            TMP_Text tier = Text("RegionTier", detail.transform, "TIER 1  ·  초원  ·  최소 수습  ·  권장 전투력 100", 17, TextAlignmentOptions.Left, new Vector2(.06f, .815f), new Vector2(.94f, .87f), new Color32(174, 195, 186, 255));
+            TMP_Text tier = Text("RegionTier", detail.transform, "1단계  ·  초원  ·  최소 수습  ·  권장 전투력 100", 17, TextAlignmentOptions.Left, new Vector2(.06f, .815f), new Vector2(.94f, .87f), new Color32(174, 195, 186, 255));
             TMP_Text progress = Text("ProgressText", detail.transform, "지역 조사도  <color=#F4D27A>0%</color>", 22, TextAlignmentOptions.Left, new Vector2(.06f, .752f), new Vector2(.94f, .81f));
             Image bar = Panel("ProgressTrack", detail.transform, new Color32(20, 27, 29, 255)); SetRect(bar.rectTransform, new Vector2(.06f, .72f), new Vector2(.94f, .747f), Vector2.zero, Vector2.zero);
             Image fill = Panel("P12_PROGRESS_FILL", bar.transform, new Color32(117, 214, 183, 255)); SetRect(fill.rectTransform, Vector2.zero, new Vector2(0, 1), Vector2.zero, Vector2.zero);
@@ -133,7 +133,9 @@ namespace KingdomTycoon.Editor
             GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(P12RegionMapSetup.ScreenPath) ?? throw new BuildFailedException("P12_UI_PREFAB_MISSING"); Transform[] nodes = prefab.GetComponentsInChildren<Transform>(true); foreach (string id in P12RegionMapSetup.RequiredIds) if (nodes.Count(value => value.name == id) != 1) throw new BuildFailedException("P12_UI_ID_INVALID: " + id);
             prefab.SetActive(true); P12RegionMapSetup.PrepareRoot(prefab); Canvas.ForceUpdateCanvases(); string[] invalid = prefab.GetComponentsInChildren<Button>(true).Where(value => value.GetComponent<RectTransform>().rect.width < 64 || value.GetComponent<RectTransform>().rect.height < 64).Select(value => value.name).ToArray(); prefab.SetActive(false); if (invalid.Length > 0) throw new BuildFailedException("P12_TOUCH_TARGET_INVALID: " + string.Join(",", invalid));
             Scene scene = EditorSceneManager.OpenScene(P12RegionMapSetup.BootstrapScenePath, OpenSceneMode.Single); RegionMapScreenPresenter[] screens = scene.GetRootGameObjects().SelectMany(value => value.GetComponentsInChildren<RegionMapScreenPresenter>(true)).ToArray(); RegionMapEntryButton[] entries = scene.GetRootGameObjects().SelectMany(value => value.GetComponentsInChildren<RegionMapEntryButton>(true)).ToArray(); if (screens.Length != 1 || entries.Length != 1) throw new BuildFailedException($"P12_SCENE_ENTRY_INVALID: screens={screens.Length}, entries={entries.Length}");
-            RegionMapEntryButton entry = entries[0]; Button button = entry.GetComponent<Button>(); if (button == null || button.onClick.GetPersistentEventCount() != 1 || button.onClick.GetPersistentTarget(0) != entry || button.onClick.GetPersistentMethodName(0) != nameof(RegionMapEntryButton.OpenRegionMap)) throw new BuildFailedException("P12_SCENE_ENTRY_BINDING_INVALID");
+            RegionMapEntryButton entry = entries[0]; Button button = entry.GetComponent<Button>();
+            bool hasEntryBinding = button != null && Enumerable.Range(0, button.onClick.GetPersistentEventCount()).Any(index => button.onClick.GetPersistentTarget(index) == entry && button.onClick.GetPersistentMethodName(index) == nameof(RegionMapEntryButton.OpenRegionMap));
+            if (!hasEntryBinding) throw new BuildFailedException("P12_SCENE_ENTRY_BINDING_INVALID");
         }
     }
 

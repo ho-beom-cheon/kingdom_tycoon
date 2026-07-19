@@ -58,9 +58,9 @@ namespace KingdomTycoon.Presentation.EquipmentGrowth
                     ResolveRefineOptionCommand value => service.ResolveRefine(value), DismantleEquipmentCommand value => service.Dismantle(value),
                     _ => throw new InvalidOperationException("P10_COMMAND_INVALID")
                 };
-                Refresh(); view.ShowToast(success + " · " + result.ResultCode);
+                Refresh(); view.ShowToast(success);
             }
-            catch (Exception exception) { view.ShowToast("처리 실패 · " + exception.Message); }
+            catch (Exception exception) { Debug.LogWarning(exception); view.ShowToast("처리하지 못했습니다. 조건을 확인해 주세요."); }
             finally { busy = false; }
         }
         private IEnumerator FadeIn() { const float duration = .22f; float elapsed = 0; view.CanvasGroup.alpha = 0; while (elapsed < duration) { elapsed += Time.unscaledDeltaTime; float t = Mathf.Clamp01(elapsed / duration); view.CanvasGroup.alpha = 1f - Mathf.Pow(1f - t, 3f); yield return null; } view.CanvasGroup.alpha = 1; }
