@@ -78,6 +78,11 @@ namespace KingdomTycoon.Infrastructure.Save
         }
 
         public SaveDocumentValidator(string legacySchemaJson, string content5SchemaJson, string content6SchemaJson, string content7SchemaJson, string content8SchemaJson, string content9SchemaJson, string content10SchemaJson)
+            : this(legacySchemaJson, content5SchemaJson, content6SchemaJson, content7SchemaJson, content8SchemaJson, content9SchemaJson, content10SchemaJson, null)
+        {
+        }
+
+        public SaveDocumentValidator(string legacySchemaJson, string content5SchemaJson, string content6SchemaJson, string content7SchemaJson, string content8SchemaJson, string content9SchemaJson, string content10SchemaJson, string content11SchemaJson)
         {
             schema = StrictJson.ParseObject(legacySchemaJson ?? throw new ArgumentNullException(nameof(legacySchemaJson)));
             var content5 = StrictJson.ParseObject(content5SchemaJson ?? throw new ArgumentNullException(nameof(content5SchemaJson)));
@@ -104,6 +109,10 @@ namespace KingdomTycoon.Infrastructure.Save
             if (content10SchemaJson != null)
             {
                 schemas["1.0.0-content.10"] = StrictJson.ParseObject(content10SchemaJson);
+            }
+            if (content11SchemaJson != null)
+            {
+                schemas["1.0.0-content.11"] = StrictJson.ParseObject(content11SchemaJson);
             }
             versionSchemas = schemas;
         }
@@ -148,6 +157,7 @@ namespace KingdomTycoon.Infrastructure.Save
             ValidateCollections(document, source, report);
             ValidateEquipmentLinks(document, source, report);
             ValidateRecruitment(document, source, report);
+            ValidateP13Recruitment(document, source, report);
             ValidateJournal(document, source, report);
             ValidateRewardSnapshots(document, source, report);
             ValidateEconomy(document, source, report);
@@ -503,6 +513,37 @@ namespace KingdomTycoon.Infrastructure.Save
             }
         }
 
+        private static void ValidateP13Recruitment(JObject document, string source, ValidationReport report)
+        {
+            if (document.Value<string>("contentVersion") != "1.0.0-content.11") return;
+            JObject state = (JObject)document["payload"]!["recruitmentMockState"]!;
+            JArray candidates = (JArray)state["tavern"]!["candidates"]!;
+            ValidateUnique(candidates, "candidateId", source, "/payload/recruitmentMockState/tavern/candidates", "P13_CANDIDATE_ID_DUPLICATE", report);
+            if (candidates.Children<JObject>().Count(value => value.Value<bool>("locked")) > 2)
+                report.AddError("P13_CANDIDATE_LOCK_LIMIT", source, "/payload/recruitmentMockState/tavern/candidates", "At most two tavern candidates may be locked.");
+            JArray history = (JArray)state["history"]!;
+            ValidateUnique(history, "operationId", source, "/payload/recruitmentMockState/history", "P13_HISTORY_OPERATION_DUPLICATE", report);
+            long historySequence = Math.Max(1, state.Value<long>("nextHistorySequence") - history.Count);
+            foreach (JObject value in history.Children<JObject>())
+                if (value.Value<long>("sequence") != historySequence++)
+                {
+                    report.AddError("P13_HISTORY_SEQUENCE_INVALID", source, "/payload/recruitmentMockState/history", "Recruitment history must be contiguous and sorted.");
+                    break;
+                }
+            if (historySequence != state.Value<long>("nextHistorySequence"))
+                report.AddError("P13_HISTORY_SEQUENCE_INVALID", source, "/payload/recruitmentMockState/nextHistorySequence", "Recruitment nextHistorySequence must follow retained history.");
+            JArray events = (JArray)state["events"]!;
+            long eventSequence = Math.Max(1, state.Value<long>("nextEventSequence") - events.Count);
+            foreach (JObject value in events.Children<JObject>())
+                if (value.Value<long>("sequence") != eventSequence++)
+                {
+                    report.AddError("P13_EVENT_SEQUENCE_INVALID", source, "/payload/recruitmentMockState/events", "Recruitment events must be contiguous and sorted.");
+                    break;
+                }
+            if (eventSequence != state.Value<long>("nextEventSequence"))
+                report.AddError("P13_EVENT_SEQUENCE_INVALID", source, "/payload/recruitmentMockState/nextEventSequence", "Recruitment nextEventSequence must follow retained events.");
+        }
+
         private static void ValidateJournal(JObject document, string source, ValidationReport report)
         {
             foreach (JObject entry in document["payload"]["operationJournal"].Children<JObject>())
@@ -536,10 +577,12 @@ namespace KingdomTycoon.Infrastructure.Save
                 }
 
                 bool hasResultPayload = entry.TryGetValue("resultPayload", out JToken resultPayload) && resultPayload.Type != JTokenType.Null;
-                bool requiresResultPayload = operationType is "STORE_TRANSACTION" or "EQUIPMENT_GROWTH_COMMAND" or "PROMOTION" && status is "COMMITTED" or "ACKNOWLEDGED";
+                bool requiresResultPayload = (status is "COMMITTED" or "ACKNOWLEDGED") &&
+                    (operationType is "STORE_TRANSACTION" or "EQUIPMENT_GROWTH_COMMAND" or "PROMOTION" or
+                        "TAVERN_REFRESH" or "TAVERN_LOCK" or "TAVERN_HIRE" or "SPECIAL_RECRUIT");
                 if (hasResultPayload != requiresResultPayload)
                 {
-                    report.AddError("SAVE_OPERATION_RESULT_PAYLOAD_INVALID", source, "/payload/operationJournal", "Only committed store transactions require resultPayload.", entry.Value<string>("operationId"));
+                    report.AddError("SAVE_OPERATION_RESULT_PAYLOAD_INVALID", source, "/payload/operationJournal", "Committed replayable commands require resultPayload.", entry.Value<string>("operationId"));
                 }
 
                 bool hasErrorCode = entry["errorCode"].Type != JTokenType.Null;
@@ -559,7 +602,7 @@ namespace KingdomTycoon.Infrastructure.Save
 
         private static void ValidateEconomy(JObject document, string source, ValidationReport report)
         {
-            if (document.Value<string>("contentVersion") is not ("1.0.0-content.6" or "1.0.0-content.7" or "1.0.0-content.8" or "1.0.0-content.9" or "1.0.0-content.10")) return;
+            if (document.Value<string>("contentVersion") is not ("1.0.0-content.6" or "1.0.0-content.7" or "1.0.0-content.8" or "1.0.0-content.9" or "1.0.0-content.10" or "1.0.0-content.11")) return;
             JObject economy = (JObject)document["payload"]?["economy"];
             if (economy == null) return;
             JObject store = (JObject)economy["store"];
@@ -605,7 +648,14 @@ namespace KingdomTycoon.Infrastructure.Save
                 JObject journal = document["payload"]!["operationJournal"]!.Children<JObject>()
                     .SingleOrDefault(value => value.Value<string>("operationId") == entry.Value<string>("operationId"));
                 string transactionType = entry.Value<string>("transactionType");
-                string expectedOperationType = transactionType is "ENHANCE_EQUIPMENT" or "REFINE_EQUIPMENT" ? "EQUIPMENT_GROWTH_COMMAND" : transactionType == "PROMOTION_START" ? "PROMOTION" : "STORE_TRANSACTION";
+                string expectedOperationType = transactionType switch
+                {
+                    "ENHANCE_EQUIPMENT" or "REFINE_EQUIPMENT" => "EQUIPMENT_GROWTH_COMMAND",
+                    "PROMOTION_START" => "PROMOTION",
+                    "TAVERN_REFRESH" => "TAVERN_REFRESH",
+                    "TAVERN_HIRE" => "TAVERN_HIRE",
+                    _ => "STORE_TRANSACTION"
+                };
                 if (journal == null || journal.Value<string>("operationType") != expectedOperationType ||
                     journal.Value<string>("requestHash") != entry.Value<string>("requestHash") ||
                     journal.Value<string>("resultDigest") != entry.Value<string>("resultDigest"))
@@ -621,7 +671,7 @@ namespace KingdomTycoon.Infrastructure.Save
 
         private static void ValidateProduction(JObject document, string source, ValidationReport report)
         {
-            if (document.Value<string>("contentVersion") is not ("1.0.0-content.7" or "1.0.0-content.8" or "1.0.0-content.9" or "1.0.0-content.10")) return;
+            if (document.Value<string>("contentVersion") is not ("1.0.0-content.7" or "1.0.0-content.8" or "1.0.0-content.9" or "1.0.0-content.10" or "1.0.0-content.11")) return;
             JObject production = document["payload"]?["production"] as JObject;
             if (production == null) return;
             JObject[] queues = production["facilityQueues"]!.Children<JObject>().ToArray();
@@ -651,7 +701,7 @@ namespace KingdomTycoon.Infrastructure.Save
 
         private static void ValidateEquipmentGrowth(JObject document, string source, ValidationReport report)
         {
-            if (document.Value<string>("contentVersion") is not ("1.0.0-content.8" or "1.0.0-content.9" or "1.0.0-content.10")) return;
+            if (document.Value<string>("contentVersion") is not ("1.0.0-content.8" or "1.0.0-content.9" or "1.0.0-content.10" or "1.0.0-content.11")) return;
             JObject growth = document["payload"]?["equipmentGrowth"] as JObject;
             if (growth == null) return;
             long expectedSequence = Math.Max(1, growth.Value<long>("nextEventSequence") - growth["events"]!.Count());
@@ -679,7 +729,7 @@ namespace KingdomTycoon.Infrastructure.Save
 
         private static void ValidateProgression(JObject document, string source, ValidationReport report)
         {
-            if (document.Value<string>("contentVersion") is not ("1.0.0-content.9" or "1.0.0-content.10")) return;
+            if (document.Value<string>("contentVersion") is not ("1.0.0-content.9" or "1.0.0-content.10" or "1.0.0-content.11")) return;
             JObject progression = document["payload"]?["progression"] as JObject;
             if (progression == null) return;
             long expectedSequence = Math.Max(1, progression.Value<long>("nextEventSequence") - progression["events"]!.Count());
@@ -700,7 +750,7 @@ namespace KingdomTycoon.Infrastructure.Save
 
         private static void ValidateRegions(JObject document, string source, ValidationReport report)
         {
-            if (document.Value<string>("contentVersion") != "1.0.0-content.10") return;
+            if (document.Value<string>("contentVersion") is not ("1.0.0-content.10" or "1.0.0-content.11")) return;
             JObject regions = document["payload"]?["regions"] as JObject;
             if (regions == null) return;
             string[] expected = Enumerable.Range(1, 5).Select(value => $"REGION_R0{value}").ToArray();
