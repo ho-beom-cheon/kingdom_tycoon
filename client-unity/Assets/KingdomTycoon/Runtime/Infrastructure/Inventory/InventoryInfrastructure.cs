@@ -24,7 +24,7 @@ namespace KingdomTycoon.Infrastructure.Inventory
 
         public CanonicalInventoryCatalog(ContentCatalog catalog)
         {
-            if (catalog == null || catalog.ContentVersion is not (CompileTimeActiveContentVersionProvider.P07ContentVersion or CompileTimeActiveContentVersionProvider.P08ContentVersion))
+            if (catalog == null || catalog.ContentVersion is not (CompileTimeActiveContentVersionProvider.P07ContentVersion or CompileTimeActiveContentVersionProvider.P08ContentVersion or CompileTimeActiveContentVersionProvider.P09ContentVersion))
                 throw new InventoryDomainException("P07_CONTENT_MISSING");
             equipment = catalog.GetTable("equipment_templates.csv").Rows.Where(Enabled).Select(row => new EquipmentDefinition(
                 row["equipment_template_id"], Int(row, "tier"), row["slot"], row["profile"], Int(row, "base_power"), row["source"]))
@@ -89,7 +89,7 @@ namespace KingdomTycoon.Infrastructure.Inventory
 
         public void Bootstrap()
         {
-            if (!game.IsBootstrapped || content.Catalog == null || game.CurrentDocument.Value<string>("contentVersion") is not (CompileTimeActiveContentVersionProvider.P07ContentVersion or CompileTimeActiveContentVersionProvider.P08ContentVersion))
+            if (!game.IsBootstrapped || content.Catalog == null || game.CurrentDocument.Value<string>("contentVersion") is not (CompileTimeActiveContentVersionProvider.P07ContentVersion or CompileTimeActiveContentVersionProvider.P08ContentVersion or CompileTimeActiveContentVersionProvider.P09ContentVersion))
                 throw new InventoryDomainException("P07_CONTENT_MISSING");
             catalog = new CanonicalInventoryCatalog(content.Catalog);
             IsBootstrapped = true;
@@ -180,7 +180,7 @@ namespace KingdomTycoon.Infrastructure.Inventory
 
         public InventoryOperationResult Sell(SellInventoryCommand command) => Mutate(command, draft =>
         {
-            if (draft.Value<string>("contentVersion") == CompileTimeActiveContentVersionProvider.P08ContentVersion)
+            if (draft.Value<string>("contentVersion") is CompileTimeActiveContentVersionProvider.P08ContentVersion or CompileTimeActiveContentVersionProvider.P09ContentVersion)
                 throw new InventoryDomainException("P08_LEGACY_COMMAND_RETIRED");
             if (command.Quantity <= 0) throw new InventoryDomainException("P07_POTION_TRANSFER_INVALID");
             JObject mercenary = FindMercenary(draft, command.MercenaryId); RequireTown(mercenary);

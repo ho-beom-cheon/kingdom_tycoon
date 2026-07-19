@@ -58,3 +58,5 @@
 ### 완료 보고서
 
 - `reports/P08_ECONOMY_STORE_REPORT.md`: P08 경제·상점·자율 거래, Save content.6, UI, Android 검증
+- `design/TYCOON_P09_PRODUCTION_NPC_COMPLETE_DESIGN_v1.0.md`: P09 생산·NPC 최종 구현 계약
+- `reports/P09_PRODUCTION_NPC_REPORT.md`: P09 생산 큐·재고 목표·NPC 숙련·치료, Save content.7 검증

@@ -272,7 +272,13 @@ def _schema(text: str) -> tuple[dict[str, Any], bytes]:
 
 def _registry(schema_sha: str) -> tuple[dict[str, Any], bytes]:
     registry = json.loads(SAVE_REGISTRY_OUTPUT.read_bytes())
-    registry["entries"] = [entry for entry in registry["entries"] if "1.0.0-content.6" not in entry["contentVersions"]]
+    registry["entries"] = [
+        entry for entry in registry["entries"]
+        if not any(
+            version.startswith("1.0.0-content.") and int(version.rsplit(".", 1)[1]) >= 6
+            for version in entry["contentVersions"]
+        )
+    ]
     registry["entries"].append({"contentVersions": ["1.0.0-content.6"], "schemaFile": "save.content.6.schema.json", "sha256": schema_sha})
     encoded = _pretty_json(registry)
     if len(encoded) != 826:
@@ -385,8 +391,28 @@ def generate(package: Package, schema_bytes: bytes, registry_bytes: bytes, extra
         OUTPUT / "content_manifest.json": package.manifest_bytes,
         OUTPUT / "content_manifest.schema.json": _pretty_json(package.schema),
         SAVE_SCHEMA_OUTPUT: schema_bytes,
-        SAVE_REGISTRY_OUTPUT: registry_bytes,
     }
+    expected_registry = json.loads(registry_bytes)
+    current_registry = json.loads(SAVE_REGISTRY_OUTPUT.read_bytes())
+    successor_entries = [
+        entry for entry in current_registry["entries"]
+        if any(
+            version.startswith("1.0.0-content.") and int(version.rsplit(".", 1)[1]) > 6
+            for version in entry["contentVersions"]
+        )
+    ]
+    if check:
+        actual_prefix = dict(current_registry)
+        actual_prefix["entries"] = [
+            entry for entry in current_registry["entries"]
+            if entry not in successor_entries
+        ]
+        if actual_prefix != expected_registry:
+            raise ContractError("P08 registry entry drifted")
+    else:
+        merged_registry = dict(expected_registry)
+        merged_registry["entries"] = expected_registry["entries"] + successor_entries
+        files[SAVE_REGISTRY_OUTPUT] = _pretty_json(merged_registry)
     files.update({OUTPUT / name: contents for name, contents in package.csv_bytes.items()})
     files.update(extras)
     failures: list[str] = []
