@@ -58,7 +58,7 @@ namespace KingdomTycoon.Infrastructure.Progression
 
         public P11ProgressionCatalog(ContentCatalog catalog)
         {
-            if (catalog?.ContentVersion != CompileTimeActiveContentVersionProvider.P11ContentVersion)
+            if (catalog?.ContentVersion is not (CompileTimeActiveContentVersionProvider.P11ContentVersion or CompileTimeActiveContentVersionProvider.P12ContentVersion))
                 throw new ProgressionDomainException("P11_CONTENT_VERSION_UNSUPPORTED");
             ranks = catalog.GetTable("mercenary_ranks.csv").Rows.Where(Enabled).Select(row => new RankRule
             {
@@ -146,7 +146,7 @@ namespace KingdomTycoon.Infrastructure.Progression
 
         public void Bootstrap()
         {
-            if (!game.IsBootstrapped || game.CurrentDocument.Value<string>("contentVersion") != CompileTimeActiveContentVersionProvider.P11ContentVersion)
+            if (!game.IsBootstrapped || game.CurrentDocument.Value<string>("contentVersion") is not (CompileTimeActiveContentVersionProvider.P11ContentVersion or CompileTimeActiveContentVersionProvider.P12ContentVersion))
                 throw new ProgressionDomainException("P11_CONTENT_VERSION_UNSUPPORTED");
             catalog = new P11ProgressionCatalog(content.Catalog);
             inventoryCatalog = new CanonicalInventoryCatalog(content.Catalog);
@@ -213,7 +213,7 @@ namespace KingdomTycoon.Infrastructure.Progression
             {
                 ["status"] = "IN_REVIEW", ["targetRankId"] = review.To, ["operationId"] = command.OperationId.ToString("D"),
                 ["startedAtUtc"] = started, ["finishesAtUtc"] = finishes,
-                ["costSnapshot"] = new JObject { ["contentVersion"] = CompileTimeActiveContentVersionProvider.P11ContentVersion,
+                ["costSnapshot"] = new JObject { ["contentVersion"] = game.CurrentDocument.Value<string>("contentVersion"),
                     ["fromRankId"] = rank.Id, ["toRankId"] = review.To, ["personalGold"] = personal, ["kingdomGold"] = kingdom,
                     ["contributionRequired"] = rank.Contribution, ["reviewSeconds"] = review.Seconds,
                     ["items"] = new JArray(items.Select(value => new JObject { ["itemId"] = value.Id, ["quantity"] = value.Quantity })) }

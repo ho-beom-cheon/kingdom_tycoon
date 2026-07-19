@@ -41,7 +41,7 @@ namespace KingdomTycoon.Infrastructure.EquipmentGrowth
 
         public P10EquipmentGrowthCatalog(ContentCatalog catalog)
         {
-            if (catalog?.ContentVersion is not (CompileTimeActiveContentVersionProvider.P10ContentVersion or CompileTimeActiveContentVersionProvider.P11ContentVersion)) throw new EquipmentGrowthDomainException("P10_CONTENT_MISSING");
+            if (catalog?.ContentVersion is not (CompileTimeActiveContentVersionProvider.P10ContentVersion or CompileTimeActiveContentVersionProvider.P11ContentVersion or CompileTimeActiveContentVersionProvider.P12ContentVersion)) throw new EquipmentGrowthDomainException("P10_CONTENT_MISSING");
             facilities = catalog.GetTable("equipment_growth_facility_rules.csv").Rows.Where(Enabled).Select(row => new FacilityRule
             {
                 Level = Int(row, "facility_level"), MaxEnhancement = Int(row, "max_enhancement_level"), Refine = Bool(row, "refine_enabled"),
@@ -105,7 +105,7 @@ namespace KingdomTycoon.Infrastructure.EquipmentGrowth
 
         public void Bootstrap()
         {
-            if (!game.IsBootstrapped || game.CurrentDocument.Value<string>("contentVersion") is not (CompileTimeActiveContentVersionProvider.P10ContentVersion or CompileTimeActiveContentVersionProvider.P11ContentVersion) || content.Catalog?.ContentVersion is not (CompileTimeActiveContentVersionProvider.P10ContentVersion or CompileTimeActiveContentVersionProvider.P11ContentVersion))
+            if (!game.IsBootstrapped || game.CurrentDocument.Value<string>("contentVersion") is not (CompileTimeActiveContentVersionProvider.P10ContentVersion or CompileTimeActiveContentVersionProvider.P11ContentVersion or CompileTimeActiveContentVersionProvider.P12ContentVersion) || content.Catalog?.ContentVersion is not (CompileTimeActiveContentVersionProvider.P10ContentVersion or CompileTimeActiveContentVersionProvider.P11ContentVersion or CompileTimeActiveContentVersionProvider.P12ContentVersion))
                 throw new EquipmentGrowthDomainException("P10_CONTENT_MISSING");
             catalog = new P10EquipmentGrowthCatalog(content.Catalog);
             IsBootstrapped = true;

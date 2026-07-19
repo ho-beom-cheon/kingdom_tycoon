@@ -1,0 +1,5 @@
+facility_level,max_enhancement_level,refine_enabled,dismantle_enabled,batch_dismantle_limit,status,enabled
+1,0,FALSE,TRUE,10,TUNABLE,TRUE
+2,5,FALSE,TRUE,10,TUNABLE,TRUE
+3,8,TRUE,TRUE,20,TUNABLE,TRUE
+4,10,TRUE,TRUE,20,TUNABLE,TRUE
