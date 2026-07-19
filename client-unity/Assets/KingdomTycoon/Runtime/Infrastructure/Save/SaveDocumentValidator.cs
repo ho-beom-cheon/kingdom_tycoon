@@ -58,6 +58,11 @@ namespace KingdomTycoon.Infrastructure.Save
         }
 
         public SaveDocumentValidator(string legacySchemaJson, string content5SchemaJson, string content6SchemaJson)
+            : this(legacySchemaJson, content5SchemaJson, content6SchemaJson, null)
+        {
+        }
+
+        public SaveDocumentValidator(string legacySchemaJson, string content5SchemaJson, string content6SchemaJson, string content7SchemaJson)
         {
             schema = StrictJson.ParseObject(legacySchemaJson ?? throw new ArgumentNullException(nameof(legacySchemaJson)));
             var content5 = StrictJson.ParseObject(content5SchemaJson ?? throw new ArgumentNullException(nameof(content5SchemaJson)));
@@ -68,6 +73,10 @@ namespace KingdomTycoon.Infrastructure.Save
             if (content6SchemaJson != null)
             {
                 schemas["1.0.0-content.6"] = StrictJson.ParseObject(content6SchemaJson);
+            }
+            if (content7SchemaJson != null)
+            {
+                schemas["1.0.0-content.7"] = StrictJson.ParseObject(content7SchemaJson);
             }
             versionSchemas = schemas;
         }
@@ -115,6 +124,7 @@ namespace KingdomTycoon.Infrastructure.Save
             ValidateJournal(document, source, report);
             ValidateRewardSnapshots(document, source, report);
             ValidateEconomy(document, source, report);
+            ValidateProduction(document, source, report);
             return report;
         }
 
@@ -519,7 +529,7 @@ namespace KingdomTycoon.Infrastructure.Save
 
         private static void ValidateEconomy(JObject document, string source, ValidationReport report)
         {
-            if (document.Value<string>("contentVersion") != "1.0.0-content.6") return;
+            if (document.Value<string>("contentVersion") is not ("1.0.0-content.6" or "1.0.0-content.7")) return;
             JObject economy = (JObject)document["payload"]?["economy"];
             if (economy == null) return;
             JObject store = (JObject)economy["store"];
@@ -575,6 +585,36 @@ namespace KingdomTycoon.Infrastructure.Save
             {
                 report.AddError("P08_LEDGER_CORRUPT", source, "/payload/economy/store/ledger/nextSequence", "Ledger nextSequence is not contiguous.");
             }
+        }
+
+        private static void ValidateProduction(JObject document, string source, ValidationReport report)
+        {
+            if (document.Value<string>("contentVersion") != "1.0.0-content.7") return;
+            JObject production = document["payload"]?["production"] as JObject;
+            if (production == null) return;
+            JObject[] queues = production["facilityQueues"]!.Children<JObject>().ToArray();
+            string[] expected = { "FAC_ALCHEMY", "FAC_BLACKSMITH", "FAC_INFIRMARY" };
+            if (!queues.Select(value => value.Value<string>("facilityId")).OrderBy(value => value, StringComparer.Ordinal).SequenceEqual(expected))
+                report.AddError("P09_FACILITY_QUEUE_SET_INVALID", source, "/payload/production/facilityQueues", "Production queues must cover exactly the three P09 facilities.");
+            var jobIds = new HashSet<string>(StringComparer.Ordinal);
+            foreach (JObject queue in queues.OrderBy(value => value.Value<string>("facilityId"), StringComparer.Ordinal))
+            {
+                long previousQueueNo = 0;
+                foreach (JObject job in queue["jobs"]!.Children<JObject>())
+                {
+                    long queueNo = job.Value<long>("queueNo"); string jobId = job.Value<string>("jobId");
+                    if (queueNo <= previousQueueNo || !jobIds.Add(jobId) || job.Value<long>("ticksRemaining") > job.Value<long>("ticksTotal"))
+                        report.AddError("P09_QUEUE_INVALID", source, "/payload/production/facilityQueues", "Production job identity, order or tick range is invalid.", jobId);
+                    previousQueueNo = queueNo;
+                    bool craft = job.Value<string>("jobKind") == "CRAFT";
+                    if ((job["recipeId"]!.Type != JTokenType.Null) != craft || (job["targetMercenaryInstanceId"]!.Type != JTokenType.Null) == craft)
+                        report.AddError("P09_JOB_UNION_INVALID", source, "/payload/production/facilityQueues", "Production job discriminator fields are inconsistent.", jobId);
+                }
+            }
+            var targetIds = new HashSet<string>(StringComparer.Ordinal);
+            foreach (JObject target in production["stockTargets"]!.Children<JObject>())
+                if (!targetIds.Add(target.Value<string>("targetId")) || target.Value<int>("targetQuantity") < target.Value<int>("minTarget") || target.Value<int>("targetQuantity") > target.Value<int>("maxTarget"))
+                    report.AddError("P09_TARGET_INVALID", source, "/payload/production/stockTargets", "Production stock target is duplicated or out of range.", target.Value<string>("targetId"));
         }
 
         private static void ValidateRewardSnapshots(JObject document, string source, ValidationReport report)

@@ -1,0 +1,5 @@
+facility_level,queue_capacity,speed_bps,status,enabled
+1,4,10000,TUNABLE,TRUE
+2,6,11250,TUNABLE,TRUE
+3,8,12750,TUNABLE,TRUE
+4,10,14500,TUNABLE,TRUE

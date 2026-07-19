@@ -77,7 +77,7 @@ namespace KingdomTycoon.Infrastructure.Economy
 
         public P08EconomyCatalog(ContentCatalog catalog)
         {
-            if (catalog?.ContentVersion != CompileTimeActiveContentVersionProvider.P08ContentVersion)
+            if (catalog?.ContentVersion is not (CompileTimeActiveContentVersionProvider.P08ContentVersion or CompileTimeActiveContentVersionProvider.P09ContentVersion))
                 throw new EconomyDomainException("P08_CONTENT_MISSING");
             policies = catalog.GetTable("pricing_policies.csv").Rows.Where(Enabled).Select(row => new PricePolicy(row["policy_id"], Int(row, "multiplier_bps"), Int(row, "min_store_level"))).ToDictionary(value => value.Id, StringComparer.Ordinal);
             levels = catalog.GetTable("store_level_rules.csv").Rows.Where(Enabled).Select(row => new LevelRule
@@ -170,7 +170,7 @@ namespace KingdomTycoon.Infrastructure.Economy
 
         public void Bootstrap()
         {
-            if (!game.IsBootstrapped || content.Catalog?.ContentVersion != CompileTimeActiveContentVersionProvider.P08ContentVersion)
+            if (!game.IsBootstrapped || content.Catalog?.ContentVersion is not (CompileTimeActiveContentVersionProvider.P08ContentVersion or CompileTimeActiveContentVersionProvider.P09ContentVersion))
                 throw new EconomyDomainException("P08_CONTENT_MISSING");
             catalog = new P08EconomyCatalog(content.Catalog);
             IsBootstrapped = true;
@@ -204,7 +204,7 @@ namespace KingdomTycoon.Infrastructure.Economy
             EnsureReady(); JObject document = game.Snapshot(); JObject store = Store(document); string policyId = document["payload"]!["kingdom"]!.Value<string>("pricingPolicy");
             return Rfc8785Canonicalizer.ComputeSha256(new JObject
             {
-                ["contentVersion"] = CompileTimeActiveContentVersionProvider.P08ContentVersion, ["saveRevision"] = game.Revision,
+                ["contentVersion"] = document.Value<string>("contentVersion"), ["saveRevision"] = game.Revision,
                 ["stockVersion"] = store.Value<long>("stockVersion"), ["policyId"] = policyId,
                 ["facilityStateHash"] = FacilityStateHash(document), ["mercenaryInstanceId"] = mercenaryId,
                 ["lines"] = new JArray((lines ?? Array.Empty<StoreCommandLine>()).Select(value => value.ToJson(true)))
@@ -318,7 +318,7 @@ namespace KingdomTycoon.Infrastructure.Economy
                             ["instanceId"] = instanceId, ["equipmentTemplateId"] = definition.Id, ["tier"] = definition.Tier,
                             ["qualityId"] = "QUALITY_COMMON", ["enhancementLevel"] = 0, ["refineOption"] = null,
                             ["locked"] = false, ["equippedByMercenaryInstanceId"] = null,
-                            ["sourceContentVersion"] = CompileTimeActiveContentVersionProvider.P08ContentVersion,
+                            ["sourceContentVersion"] = draft.Value<string>("contentVersion"),
                             ["generationOperationId"] = command.OperationId.ToString("D"), ["stockAcquiredAtUtc"] = FormatUtc(clock.UtcNow),
                             ["stockAcquiredOperationId"] = command.OperationId.ToString("D"), ["sourceType"] = "SYSTEM_SUPPLY"
                         });
@@ -334,6 +334,7 @@ namespace KingdomTycoon.Infrastructure.Economy
         public EconomyOperationResult EnsureSystemSupply()
         {
             EnsureReady(); JObject document = game.Snapshot(); RequireOpen(document); JObject state = (JObject)Store(document)["supplyState"]!;
+            if (state.Value<string>("mode") == "PRODUCTION_OWNED") return null;
             bool initial = state["lastRefreshOperationId"]!.Type == JTokenType.Null;
             bool refreshDue = state.Value<int>("buyCountSinceRefresh") >= catalog.SupplyRefreshBuyCount;
             if (!initial && !refreshDue) return null;
@@ -594,7 +595,7 @@ namespace KingdomTycoon.Infrastructure.Economy
 
         private string QuoteContextHash(JObject document, string mercenaryId, IEnumerable<StoreCommandLine> lines) => Rfc8785Canonicalizer.ComputeSha256(new JObject
         {
-            ["contentVersion"] = CompileTimeActiveContentVersionProvider.P08ContentVersion, ["saveRevision"] = document.Value<long>("revision"),
+            ["contentVersion"] = document.Value<string>("contentVersion"), ["saveRevision"] = document.Value<long>("revision"),
             ["stockVersion"] = Store(document).Value<long>("stockVersion"), ["policyId"] = document["payload"]!["kingdom"]!.Value<string>("pricingPolicy"),
             ["facilityStateHash"] = FacilityStateHash(document), ["mercenaryInstanceId"] = mercenaryId,
             ["lines"] = new JArray(lines.Select(value => value.ToJson(true)))
