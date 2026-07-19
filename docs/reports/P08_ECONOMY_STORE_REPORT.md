@@ -97,6 +97,21 @@ python scripts/generate_p08_content.py --check
 
 Unity 테스트·캡처·빌드는 프로젝트 고정 에디터 `6000.3.20f1 (c9ba695d4f07)`에서 실행했다.
 
+### 6.1 런타임 실행 연결 보정 (2026-07-19)
+
+기존 P08 구현은 개별 시스템과 생성 자산 검증은 통과했지만, 실제 Bootstrap 진입 화면에서 사냥터로 이동하는
+동선과 상점 진입 버튼의 활성 수명주기가 완결되지 않아 플레이어가 기능을 사용할 수 없었다. 다음 실행 연결을
+추가하고 PlayMode 회귀 테스트로 고정했다.
+
+- `AppRoot` 아래에 UI 배경용 영속 카메라를 두어 모든 화면의 `No cameras rendering` 상태를 제거했다.
+- 공통 HUD에 `왕국`·`사냥터` 이동 버튼을 추가해 Kingdom과 Region을 실제 플레이 중 왕복할 수 있게 했다.
+- 상점 진입 버튼은 오브젝트 비활성화 대신 `CanvasGroup`으로 표시·입력을 제어하고, 클릭 이벤트를 씬에 영구 저장한다.
+- 상점 화면을 먼저 열지 않아도 귀환 자율 거래가 시스템 초도 보급을 생성한 뒤 판매·물약·장비 구매를 수행한다.
+- P06 계약대로 출정 용병 1~4명 선택과 출정 시작은 사용자가 수행한다. 무인 자동 재출정은 P12 정책 설계 범위로 남긴다.
+
+보정 후 `P08EconomyTests`는 **8 passed / 0 failed**, `P08StoreScreenTests`는
+**6 passed / 0 failed**이며 generated-asset verifier와 portable P08 gate도 통과했다.
+
 ## 7. Android 개발 빌드
 
 - Entry: `KingdomTycoon.Editor.P08AndroidBuilder.Build`
