@@ -200,7 +200,7 @@ namespace KingdomTycoon.Domain.Mercenaries
             {
                 if (slot.Value.Type == JTokenType.Null) continue;
                 string id = slot.Value.Value<string>();
-                Require(equipment.TryGetValue(id, out JObject item) && item.Value<string>("equippedByMercenaryInstanceId") == mercenary.Value<string>("instanceId") && occupied.Add(id) && catalog.IsEquipmentEligible(item.Value<string>("templateId"), job), "SAVE_MERCENARY_EQUIPMENT_LINK_INVALID");
+                Require(equipment.TryGetValue(id, out JObject item) && item.Value<string>("equippedByMercenaryInstanceId") == mercenary.Value<string>("instanceId") && occupied.Add(id) && catalog.IsEquipmentEligible(item.Value<string>("equipmentTemplateId"), job), "SAVE_MERCENARY_EQUIPMENT_LINK_INVALID");
             }
         }
 
