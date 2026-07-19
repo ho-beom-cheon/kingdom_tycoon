@@ -138,4 +138,23 @@ public class JdbcWalletRepository implements WalletRepository {
         );
         return entries.stream().findFirst();
     }
+
+    @Override
+    public List<WalletBalance> findAll(long playerId) {
+        return jdbcTemplate.query(
+            """
+                SELECT player_id, currency_key, balance, version
+                  FROM game.wallet
+                 WHERE player_id = ?
+                 ORDER BY currency_key
+                """,
+            (resultSet, rowNumber) -> new WalletBalance(
+                resultSet.getLong("player_id"),
+                resultSet.getString("currency_key"),
+                resultSet.getLong("balance"),
+                resultSet.getLong("version")
+            ),
+            playerId
+        );
+    }
 }

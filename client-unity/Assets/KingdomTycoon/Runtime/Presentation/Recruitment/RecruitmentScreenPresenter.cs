@@ -1,4 +1,6 @@
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using KingdomTycoon.Application.Recruitment;
 using KingdomTycoon.Bootstrap;
 using KingdomTycoon.Domain.Recruitment;
@@ -62,12 +64,28 @@ namespace KingdomTycoon.Presentation.Recruitment
         private void Hire(string id) =>
             Run(() => service.Hire(service.CreateHireCommand(id)), "새 용병이 로스터에 합류했습니다.");
 
-        private void Special()
+        private async void Special()
         {
             RecruitmentOverviewDto state = service.GetOverview();
             string pool = state.Tickets > 0 ? "SPECIAL_STANDARD_TICKET" : "SPECIAL_STANDARD_FREE_PREMIUM";
             string payment = state.Tickets > 0 ? "TICKET" : "FREE_PREMIUM";
-            Run(() => service.RecruitSpecial(service.CreateSpecialCommand(pool, payment)), "특별 모집을 완료했습니다.");
+            await RunAsync(
+                () => service.RecruitSpecialAsync(service.CreateSpecialCommand(pool, payment), CancellationToken.None),
+                "특별 모집을 완료했습니다.");
+        }
+
+        private async Task RunAsync(Func<Task<RecruitmentOperationResult>> action, string success)
+        {
+            try
+            {
+                RecruitmentOperationResult result = await action();
+                Refresh();
+                view.ShowToast(result.Replayed ? "이미 처리된 요청입니다." : success);
+            }
+            catch (Exception error)
+            {
+                view.ShowToast(Code(error), true);
+            }
         }
 
         private void Run(Func<RecruitmentOperationResult> action, string success)

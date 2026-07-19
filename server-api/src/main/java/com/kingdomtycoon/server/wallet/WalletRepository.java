@@ -1,6 +1,7 @@
 package com.kingdomtycoon.server.wallet;
 
 import java.util.Optional;
+import java.util.List;
 import java.util.UUID;
 
 public interface WalletRepository {
@@ -12,6 +13,8 @@ public interface WalletRepository {
     void updateBalance(long playerId, String currencyKey, long newBalance, long expectedVersion);
 
     Optional<WalletLedgerEntry> findLedger(long playerId, UUID requestId, short lineNo);
+
+    List<WalletBalance> findAll(long playerId);
 
     record WalletBalance(long playerId, String currencyKey, long balance, long version) {
     }

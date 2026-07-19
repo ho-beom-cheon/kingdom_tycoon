@@ -32,3 +32,8 @@ management:
 server:
   servlet:
     context-path: /api/v1
+
+tycoon:
+  dev-session:
+    enabled: ${TYCOON_DEV_SESSION_ENABLED:false}
+    ttl: ${TYCOON_DEV_SESSION_TTL:PT24H}

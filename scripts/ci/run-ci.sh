@@ -96,6 +96,7 @@ p12_gate="scripts/ci/p12.sh"
 p13_gate="scripts/ci/p13.sh"
 p14_gate="scripts/ci/p14.sh"
 p15_gate="scripts/ci/p15.sh"
+p16_gate="scripts/ci/p16.sh"
 
 if [ -f "$validator" ]; then
   command -v python >/dev/null 2>&1 || fail "Python is required for ${validator}"
@@ -112,6 +113,7 @@ if [ -f "$validator" ]; then
   [ -f "$p13_gate" ] || fail "P13 CI gate is missing: ${p13_gate}"
   [ -f "$p14_gate" ] || fail "P14 CI gate is missing: ${p14_gate}"
   [ -f "$p15_gate" ] || fail "P15 CI gate is missing: ${p15_gate}"
+  [ -f "$p16_gate" ] || fail "P16 CI gate is missing: ${p16_gate}"
   printf '[%s] Canonical package: %s --check\n' "$pipeline_name" "$canonical_generator"
   PYTHONUNBUFFERED=1 python -u "$canonical_generator" --check
   printf '[%s] P04 package: %s --check\n' "$pipeline_name" "$p04_generator"
@@ -138,6 +140,8 @@ if [ -f "$validator" ]; then
   bash "$p14_gate"
   printf '[%s] P15 gate: %s\n' "$pipeline_name" "$p15_gate"
   bash "$p15_gate"
+  printf '[%s] P16 gate: %s\n' "$pipeline_name" "$p16_gate"
+  bash "$p16_gate"
   printf '[%s] Validator: %s\n' "$pipeline_name" "$validator"
   PYTHONUNBUFFERED=1 python -u "$validator"
   finish_step "${validator} completed"
