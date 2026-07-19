@@ -392,7 +392,7 @@ namespace KingdomTycoon.Editor
         private static TMP_Text CreateText(string name, Transform parent, string value, float size, TextAlignmentOptions alignment)
         {
             var gameObject = new GameObject(name, typeof(RectTransform), typeof(TextMeshProUGUI)); gameObject.transform.SetParent(parent, false);
-            TextMeshProUGUI text = gameObject.GetComponent<TextMeshProUGUI>(); text.text = value; text.fontSize = size; text.alignment = alignment; text.color = new Color32(244, 239, 222, 255); text.enableWordWrapping = true; text.raycastTarget = false;
+            TextMeshProUGUI text = gameObject.GetComponent<TextMeshProUGUI>(); text.text = value; text.fontSize = size; text.alignment = alignment; text.color = new Color32(244, 239, 222, 255); text.textWrappingMode = TextWrappingModes.Normal; text.raycastTarget = false;
             TMP_FontAsset font = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(FontAssetPath);
             if (font != null) text.font = font;
             return text;
