@@ -239,6 +239,7 @@ def build_extras(schema_bytes: bytes) -> tuple[bytes, dict[Path, bytes]]:
     registry["entries"] = [entry for entry in registry["entries"] if "1.0.0-content.8" not in entry["contentVersions"]]
     registry["entries"].append({"contentVersions": ["1.0.0-content.8"],
                                 "schemaFile": "save.content.8.schema.json", "sha256": sha(schema_bytes)})
+    registry["entries"].sort(key=lambda entry: int(entry["contentVersions"][0].rsplit(".", 1)[-1]))
     files = {
         TEMPLATE_OUTPUT: pretty(new_game),
         GOLDEN_ROOT / "p10-new-game.golden.json": pretty(new_game),

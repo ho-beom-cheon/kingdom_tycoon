@@ -11,28 +11,34 @@ namespace KingdomTycoon.Infrastructure.Save
         private readonly string content6SchemaJson;
         private readonly string content7SchemaJson;
         private readonly string content8SchemaJson;
+        private readonly string content9SchemaJson;
 
         public SaveService(string persistentDataPath, string schemaJson)
-            : this(persistentDataPath, schemaJson, null, null, null, null)
+            : this(persistentDataPath, schemaJson, null, null, null, null, null)
         {
         }
 
         public SaveService(string persistentDataPath, string schemaJson, string content5SchemaJson)
-            : this(persistentDataPath, schemaJson, content5SchemaJson, null, null, null)
+            : this(persistentDataPath, schemaJson, content5SchemaJson, null, null, null, null)
         {
         }
 
         public SaveService(string persistentDataPath, string schemaJson, string content5SchemaJson, string content6SchemaJson)
-            : this(persistentDataPath, schemaJson, content5SchemaJson, content6SchemaJson, null, null)
+            : this(persistentDataPath, schemaJson, content5SchemaJson, content6SchemaJson, null, null, null)
         {
         }
 
         public SaveService(string persistentDataPath, string schemaJson, string content5SchemaJson, string content6SchemaJson, string content7SchemaJson)
-            : this(persistentDataPath, schemaJson, content5SchemaJson, content6SchemaJson, content7SchemaJson, null)
+            : this(persistentDataPath, schemaJson, content5SchemaJson, content6SchemaJson, content7SchemaJson, null, null)
         {
         }
 
         public SaveService(string persistentDataPath, string schemaJson, string content5SchemaJson, string content6SchemaJson, string content7SchemaJson, string content8SchemaJson)
+            : this(persistentDataPath, schemaJson, content5SchemaJson, content6SchemaJson, content7SchemaJson, content8SchemaJson, null)
+        {
+        }
+
+        public SaveService(string persistentDataPath, string schemaJson, string content5SchemaJson, string content6SchemaJson, string content7SchemaJson, string content8SchemaJson, string content9SchemaJson)
         {
             this.persistentDataPath = string.IsNullOrWhiteSpace(persistentDataPath)
                 ? throw new ArgumentException("Persistent data path is required.", nameof(persistentDataPath))
@@ -42,6 +48,7 @@ namespace KingdomTycoon.Infrastructure.Save
             this.content6SchemaJson = content6SchemaJson;
             this.content7SchemaJson = content7SchemaJson;
             this.content8SchemaJson = content8SchemaJson;
+            this.content9SchemaJson = content9SchemaJson;
         }
 
         public int InitializationOrder => 30;
@@ -60,7 +67,7 @@ namespace KingdomTycoon.Infrastructure.Save
                 ? new SaveDocumentValidator(schemaJson)
                 : content6SchemaJson == null
                     ? new SaveDocumentValidator(schemaJson, content5SchemaJson)
-                    : new SaveDocumentValidator(schemaJson, content5SchemaJson, content6SchemaJson, content7SchemaJson, content8SchemaJson);
+                    : new SaveDocumentValidator(schemaJson, content5SchemaJson, content6SchemaJson, content7SchemaJson, content8SchemaJson, content9SchemaJson);
             Migrations = new SaveMigrationRegistry(1);
             Repository = new AtomicSaveRepository(persistentDataPath, Validator);
         }

@@ -113,7 +113,8 @@ namespace KingdomTycoon.Domain.Mercenaries
         };
 
         private static readonly string[] Slots = { "WEAPON", "ARMOR", "HELMET", "ACCESSORY" };
-        private static readonly string[] RecordFields = { "huntCount", "killCount", "raidClearCount", "itemsCollected" };
+        private static readonly string[] LegacyRecordFields = { "huntCount", "killCount", "raidClearCount", "itemsCollected" };
+        private static readonly string[] P11RecordFields = { "huntCount", "killCount", "raidClearCount", "itemsCollected", "region2BattleCount", "eliteKillCount", "bossContributionCount" };
 
         public void Validate(JObject document, IMercenaryCatalogRules catalog)
         {
@@ -177,12 +178,12 @@ namespace KingdomTycoon.Domain.Mercenaries
             Require(autonomy != null && States.Contains(autonomy.Value<string>("state")) && Reasons.Contains(autonomy.Value<string>("reasonCode")), "SAVE_MERCENARY_AUTONOMY_INVALID");
             Require(IsUtc(autonomy.Value<string>("stateStartedAtUtc")) && IsUtc(autonomy.Value<string>("nextDecisionAtUtc")), "SAVE_MERCENARY_AUTONOMY_INVALID");
             string state = autonomy.Value<string>("state");
-            bool townSafe = state is "IDLE_TOWN" or "PROMOTION_READY" or "INJURED";
+            bool townSafe = state is "IDLE_TOWN" or "PROMOTION_READY" or "PROMOTION_PROCESS" or "INJURED";
             if (!mercenary.Value<bool>("active"))
                 Require(townSafe && IsNull(autonomy["currentRegionId"]) && IsNull(autonomy["targetInstanceId"]), "SAVE_MERCENARY_INACTIVE_STATE_INVALID");
             if (autonomy["targetInstanceId"]!.Type != JTokenType.Null)
                 Require(IsUuidV7(autonomy.Value<string>("targetInstanceId")), "SAVE_MERCENARY_AUTONOMY_INVALID");
-            if (state is "IDLE_TOWN" or "PROMOTION_READY" or "INJURED")
+            if (state is "IDLE_TOWN" or "PROMOTION_READY" or "PROMOTION_PROCESS" or "INJURED")
                 Require(IsNull(autonomy["currentRegionId"]), "SAVE_MERCENARY_AUTONOMY_INVALID");
         }
 
@@ -226,7 +227,10 @@ namespace KingdomTycoon.Domain.Mercenaries
 
         private static void ValidateRecords(JObject records)
         {
-            Require(records != null && records.Properties().Select(value => value.Name).OrderBy(value => value, StringComparer.Ordinal).SequenceEqual(RecordFields.OrderBy(value => value, StringComparer.Ordinal)) && RecordFields.All(field => records.Value<long>(field) >= 0), "SAVE_MERCENARY_RECORD_INVALID");
+            Require(records != null, "SAVE_MERCENARY_RECORD_INVALID");
+            string[] actual = records.Properties().Select(value => value.Name).OrderBy(value => value, StringComparer.Ordinal).ToArray();
+            string[] expected = actual.Length == P11RecordFields.Length ? P11RecordFields : LegacyRecordFields;
+            Require(actual.SequenceEqual(expected.OrderBy(value => value, StringComparer.Ordinal)) && expected.All(field => records.Value<long>(field) >= 0), "SAVE_MERCENARY_RECORD_INVALID");
         }
 
         private static void ValidateName(string value)

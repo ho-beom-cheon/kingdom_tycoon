@@ -11,6 +11,7 @@ using KingdomTycoon.Infrastructure.Content.Migrations;
 using KingdomTycoon.Infrastructure.Facilities;
 using KingdomTycoon.Infrastructure.Inventory;
 using KingdomTycoon.Infrastructure.Save;
+using KingdomTycoon.Infrastructure.Progression;
 using KingdomTycoon.Services;
 using Newtonsoft.Json.Linq;
 using CombatSplitMix64 = KingdomTycoon.Domain.Combat.SplitMix64;
@@ -43,12 +44,15 @@ namespace KingdomTycoon.Infrastructure.Combat
         {
             MonsterId = row["monster_id"];
             MaxHp = Int(row, "hp"); Attack = Int(row, "attack"); Defense = Int(row, "defense"); Bounty = Int(row, "bounty_personal_gold");
+            Experience = Int(row, "xp"); Type = row["type"];
         }
         public string MonsterId { get; }
         public int MaxHp { get; }
         public int Attack { get; }
         public int Defense { get; }
         public int Bounty { get; }
+        public int Experience { get; }
+        public string Type { get; }
         private static int Int(IReadOnlyDictionary<string, string> row, string key) => int.Parse(row[key], NumberStyles.None, CultureInfo.InvariantCulture);
     }
 
@@ -77,7 +81,7 @@ namespace KingdomTycoon.Infrastructure.Combat
         public CanonicalCombatCatalog(ContentCatalog catalog)
         {
             if (catalog == null) throw new ArgumentNullException(nameof(catalog));
-            if (catalog.ContentVersion is not (CompileTimeActiveContentVersionProvider.P06ContentVersion or CompileTimeActiveContentVersionProvider.P07ContentVersion or CompileTimeActiveContentVersionProvider.P08ContentVersion or CompileTimeActiveContentVersionProvider.P09ContentVersion or CompileTimeActiveContentVersionProvider.P10ContentVersion))
+            if (catalog.ContentVersion is not (CompileTimeActiveContentVersionProvider.P06ContentVersion or CompileTimeActiveContentVersionProvider.P07ContentVersion or CompileTimeActiveContentVersionProvider.P08ContentVersion or CompileTimeActiveContentVersionProvider.P09ContentVersion or CompileTimeActiveContentVersionProvider.P10ContentVersion or CompileTimeActiveContentVersionProvider.P11ContentVersion))
                 throw new CombatDomainException("P06_CONTENT_VERSION_UNSUPPORTED");
             ContentVersion = catalog.ContentVersion;
             jobs = catalog.GetTable("combat_job_profiles.csv").Rows.Where(Enabled).Select(row => new CombatJobProfile(row)).ToDictionary(value => value.JobId, StringComparer.Ordinal);
@@ -126,6 +130,7 @@ namespace KingdomTycoon.Infrastructure.Combat
         private ContentCatalogService content;
         private FacilityGameService game;
         private InventoryGameService inventory;
+        private ProgressionGameService progression;
         private CanonicalCombatCatalog catalog;
         private RuntimeSession session;
         private RecallHuntResult lastTerminalResult;
@@ -144,6 +149,8 @@ namespace KingdomTycoon.Infrastructure.Combat
             game = services.Get<FacilityGameService>();
             try { inventory = services.Get<InventoryGameService>(); }
             catch (InvalidOperationException) { inventory = null; }
+            try { progression = services.Get<ProgressionGameService>(); }
+            catch (InvalidOperationException) { progression = null; }
         }
 
         public void Bootstrap()
@@ -157,7 +164,7 @@ namespace KingdomTycoon.Infrastructure.Combat
                 current = new P05ToP06ContentMigration(clock).Apply(current);
                 needsWrite = true;
             }
-            else if (current.Value<string>("contentVersion") is not (CompileTimeActiveContentVersionProvider.P06ContentVersion or CompileTimeActiveContentVersionProvider.P07ContentVersion or CompileTimeActiveContentVersionProvider.P08ContentVersion or CompileTimeActiveContentVersionProvider.P09ContentVersion or CompileTimeActiveContentVersionProvider.P10ContentVersion))
+            else if (current.Value<string>("contentVersion") is not (CompileTimeActiveContentVersionProvider.P06ContentVersion or CompileTimeActiveContentVersionProvider.P07ContentVersion or CompileTimeActiveContentVersionProvider.P08ContentVersion or CompileTimeActiveContentVersionProvider.P09ContentVersion or CompileTimeActiveContentVersionProvider.P10ContentVersion or CompileTimeActiveContentVersionProvider.P11ContentVersion))
             {
                 throw new CombatDomainException("P06_CONTENT_VERSION_UNSUPPORTED");
             }
@@ -183,7 +190,7 @@ namespace KingdomTycoon.Infrastructure.Combat
             }
             Require(session == null, "P06_COMBAT_INVARIANT");
             Require(command.ExpectedRevision == Revision, "P06_SAVE_REVISION_CONFLICT");
-            Require(command.RegionId == "REGION_R01" && RegionUnlocked(command.RegionId), "P06_REGION_NOT_AVAILABLE");
+            Require(RegionUnlocked(command.RegionId), "P06_REGION_NOT_AVAILABLE");
             string[] party = command.PartyMercenaryInstanceIds.Select(value => value.ToString("D")).ToArray();
             Require(party.Distinct(StringComparer.Ordinal).Count() == party.Length, "P06_PARTY_DUPLICATE");
             JObject current = game.Snapshot();
@@ -267,7 +274,7 @@ namespace KingdomTycoon.Infrastructure.Combat
 
         public void Shutdown()
         {
-            SnapshotChanged = null; HuntSettled = null; session = null; catalog = null; inventory = null; game = null; content = null; save = null; IsBootstrapped = false;
+            SnapshotChanged = null; HuntSettled = null; session = null; catalog = null; progression = null; inventory = null; game = null; content = null; save = null; IsBootstrapped = false;
         }
 
         private RuntimeSession NewSession(Guid huntId, string regionId, string[] party, IReadOnlyDictionary<string, JObject> mercenaries)
@@ -283,6 +290,8 @@ namespace KingdomTycoon.Infrastructure.Combat
             var random = new CombatSplitMix64(seed);
             (EncounterCombatProfile profile, int waveSize) = catalog.SelectEncounter(runtime.RegionId, random);
             MonsterCombatProfile monster = catalog.Monster(profile.MonsterId);
+            runtime.CurrentMonsterExperience = monster.Experience;
+            runtime.CurrentMonsterType = monster.Type;
             var simulation = new HuntSimulation();
             for (int index = 0; index < runtime.Party.Length; index++)
             {
@@ -331,12 +340,16 @@ namespace KingdomTycoon.Infrastructure.Combat
             InventorySettlementMutation loot = inventory?.IsBootstrapped == true
                 ? inventory.ApplyTerminalLoot(draft, completed.HuntOperationId, completed.KillCount, completed.Party)
                 : new InventorySettlementMutation();
+            if (progression?.IsBootstrapped == true)
+                progression.ApplyCombatSettlement(draft, completed.Party, completed.Experience, completed.RegionId,
+                    completed.CompletedBattles, completed.EliteKills, completed.BossContributions, clock.UtcNow);
             var terminalDigest = new JObject
             {
                 ["operationId"] = completed.HuntOperationId.ToString("D"), ["revisionBefore"] = before, ["revisionAfter"] = before + 1,
                 ["terminalState"] = "IDLE_TOWN", ["killCountDelta"] = completed.KillCount, ["huntCountDeltaPerPartyMember"] = completed.KillCount > 0 ? 1 : 0,
                 ["contributionDelta"] = new JArray(contribution), ["personalGoldDelta"] = new JArray(gold), ["rewardJournalCount"] = 1, ["replayed"] = false
             };
+            terminalDigest["experienceDeltaTotal"] = completed.Experience;
             if (inventory?.IsBootstrapped == true)
             {
                 terminalDigest["retainedItems"] = loot.RetainedItems;
@@ -363,6 +376,13 @@ namespace KingdomTycoon.Infrastructure.Combat
         private static void AccumulateCurrentEncounter(RuntimeSession runtime)
         {
             runtime.KillCount += runtime.Simulation.KillCount;
+            if (runtime.Simulation.KillCount > 0)
+            {
+                runtime.Experience = checked(runtime.Experience + (long)runtime.CurrentMonsterExperience * runtime.Simulation.KillCount);
+                runtime.CompletedBattles++;
+                if (runtime.CurrentMonsterType == "ELITE") runtime.EliteKills = checked(runtime.EliteKills + runtime.Simulation.KillCount);
+                if (runtime.CurrentMonsterType == "BOSS") runtime.BossContributions++;
+            }
             Combatant[] members = runtime.Simulation.Entities.Where(value => value.Team == CombatTeam.Party).ToArray();
             for (int index = 0; index < members.Length; index++)
             {
@@ -405,6 +425,12 @@ namespace KingdomTycoon.Infrastructure.Combat
             public HuntSimulation Simulation { get; set; }
             public int EncounterIndex { get; set; }
             public int KillCount { get; set; }
+            public long Experience { get; set; }
+            public int CompletedBattles { get; set; }
+            public int EliteKills { get; set; }
+            public int BossContributions { get; set; }
+            public int CurrentMonsterExperience { get; set; }
+            public string CurrentMonsterType { get; set; }
             public Dictionary<string, long> Contribution { get; } = new(StringComparer.Ordinal);
         }
     }

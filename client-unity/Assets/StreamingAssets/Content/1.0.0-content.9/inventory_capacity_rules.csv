@@ -1,0 +1,5 @@
+warehouse_level,item_stack_slots,equipment_slots,potion_stack_slots,hunt_buffer_slots,status,enabled
+1,40,40,10,12,TUNABLE,TRUE
+2,60,60,14,16,TUNABLE,TRUE
+3,90,90,18,20,TUNABLE,TRUE
+4,120,120,24,24,TUNABLE,TRUE
