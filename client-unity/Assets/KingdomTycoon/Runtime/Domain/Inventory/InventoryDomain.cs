@@ -107,18 +107,26 @@ namespace KingdomTycoon.Domain.Inventory
     public sealed class EquipmentInstance
     {
         public EquipmentInstance(string instanceId, EquipmentDefinition definition, string qualityId, int qualityBps, int enhancementLevel, string refineOption, bool locked)
+            : this(instanceId, definition, qualityId, qualityBps, enhancementLevel, refineOption, string.IsNullOrEmpty(refineOption) ? 0 : 1000, locked)
+        {
+        }
+
+        public EquipmentInstance(string instanceId, EquipmentDefinition definition, string qualityId, int qualityBps, int enhancementLevel, string refineOptionId, int refineValueBps, bool locked)
         {
             if (enhancementLevel is < 0 or > 10) throw new InventoryDomainException("P07_ENHANCEMENT_LEVEL_INVALID");
+            if (refineValueBps is < 0 or > 10_000 || (string.IsNullOrEmpty(refineOptionId) != (refineValueBps == 0))) throw new InventoryDomainException("P07_REFINE_INVALID");
             InstanceId = instanceId; Definition = definition ?? throw new ArgumentNullException(nameof(definition));
             QualityId = qualityId; QualityBps = qualityBps; EnhancementLevel = enhancementLevel;
-            RefineOption = refineOption; Locked = locked;
+            RefineOptionId = refineOptionId; RefineValueBps = refineValueBps; Locked = locked;
         }
         public string InstanceId { get; }
         public EquipmentDefinition Definition { get; }
         public string QualityId { get; }
         public int QualityBps { get; }
         public int EnhancementLevel { get; }
-        public string RefineOption { get; }
+        public string RefineOption => RefineOptionId;
+        public string RefineOptionId { get; }
+        public int RefineValueBps { get; }
         public bool Locked { get; }
     }
 
@@ -182,7 +190,7 @@ namespace KingdomTycoon.Domain.Inventory
                 case "WISDOM": stats.HealPower = power * 80 / 100; stats.StatusPower = Math.Min(1200, power * 4); break;
                 default: throw new InventoryDomainException("P07_EQUIPMENT_PROFILE_INVALID");
             }
-            ApplyRefine(stats, item.RefineOption);
+            ApplyRefine(stats, item.RefineOptionId, item.RefineValueBps);
             return stats;
         }
 
@@ -202,16 +210,17 @@ namespace KingdomTycoon.Domain.Inventory
         private static int Weight(IReadOnlyDictionary<string, int> weights, string key) =>
             weights.TryGetValue(key, out int value) ? value : throw new InventoryDomainException("P07_CONTENT_MISSING");
 
-        private static void ApplyRefine(EquipmentStatBlock stats, string refine)
+        private static void ApplyRefine(EquipmentStatBlock stats, string refine, int valueBps)
         {
             if (string.IsNullOrEmpty(refine)) return;
             switch (refine)
             {
-                case "ATTACK": stats.Attack += Math.Max(1, stats.Attack / 10); break;
-                case "DEFENSE": stats.Defense += Math.Max(1, stats.Defense / 10); break;
-                case "HP": stats.MaxHp += Math.Max(1, stats.MaxHp / 10); break;
-                case "CRIT": stats.CritChance += 100; break;
-                case "FIRE": case "FROST": case "BOSS": case "PART": case "POISON": case "MATERIAL": case "RARE": break;
+                case "ATTACK": case "REF_ATK_POWER": stats.Attack += Math.Max(1, checked(stats.Attack * valueBps / 10_000)); break;
+                case "DEFENSE": case "REF_DEF": stats.Defense += Math.Max(1, checked(stats.Defense * valueBps / 10_000)); break;
+                case "HP": case "REF_HP": stats.MaxHp += Math.Max(1, checked(stats.MaxHp * valueBps / 10_000)); break;
+                case "CRIT": case "REF_CRIT": stats.CritChance = checked(stats.CritChance + valueBps); break;
+                case "FIRE": case "FROST": case "BOSS": case "PART": case "POISON": case "MATERIAL": case "RARE":
+                case "REF_FIRE": case "REF_FROST": case "REF_BOSS": case "REF_PART": case "REF_POISON": case "REF_MATERIAL": case "REF_RARE_FIND": break;
                 default: throw new InventoryDomainException("P07_REFINE_INVALID");
             }
         }

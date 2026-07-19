@@ -1,0 +1,3 @@
+pity_group_id,pity_rule_id,trigger_count,guaranteed_grade_id,reset_on_grade_or_higher_id,guarantee_type,status,enabled
+PITY_GROUP_SPECIAL_STANDARD,PITY_S_PLUS,10,GRADE_S,GRADE_S,GRADE_AT_LEAST,TUNABLE,TRUE
+PITY_GROUP_SPECIAL_STANDARD,PITY_SS,80,GRADE_SS,GRADE_SS,GRADE_AT_LEAST,TUNABLE,TRUE

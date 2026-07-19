@@ -44,7 +44,7 @@ namespace KingdomTycoon.Infrastructure.Production
 
         public P09ProductionCatalog(ContentCatalog catalog)
         {
-            if (catalog?.ContentVersion != CompileTimeActiveContentVersionProvider.P09ContentVersion) throw new ProductionDomainException("P09_CONTENT_MISSING");
+            if (catalog?.ContentVersion is not (CompileTimeActiveContentVersionProvider.P09ContentVersion or CompileTimeActiveContentVersionProvider.P10ContentVersion)) throw new ProductionDomainException("P09_CONTENT_MISSING");
             facilities = catalog.GetTable("production_facility_rules.csv").Rows.Where(Enabled).Select(row => new FacilityRule
             {
                 Level = Int(row, "facility_level"), QueueCapacity = Int(row, "queue_capacity"), SpeedBps = Int(row, "speed_bps")
@@ -147,6 +147,12 @@ namespace KingdomTycoon.Infrastructure.Production
                 ["sourceContentVersion"] = contentVersion, ["generationOperationId"] = operationId.ToString("D"),
                 ["stockAcquiredAtUtc"] = "1970-01-01T00:00:00.000Z", ["stockAcquiredOperationId"] = operationId.ToString("D"), ["sourceType"] = "PRODUCTION"
             });
+            if (contentVersion == CompileTimeActiveContentVersionProvider.P10ContentVersion)
+            {
+                JObject created = (JObject)equipment.Last!;
+                created["enhancementPityBps"] = 0; created["enhancementAttemptCount"] = 0;
+                created["enhancementMaterialInvested"] = new JArray(); created["pendingRefineOption"] = null; created["refineRollCount"] = 0;
+            }
             store["equipment"] = new JArray(equipment.Children<JObject>().OrderBy(value => value.Value<string>("instanceId"), StringComparer.Ordinal));
             store["stockVersion"] = checked(store.Value<long>("stockVersion") + 1);
         }
@@ -176,7 +182,7 @@ namespace KingdomTycoon.Infrastructure.Production
 
         public void Bootstrap()
         {
-            if (!game.IsBootstrapped || content.Catalog?.ContentVersion != CompileTimeActiveContentVersionProvider.P09ContentVersion) throw new ProductionDomainException("P09_CONTENT_MISSING");
+            if (!game.IsBootstrapped || content.Catalog?.ContentVersion is not (CompileTimeActiveContentVersionProvider.P09ContentVersion or CompileTimeActiveContentVersionProvider.P10ContentVersion)) throw new ProductionDomainException("P09_CONTENT_MISSING");
             catalog = new P09ProductionCatalog(content.Catalog); stock = new P09StoreStockSink(content.Catalog); IsBootstrapped = true;
         }
 
@@ -317,7 +323,7 @@ namespace KingdomTycoon.Infrastructure.Production
             if (kind == "CRAFT")
             {
                 if (outputKind == "POTION") stock.AddStack(document, outputId, quantity, operationId);
-                else for (int index = 0; index < quantity; index++) stock.AddEquipment(document, outputId, DeterministicUuid(job.Value<string>("jobId") + ":" + index), RollQuality(job.Value<string>("jobId"), index, AssignedNpc(document, Facility(document, facilityId))), operationId, CompileTimeActiveContentVersionProvider.P09ContentVersion);
+                else for (int index = 0; index < quantity; index++) stock.AddEquipment(document, outputId, DeterministicUuid(job.Value<string>("jobId") + ":" + index), RollQuality(job.Value<string>("jobId"), index, AssignedNpc(document, Facility(document, facilityId))), operationId, document.Value<string>("contentVersion"));
                 P09ProductionCatalog.RecipeRule recipe = catalog.Recipe(job.Value<string>("recipeId")); AddXp(document, facilityId, checked(recipe.BaseTicks * job.Value<long>("quantity")));
                 AddMerchantXp(document, quantity);
             }

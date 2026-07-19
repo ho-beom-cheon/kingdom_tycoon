@@ -77,7 +77,7 @@ namespace KingdomTycoon.Infrastructure.Economy
 
         public P08EconomyCatalog(ContentCatalog catalog)
         {
-            if (catalog?.ContentVersion is not (CompileTimeActiveContentVersionProvider.P08ContentVersion or CompileTimeActiveContentVersionProvider.P09ContentVersion))
+            if (catalog?.ContentVersion is not (CompileTimeActiveContentVersionProvider.P08ContentVersion or CompileTimeActiveContentVersionProvider.P09ContentVersion or CompileTimeActiveContentVersionProvider.P10ContentVersion))
                 throw new EconomyDomainException("P08_CONTENT_MISSING");
             policies = catalog.GetTable("pricing_policies.csv").Rows.Where(Enabled).Select(row => new PricePolicy(row["policy_id"], Int(row, "multiplier_bps"), Int(row, "min_store_level"))).ToDictionary(value => value.Id, StringComparer.Ordinal);
             levels = catalog.GetTable("store_level_rules.csv").Rows.Where(Enabled).Select(row => new LevelRule
@@ -133,7 +133,13 @@ namespace KingdomTycoon.Infrastructure.Economy
         public int InventoryEquipmentCapacity(int level) => inventoryEquipmentCapacity.GetValueOrDefault(level, 0);
         public long PotionBase(string id) => Price("POTION", id).CustomerBase;
         public PriceRule Price(string kind, string id) => prices.GetValueOrDefault(kind + "\0" + id) ?? prices.GetValueOrDefault(kind + "\0*") ?? throw new EconomyDomainException("P08_PRODUCT_NOT_FOUND");
-        public EquipmentInstance Instance(JObject value) => new(value.Value<string>("instanceId"), Equipment(value.Value<string>("equipmentTemplateId")), value.Value<string>("qualityId"), QualityBps(value.Value<string>("qualityId")), value.Value<int>("enhancementLevel"), value["refineOption"].Type == JTokenType.Null ? null : value.Value<string>("refineOption"), value.Value<bool>("locked"));
+        public EquipmentInstance Instance(JObject value)
+        {
+            JToken token = value["refineOption"];
+            string optionId = token == null || token.Type == JTokenType.Null ? null : token.Type == JTokenType.Object ? token.Value<string>("optionId") : token.Value<string>();
+            int optionValue = token == null || token.Type == JTokenType.Null ? 0 : token.Type == JTokenType.Object ? token.Value<int>("value") : 1000;
+            return new EquipmentInstance(value.Value<string>("instanceId"), Equipment(value.Value<string>("equipmentTemplateId")), value.Value<string>("qualityId"), QualityBps(value.Value<string>("qualityId")), value.Value<int>("enhancementLevel"), optionId, optionValue, value.Value<bool>("locked"));
+        }
         private static bool Enabled(IReadOnlyDictionary<string, string> row) => row["enabled"] == "TRUE";
         private static bool Bool(IReadOnlyDictionary<string, string> row, string key) => row[key] == "TRUE";
         private static int Int(IReadOnlyDictionary<string, string> row, string key) => int.Parse(row[key], NumberStyles.Integer, CultureInfo.InvariantCulture);
@@ -170,7 +176,7 @@ namespace KingdomTycoon.Infrastructure.Economy
 
         public void Bootstrap()
         {
-            if (!game.IsBootstrapped || content.Catalog?.ContentVersion is not (CompileTimeActiveContentVersionProvider.P08ContentVersion or CompileTimeActiveContentVersionProvider.P09ContentVersion))
+            if (!game.IsBootstrapped || content.Catalog?.ContentVersion is not (CompileTimeActiveContentVersionProvider.P08ContentVersion or CompileTimeActiveContentVersionProvider.P09ContentVersion or CompileTimeActiveContentVersionProvider.P10ContentVersion))
                 throw new EconomyDomainException("P08_CONTENT_MISSING");
             catalog = new P08EconomyCatalog(content.Catalog);
             IsBootstrapped = true;

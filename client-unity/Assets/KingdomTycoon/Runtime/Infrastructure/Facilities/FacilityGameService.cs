@@ -14,6 +14,7 @@ using KingdomTycoon.Infrastructure.Content.Migrations;
 using KingdomTycoon.Infrastructure.Economy;
 using KingdomTycoon.Infrastructure.Save;
 using KingdomTycoon.Infrastructure.Production;
+using KingdomTycoon.Infrastructure.EquipmentGrowth;
 using KingdomTycoon.Services;
 using Newtonsoft.Json.Linq;
 
@@ -29,6 +30,7 @@ namespace KingdomTycoon.Infrastructure.Facilities
         private readonly bool p07Enabled;
         private readonly bool p08Enabled;
         private readonly bool p09Enabled;
+        private readonly bool p10Enabled;
         private readonly SemaphoreSlim commitGate = new(1, 1);
         private SaveService saveService;
         private ContentCatalogService contentService;
@@ -44,6 +46,7 @@ namespace KingdomTycoon.Infrastructure.Facilities
             p07Enabled = StrictJson.ParseObject(newGameTemplateJson).Value<string>("contentVersion") == CompileTimeActiveContentVersionProvider.P07ContentVersion;
             p08Enabled = StrictJson.ParseObject(newGameTemplateJson).Value<string>("contentVersion") == CompileTimeActiveContentVersionProvider.P08ContentVersion;
             p09Enabled = StrictJson.ParseObject(newGameTemplateJson).Value<string>("contentVersion") == CompileTimeActiveContentVersionProvider.P09ContentVersion;
+            p10Enabled = StrictJson.ParseObject(newGameTemplateJson).Value<string>("contentVersion") == CompileTimeActiveContentVersionProvider.P10ContentVersion;
             this.p04MigrationTemplateJson = p04MigrationTemplateJson ?? newGameTemplateJson;
         }
 
@@ -76,7 +79,7 @@ namespace KingdomTycoon.Infrastructure.Facilities
             {
                 if (saveService.Repository is not AtomicSaveRepository atomicRepository)
                     throw new InvalidOperationException("SAVE_CREATE_REPOSITORY_UNSUPPORTED");
-                INewGameFactory factory = p09Enabled ? new P09NewGameFactory(newGameTemplateJson) : p08Enabled ? new P08NewGameFactory(newGameTemplateJson) : p07Enabled ? new P07NewGameFactory(newGameTemplateJson) : p06Enabled ? new P06NewGameFactory(newGameTemplateJson) : p05Enabled ? new P05NewGameFactory(newGameTemplateJson) : new P04NewGameFactory(newGameTemplateJson);
+                INewGameFactory factory = p10Enabled ? new P10NewGameFactory(newGameTemplateJson) : p09Enabled ? new P09NewGameFactory(newGameTemplateJson) : p08Enabled ? new P08NewGameFactory(newGameTemplateJson) : p07Enabled ? new P07NewGameFactory(newGameTemplateJson) : p06Enabled ? new P06NewGameFactory(newGameTemplateJson) : p05Enabled ? new P05NewGameFactory(newGameTemplateJson) : new P04NewGameFactory(newGameTemplateJson);
                 SaveLoadResult created = new SingleProfileCreator(saveService.PersistentDataPath, atomicRepository, saveService.Validator)
                     .CreateOrResume(factory, clock.UtcNow);
                 if (!created.Success) throw new InvalidOperationException(created.ErrorCode ?? "SAVE_CREATE_FAILED");
@@ -111,12 +114,17 @@ namespace KingdomTycoon.Infrastructure.Facilities
                 JObject migrated = new P07ToP08ContentMigration().Apply(CurrentDocument);
                 Commit(migrated, Revision, clock.UtcNow);
             }
-            else if (CurrentDocument.Value<string>("contentVersion") == CompileTimeActiveContentVersionProvider.P08ContentVersion && p09Enabled)
+            else if (CurrentDocument.Value<string>("contentVersion") == CompileTimeActiveContentVersionProvider.P08ContentVersion && (p09Enabled || p10Enabled))
             {
                 JObject migrated = new P08ToP09ContentMigration().Apply(CurrentDocument, new P09ProductionCatalog(contentService.Catalog).DefaultTargets());
                 Commit(migrated, Revision, clock.UtcNow);
             }
-            else if (CurrentDocument.Value<string>("contentVersion") is not (CompileTimeActiveContentVersionProvider.P04ContentVersion or CompileTimeActiveContentVersionProvider.P05ContentVersion or CompileTimeActiveContentVersionProvider.P06ContentVersion or CompileTimeActiveContentVersionProvider.P07ContentVersion or CompileTimeActiveContentVersionProvider.P08ContentVersion or CompileTimeActiveContentVersionProvider.P09ContentVersion))
+            if (CurrentDocument.Value<string>("contentVersion") == CompileTimeActiveContentVersionProvider.P09ContentVersion && p10Enabled)
+            {
+                JObject migrated = new P09ToP10ContentMigration().Apply(CurrentDocument);
+                Commit(migrated, Revision, clock.UtcNow);
+            }
+            else if (CurrentDocument.Value<string>("contentVersion") is not (CompileTimeActiveContentVersionProvider.P04ContentVersion or CompileTimeActiveContentVersionProvider.P05ContentVersion or CompileTimeActiveContentVersionProvider.P06ContentVersion or CompileTimeActiveContentVersionProvider.P07ContentVersion or CompileTimeActiveContentVersionProvider.P08ContentVersion or CompileTimeActiveContentVersionProvider.P09ContentVersion or CompileTimeActiveContentVersionProvider.P10ContentVersion))
             {
                 throw new InvalidOperationException("SAVE_CONTENT_VERSION_UNSUPPORTED");
             }
