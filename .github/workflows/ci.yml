@@ -92,6 +92,12 @@ jobs:
             echo "has_p15=false" >> "$GITHUB_OUTPUT"
           fi
 
+          if [[ -f scripts/ci/p17.sh ]]; then
+            echo "has_p17=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_p17=false" >> "$GITHUB_OUTPUT"
+          fi
+
           if [[ -f gradlew || -f server-api/gradlew ]]; then
             echo "has_server=true" >> "$GITHUB_OUTPUT"
           else
@@ -241,3 +247,14 @@ jobs:
             client-unity/Assets/KingdomTycoon/Resources/Contracts/save.content.13.schema.json
           if-no-files-found: error
           retention-days: 14
+
+      - name: Upload P17 release candidate evidence
+        if: always() && steps.layout.outputs.has_p17 == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: p17-release-evidence-${{ github.run_id }}
+          path: |
+            docs/reports/captures/P17/*.png
+            docs/reports/P17_*.md
+          if-no-files-found: error
+          retention-days: 30
