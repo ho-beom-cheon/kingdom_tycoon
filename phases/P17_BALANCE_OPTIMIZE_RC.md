@@ -13,6 +13,8 @@
 - Profiling
 -  QA
 -  license register
+-  commercialization gate
+-  visual consistency and approved asset replacement
 -  RC
 
 ## 제외 범위
@@ -40,6 +42,9 @@
 
 ## 완료 조건
 
+- 상용화 판단, 유료 에셋 도입 여부, 승인 근거와 실제 집행액 기록
+- 유료 에셋은 사용자 명시 승인과 200,000원 상한 준수
+- 사용자 노출 화면의 임시 에셋 제거와 전체 스타일 일관성 검증
 - Definition of Done 충족
 - 테스트 실패 0
 - 다음 Phase 진입 가능 여부 명시
