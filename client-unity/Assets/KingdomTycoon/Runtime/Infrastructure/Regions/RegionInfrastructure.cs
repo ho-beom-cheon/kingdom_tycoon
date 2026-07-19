@@ -52,7 +52,7 @@ namespace KingdomTycoon.Infrastructure.Regions
 
         public P12RegionCatalog(ContentCatalog catalog)
         {
-            if (catalog?.ContentVersion is not (CompileTimeActiveContentVersionProvider.P12ContentVersion or CompileTimeActiveContentVersionProvider.P13ContentVersion))
+            if (catalog?.ContentVersion is not (CompileTimeActiveContentVersionProvider.P12ContentVersion or CompileTimeActiveContentVersionProvider.P13ContentVersion or CompileTimeActiveContentVersionProvider.P14ContentVersion))
                 throw new RegionDomainException("P12_CONTENT_VERSION_UNSUPPORTED");
             regions = catalog.GetTable("regions.csv").Rows.Where(Enabled).Select(row => new RegionRule
             {
@@ -121,7 +121,7 @@ namespace KingdomTycoon.Infrastructure.Regions
             ["REGION_R04"] = "독안개 습지", ["REGION_R05"] = "서리 왕국 유적"
         };
         private static readonly IReadOnlyDictionary<string, int> StageOrder = new Dictionary<string, int>(StringComparer.Ordinal)
-        { ["KINGDOM_1"] = 1, ["KINGDOM_2"] = 2, ["KINGDOM_3"] = 3, ["KINGDOM_4"] = 4 };
+        { ["KINGDOM_1"] = 1, ["KINGDOM_2"] = 2, ["KINGDOM_3"] = 3, ["KINGDOM_4"] = 4, ["KINGDOM_5"] = 5 };
         private readonly ITrustedUtcClock clock;
         private SaveService save;
         private ContentCatalogService content;
@@ -138,7 +138,7 @@ namespace KingdomTycoon.Infrastructure.Regions
 
         public void Bootstrap()
         {
-            if (!game.IsBootstrapped || game.CurrentDocument.Value<string>("contentVersion") is not (CompileTimeActiveContentVersionProvider.P12ContentVersion or CompileTimeActiveContentVersionProvider.P13ContentVersion))
+            if (!game.IsBootstrapped || game.CurrentDocument.Value<string>("contentVersion") is not (CompileTimeActiveContentVersionProvider.P12ContentVersion or CompileTimeActiveContentVersionProvider.P13ContentVersion or CompileTimeActiveContentVersionProvider.P14ContentVersion))
                 throw new RegionDomainException("P12_CONTENT_VERSION_UNSUPPORTED");
             catalog = new P12RegionCatalog(content.Catalog);
             IsBootstrapped = true;
@@ -240,6 +240,12 @@ namespace KingdomTycoon.Infrastructure.Regions
             EnsureReady(); JObject draft = game.Snapshot(); long before = draft.Value<long>("revision"); bool changed = NormalizeDraft(draft, clock.UtcNow);
             if (changed) { Commit(draft, before); Changed?.Invoke(this, GetOverview()); }
             return changed;
+        }
+
+        public bool NormalizeUnlocksInDraft(JObject draft, DateTimeOffset now)
+        {
+            EnsureReady();
+            return NormalizeDraft(draft ?? throw new ArgumentNullException(nameof(draft)), now);
         }
 
         public void Shutdown()

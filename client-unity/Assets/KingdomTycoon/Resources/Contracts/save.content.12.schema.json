@@ -1,0 +1,4280 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:tycoon:schema:save:v1:content.12",
+  "title": "Kingdom Tycoon Save v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaId",
+    "saveVersion",
+    "gameVersion",
+    "contentVersion",
+    "saveId",
+    "profileId",
+    "revision",
+    "createdAtUtc",
+    "savedAtUtc",
+    "integrity",
+    "payload"
+  ],
+  "properties": {
+    "schemaId": {
+      "const": "urn:tycoon:save:v1"
+    },
+    "saveVersion": {
+      "const": 1
+    },
+    "gameVersion": {
+      "type": "string",
+      "format": "semver"
+    },
+    "contentVersion": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "const": "1.0.0-content.12"
+    },
+    "saveId": {
+      "type": "string",
+      "format": "uuid-v7"
+    },
+    "profileId": {
+      "type": "string",
+      "format": "uuid-v7"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "createdAtUtc": {
+      "type": "string",
+      "format": "utc-instant"
+    },
+    "savedAtUtc": {
+      "type": "string",
+      "format": "utc-instant"
+    },
+    "integrity": {
+      "$ref": "#/$defs/Integrity"
+    },
+    "payload": {
+      "$ref": "#/$defs/Payload"
+    }
+  },
+  "$defs": {
+    "RefineOption": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "optionId",
+        "value"
+      ],
+      "properties": {
+        "optionId": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+          "maxLength": 64
+        },
+        "value": {
+          "minimum": 0,
+          "maximum": 10000,
+          "type": "integer"
+        }
+      }
+    },
+    "GeneratedEquipmentSnapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "instanceId",
+        "equipmentTemplateId",
+        "tier",
+        "qualityId",
+        "enhancementLevel",
+        "refineOption",
+        "sourceContentVersion",
+        "generationOperationId",
+        "randomTraceHash"
+      ],
+      "properties": {
+        "instanceId": {
+          "type": "string",
+          "format": "uuid-v7"
+        },
+        "equipmentTemplateId": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+          "maxLength": 64
+        },
+        "tier": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5
+        },
+        "qualityId": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+          "maxLength": 64
+        },
+        "enhancementLevel": {
+          "const": 0
+        },
+        "refineOption": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RefineOption"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "sourceContentVersion": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "generationOperationId": {
+          "type": "string",
+          "format": "uuid-v7"
+        },
+        "randomTraceHash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "RewardSnapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "rewardType",
+        "rewardId",
+        "quantity",
+        "destination",
+        "targetId",
+        "generatedEquipmentSnapshot"
+      ],
+      "properties": {
+        "rewardType": {
+          "type": "string",
+          "enum": [
+            "ITEM",
+            "POTION",
+            "CURRENCY",
+            "PERSONAL_GOLD",
+            "EQUIPMENT_TEMPLATE",
+            "RANDOM_EQUIPMENT_TIER",
+            "PLAYER_EXP",
+            "KINGDOM_EXP",
+            "REGION_UNLOCK",
+            "PROGRESSION_FLAG"
+          ]
+        },
+        "rewardId": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+          "maxLength": 64
+        },
+        "quantity": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "destination": {
+          "type": "string",
+          "enum": [
+            "INVENTORY",
+            "FACILITY_STORAGE",
+            "MERCENARY",
+            "PROFILE",
+            "KINGDOM",
+            "SERVER_WALLET",
+            "REGION"
+          ]
+        },
+        "targetId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "generatedEquipmentSnapshot": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/GeneratedEquipmentSnapshot"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "AssetAmount": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "assetType",
+        "assetId",
+        "quantity",
+        "targetMercenaryInstanceId"
+      ],
+      "properties": {
+        "assetType": {
+          "type": "string",
+          "enum": [
+            "ITEM",
+            "POTION",
+            "PERSONAL_GOLD",
+            "KINGDOM_GOLD"
+          ]
+        },
+        "assetId": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+          "maxLength": 64
+        },
+        "quantity": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "targetMercenaryInstanceId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "CostItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "itemId",
+        "quantity"
+      ],
+      "properties": {
+        "itemId": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+          "maxLength": 64
+        },
+        "quantity": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        }
+      }
+    },
+    "PromotionCostSnapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contentVersion",
+        "fromRankId",
+        "toRankId",
+        "personalGold",
+        "kingdomGold",
+        "contributionRequired",
+        "reviewSeconds",
+        "items"
+      ],
+      "properties": {
+        "contentVersion": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "fromRankId": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+          "maxLength": 64
+        },
+        "toRankId": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+          "maxLength": 64
+        },
+        "personalGold": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "kingdomGold": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "contributionRequired": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "reviewSeconds": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CostItem"
+          },
+          "minItems": 0
+        }
+      }
+    },
+    "Promotion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "targetRankId",
+        "operationId",
+        "startedAtUtc",
+        "finishesAtUtc",
+        "costSnapshot"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "NONE",
+            "READY",
+            "IN_REVIEW",
+            "COMPLETED_PENDING_APPLY"
+          ]
+        },
+        "targetRankId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+              "maxLength": 64
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "operationId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid-v7"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "startedAtUtc": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "utc-instant"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "finishesAtUtc": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "utc-instant"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "costSnapshot": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PromotionCostSnapshot"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "PotionStack": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "potionId",
+        "quantity"
+      ],
+      "properties": {
+        "potionId": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+          "maxLength": 64
+        },
+        "quantity": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        }
+      }
+    },
+    "EquipmentSlots": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "WEAPON",
+        "ARMOR",
+        "HELMET",
+        "ACCESSORY"
+      ],
+      "properties": {
+        "WEAPON": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "ARMOR": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "HELMET": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "ACCESSORY": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "MercenaryAutonomy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "state",
+        "currentRegionId",
+        "targetInstanceId",
+        "reasonCode",
+        "stateStartedAtUtc",
+        "nextDecisionAtUtc"
+      ],
+      "properties": {
+        "state": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+          "maxLength": 64
+        },
+        "currentRegionId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+              "maxLength": 64
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "targetInstanceId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reasonCode": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+          "maxLength": 64
+        },
+        "stateStartedAtUtc": {
+          "type": "string",
+          "format": "utc-instant"
+        },
+        "nextDecisionAtUtc": {
+          "type": "string",
+          "format": "utc-instant"
+        }
+      }
+    },
+    "MercenaryRecords": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "huntCount",
+        "killCount",
+        "raidClearCount",
+        "itemsCollected",
+        "region2BattleCount",
+        "eliteKillCount",
+        "bossContributionCount"
+      ],
+      "properties": {
+        "huntCount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "killCount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "raidClearCount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "itemsCollected": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "region2BattleCount": {
+          "minimum": 0,
+          "maximum": 9007199254740991,
+          "type": "integer"
+        },
+        "eliteKillCount": {
+          "minimum": 0,
+          "maximum": 9007199254740991,
+          "type": "integer"
+        },
+        "bossContributionCount": {
+          "minimum": 0,
+          "maximum": 9007199254740991,
+          "type": "integer"
+        }
+      }
+    },
+    "Mercenary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "instanceId",
+        "generationProfileId",
+        "nameSeed",
+        "appearanceSeed",
+        "growthSeed",
+        "displayName",
+        "jobId",
+        "gradeId",
+        "rankId",
+        "level",
+        "exp",
+        "personalityId",
+        "traitIds",
+        "personalGold",
+        "contribution",
+        "active",
+        "autonomy",
+        "potions",
+        "equipmentSlots",
+        "promotion",
+        "records"
+      ],
+      "properties": {
+        "instanceId": {
+          "type": "string",
+          "format": "uuid-v7"
+        },
+        "generationProfileId": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+          "maxLength": 64
+        },
+        "nameSeed": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,19})$"
+        },
+        "appearanceSeed": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,19})$"
+        },
+        "growthSeed": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,19})$"
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20
+        },
+        "jobId": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+          "maxLength": 64
+        },
+        "gradeId": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+          "maxLength": 64
+        },
+        "rankId": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+          "maxLength": 64
+        },
+        "level": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "exp": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "personalityId": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+          "maxLength": 64
+        },
+        "traitIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+            "maxLength": 64
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        },
+        "personalGold": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "contribution": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "active": {
+          "type": "boolean"
+        },
+        "autonomy": {
+          "$ref": "#/$defs/MercenaryAutonomy"
+        },
+        "potions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PotionStack"
+          },
+          "minItems": 0
+        },
+        "equipmentSlots": {
+          "$ref": "#/$defs/EquipmentSlots"
+        },
+        "promotion": {
+          "$ref": "#/$defs/Promotion"
+        },
+        "records": {
+          "$ref": "#/$defs/MercenaryRecords"
+        }
+      }
+    },
+    "ManagementNpc": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "instanceId",
+        "professionId",
+        "proficiencyId",
+        "proficiencyExp",
+        "assignedFacilityId",
+        "working"
+      ],
+      "properties": {
+        "instanceId": {
+          "type": "string",
+          "format": "uuid-v7"
+        },
+        "professionId": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+          "maxLength": 64
+        },
+        "proficiencyId": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+          "maxLength": 64
+        },
+        "proficiencyExp": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "assignedFacilityId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+              "maxLength": 64
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "working": {
+          "type": "boolean"
+        }
+      }
+    },
+    "FacilityJob": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "operationId",
+        "jobType",
+        "status",
+        "recipeId",
+        "targetLevel",
+        "treatmentTargetInstanceId",
+        "contentVersion",
+        "startedAtUtc",
+        "finishesAtUtc",
+        "claimedAtUtc",
+        "cancelledAtUtc",
+        "cycleCount",
+        "inputSnapshot",
+        "outputSnapshot"
+      ],
+      "properties": {
+        "operationId": {
+          "type": "string",
+          "format": "uuid-v7"
+        },
+        "jobType": {
+          "type": "string",
+          "enum": [
+            "BUILD",
+            "UPGRADE",
+            "PRODUCTION",
+            "CRAFT",
+            "TREATMENT"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "RUNNING",
+            "READY",
+            "CLAIMED",
+            "CANCELLED"
+          ]
+        },
+        "recipeId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+              "maxLength": 64
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "targetLevel": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 4
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "treatmentTargetInstanceId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "contentVersion": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "startedAtUtc": {
+          "type": "string",
+          "format": "utc-instant"
+        },
+        "finishesAtUtc": {
+          "type": "string",
+          "format": "utc-instant"
+        },
+        "claimedAtUtc": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "utc-instant"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "cancelledAtUtc": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "utc-instant"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "cycleCount": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "inputSnapshot": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/AssetAmount"
+          },
+          "minItems": 0
+        },
+        "outputSnapshot": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RewardSnapshot"
+          },
+          "minItems": 0
+        }
+      }
+    },
+    "FacilityStorageEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "storageType",
+        "resourceId",
+        "quantity",
+        "sourceOperationId"
+      ],
+      "properties": {
+        "storageType": {
+          "type": "string",
+          "enum": [
+            "ITEM",
+            "POTION"
+          ]
+        },
+        "resourceId": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+          "maxLength": 64
+        },
+        "quantity": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "sourceOperationId": {
+          "type": "string",
+          "format": "uuid-v7"
+        }
+      }
+    },
+    "Facility": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "facilityId",
+        "level",
+        "state",
+        "assignedNpcInstanceId",
+        "job",
+        "storage"
+      ],
+      "properties": {
+        "facilityId": {
+          "type": "string",
+          "enum": [
+            "FAC_TAVERN",
+            "FAC_LODGE",
+            "FAC_GUILD",
+            "FAC_STORE",
+            "FAC_BLACKSMITH",
+            "FAC_ALCHEMY",
+            "FAC_WAREHOUSE",
+            "FAC_INFIRMARY"
+          ]
+        },
+        "level": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "LOCKED",
+            "BUILDABLE",
+            "BUILDING",
+            "ACTIVE",
+            "UPGRADING",
+            "STOPPED"
+          ]
+        },
+        "assignedNpcInstanceId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "job": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FacilityJob"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "storage": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/FacilityStorageEntry"
+          },
+          "minItems": 0
+        }
+      }
+    },
+    "ItemStack": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "itemId",
+        "quantity"
+      ],
+      "properties": {
+        "itemId": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+          "maxLength": 64
+        },
+        "quantity": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        }
+      }
+    },
+    "EquipmentInstance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "instanceId",
+        "equipmentTemplateId",
+        "tier",
+        "qualityId",
+        "enhancementLevel",
+        "refineOption",
+        "enhancementPityBps",
+        "enhancementAttemptCount",
+        "enhancementMaterialInvested",
+        "pendingRefineOption",
+        "refineRollCount",
+        "locked",
+        "equippedByMercenaryInstanceId",
+        "sourceContentVersion",
+        "generationOperationId"
+      ],
+      "properties": {
+        "instanceId": {
+          "type": "string",
+          "format": "uuid-v7"
+        },
+        "equipmentTemplateId": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+          "maxLength": 64
+        },
+        "tier": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5
+        },
+        "qualityId": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+          "maxLength": 64
+        },
+        "enhancementLevel": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10
+        },
+        "refineOption": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RefineOption"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "locked": {
+          "type": "boolean"
+        },
+        "equippedByMercenaryInstanceId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "sourceContentVersion": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "generationOperationId": {
+          "type": "string",
+          "format": "uuid-v7"
+        },
+        "enhancementPityBps": {
+          "minimum": 0,
+          "maximum": 10000,
+          "type": "integer"
+        },
+        "enhancementAttemptCount": {
+          "minimum": 0,
+          "maximum": 9007199254740991,
+          "type": "integer"
+        },
+        "enhancementMaterialInvested": {
+          "items": {
+            "$ref": "#/$defs/EnhancementMaterialInvestment"
+          },
+          "maxItems": 4,
+          "type": "array"
+        },
+        "pendingRefineOption": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/RefineOption"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "refineRollCount": {
+          "minimum": 0,
+          "maximum": 9007199254740991,
+          "type": "integer"
+        }
+      }
+    },
+    "Inventory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "itemStacks",
+        "equipment",
+        "warehousePotions"
+      ],
+      "properties": {
+        "itemStacks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ItemStack"
+          },
+          "minItems": 0
+        },
+        "equipment": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/EquipmentInstance"
+          },
+          "minItems": 0
+        },
+        "warehousePotions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PotionStack"
+          },
+          "minItems": 0
+        }
+      }
+    },
+    "RegionProgress": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "regionId",
+        "unlocked",
+        "progressPercent",
+        "highestRankReachedId",
+        "huntCount",
+        "eliteKillCount",
+        "firstUnlockedAtUtc",
+        "lastVisitedAtUtc"
+      ],
+      "properties": {
+        "regionId": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+          "maxLength": 64
+        },
+        "unlocked": {
+          "type": "boolean"
+        },
+        "progressPercent": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "highestRankReachedId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+              "maxLength": 64
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "huntCount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "eliteKillCount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "firstUnlockedAtUtc": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "utc-instant"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "lastVisitedAtUtc": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "utc-instant"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "RaidPartProgress": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "partId",
+        "breakCount",
+        "exposedCount",
+        "bestBreakTimeMs",
+        "lastRewardOperationId"
+      ],
+      "properties": {
+        "partId": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+          "maxLength": 64
+        },
+        "breakCount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "exposedCount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "bestBreakTimeMs": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "lastRewardOperationId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid-v7"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "RaidProgress": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "raidId",
+        "difficulty",
+        "unlocked",
+        "clearCount",
+        "bestClearTimeMs",
+        "firstClearedAtUtc",
+        "lastClearedAtUtc",
+        "firstClearRewardOperationId",
+        "partStates",
+        "attemptCount",
+        "lastResultCode"
+      ],
+      "properties": {
+        "raidId": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+          "maxLength": 64
+        },
+        "difficulty": {
+          "type": "string",
+          "enum": [
+            "NORMAL",
+            "HARD",
+            "CORRUPTED"
+          ]
+        },
+        "unlocked": {
+          "type": "boolean"
+        },
+        "clearCount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "bestClearTimeMs": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "firstClearedAtUtc": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "utc-instant"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "lastClearedAtUtc": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "utc-instant"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "firstClearRewardOperationId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid-v7"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "partStates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RaidPartProgress"
+          },
+          "minItems": 0
+        },
+        "attemptCount": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "lastResultCode": {
+          "oneOf": [
+            {
+              "maxLength": 64,
+              "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "Regions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "regionVersion",
+        "nextEventSequence",
+        "progress",
+        "raids",
+        "events",
+        "raidVersion",
+        "nextRaidHistorySequence",
+        "raidHistory"
+      ],
+      "properties": {
+        "regionVersion": {
+          "const": 2,
+          "type": "integer"
+        },
+        "nextEventSequence": {
+          "minimum": 1,
+          "maximum": 9007199254740991,
+          "type": "integer"
+        },
+        "progress": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RegionProgress"
+          },
+          "minItems": 0
+        },
+        "raids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RaidProgress"
+          },
+          "minItems": 0
+        },
+        "events": {
+          "items": {
+            "$ref": "#/$defs/RegionEvent"
+          },
+          "maxItems": 200,
+          "type": "array"
+        },
+        "raidVersion": {
+          "const": 1,
+          "type": "integer"
+        },
+        "nextRaidHistorySequence": {
+          "maximum": 9007199254740991,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "raidHistory": {
+          "items": {
+            "$ref": "#/$defs/RaidHistoryEntry"
+          },
+          "maxItems": 50,
+          "type": "array"
+        }
+      }
+    },
+    "PremiumWalletCache": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "freePremium",
+        "paidPremium",
+        "specialRecruitTickets"
+      ],
+      "properties": {
+        "freePremium": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "paidPremium": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "specialRecruitTickets": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      }
+    },
+    "PityCounter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "pityGroupId",
+        "pityRuleId",
+        "pullCount",
+        "lastUpdatedContentVersion"
+      ],
+      "properties": {
+        "pityGroupId": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+          "maxLength": 64
+        },
+        "pityRuleId": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+          "maxLength": 64
+        },
+        "pullCount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "lastUpdatedContentVersion": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        }
+      }
+    },
+    "FeaturedGuarantee": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "pityGroupId",
+        "rateUpGroupId",
+        "state",
+        "lastUpdatedContentVersion"
+      ],
+      "properties": {
+        "pityGroupId": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+          "maxLength": 64
+        },
+        "rateUpGroupId": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+          "maxLength": 64
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "NONE",
+            "NEXT_S_OR_SS_FEATURED"
+          ]
+        },
+        "lastUpdatedContentVersion": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        }
+      }
+    },
+    "PendingRecruitmentRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "operationId",
+        "poolId",
+        "paymentType",
+        "count",
+        "requestHash",
+        "status",
+        "createdAtUtc",
+        "serverReceiptId"
+      ],
+      "properties": {
+        "operationId": {
+          "type": "string",
+          "format": "uuid-v7"
+        },
+        "poolId": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+          "maxLength": 64
+        },
+        "paymentType": {
+          "type": "string",
+          "enum": [
+            "KINGDOM_GOLD",
+            "TICKET",
+            "FREE_PREMIUM",
+            "PAID_PREMIUM"
+          ]
+        },
+        "count": {
+          "type": "integer",
+          "enum": [
+            1,
+            10
+          ]
+        },
+        "requestHash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "PREPARED",
+            "SENT",
+            "RECEIVED"
+          ]
+        },
+        "createdAtUtc": {
+          "type": "string",
+          "format": "utc-instant"
+        },
+        "serverReceiptId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "RecruitmentMockState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "stateVersion",
+        "authority",
+        "serverRevision",
+        "nextHistorySequence",
+        "nextEventSequence",
+        "premiumWalletCache",
+        "tavern",
+        "pityCounters",
+        "featuredGuarantees",
+        "pendingRequests",
+        "history",
+        "events"
+      ],
+      "properties": {
+        "authority": {
+          "type": "string",
+          "enum": [
+            "MOCK_ONLY",
+            "SERVER_CACHE"
+          ]
+        },
+        "serverRevision": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "premiumWalletCache": {
+          "$ref": "#/$defs/PremiumWalletCache"
+        },
+        "pityCounters": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PityCounter"
+          },
+          "minItems": 0
+        },
+        "featuredGuarantees": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/FeaturedGuarantee"
+          },
+          "minItems": 0
+        },
+        "pendingRequests": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PendingRecruitmentRequest"
+          },
+          "minItems": 0,
+          "maxItems": 50
+        },
+        "stateVersion": {
+          "const": 1,
+          "type": "integer"
+        },
+        "nextHistorySequence": {
+          "maximum": 9007199254740991,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "nextEventSequence": {
+          "maximum": 9007199254740991,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "tavern": {
+          "$ref": "#/$defs/RecruitmentTavernState"
+        },
+        "history": {
+          "items": {
+            "$ref": "#/$defs/RecruitmentHistoryEntry"
+          },
+          "maxItems": 100,
+          "type": "array"
+        },
+        "events": {
+          "items": {
+            "$ref": "#/$defs/RecruitmentEvent"
+          },
+          "maxItems": 200,
+          "type": "array"
+        }
+      }
+    },
+    "Tutorial": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "currentStepId",
+        "completedStepIds",
+        "grantedRewardIds",
+        "skipped",
+        "completedAtUtc"
+      ],
+      "properties": {
+        "currentStepId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+              "maxLength": 64
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "completedStepIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+            "maxLength": 64
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        },
+        "grantedRewardIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+            "maxLength": 64
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        },
+        "skipped": {
+          "type": "boolean"
+        },
+        "completedAtUtc": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "utc-instant"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "OfflineSettlementLine": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "lineNo",
+        "settlementType",
+        "subjectType",
+        "subjectId",
+        "elapsedSeconds",
+        "quantityDelta",
+        "rewards",
+        "consumptions"
+      ],
+      "properties": {
+        "lineNo": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "settlementType": {
+          "type": "string",
+          "enum": [
+            "HUNT",
+            "FACILITY",
+            "NPC_PROFICIENCY",
+            "POTION_CONSUMPTION",
+            "INJURY_RECOVERY",
+            "PROMOTION_REVIEW"
+          ]
+        },
+        "subjectType": {
+          "type": "string",
+          "enum": [
+            "MERCENARY",
+            "FACILITY",
+            "MANAGEMENT_NPC",
+            "PROMOTION"
+          ]
+        },
+        "subjectId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "elapsedSeconds": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "quantityDelta": {
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        },
+        "rewards": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RewardSnapshot"
+          },
+          "minItems": 0
+        },
+        "consumptions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/AssetAmount"
+          },
+          "minItems": 0
+        }
+      }
+    },
+    "OfflinePendingSettlement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "operationId",
+        "status",
+        "fromUtc",
+        "toUtc",
+        "cursorAfterUtc",
+        "eligibleSeconds",
+        "contentVersion",
+        "ruleSnapshotVersion",
+        "lines",
+        "attemptCount",
+        "lastAttemptAtUtc",
+        "serverReceiptId",
+        "errorCode"
+      ],
+      "properties": {
+        "operationId": {
+          "type": "string",
+          "format": "uuid-v7"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "PREPARED",
+            "APPLYING",
+            "COMMITTED",
+            "ACKNOWLEDGED",
+            "FAILED_PERMANENT"
+          ]
+        },
+        "fromUtc": {
+          "type": "string",
+          "format": "utc-instant"
+        },
+        "toUtc": {
+          "type": "string",
+          "format": "utc-instant"
+        },
+        "cursorAfterUtc": {
+          "type": "string",
+          "format": "utc-instant"
+        },
+        "eligibleSeconds": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "contentVersion": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "ruleSnapshotVersion": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "lines": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/OfflineSettlementLine"
+          },
+          "minItems": 0
+        },
+        "attemptCount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "lastAttemptAtUtc": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "utc-instant"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "serverReceiptId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "errorCode": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+              "maxLength": 64
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "Offline": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "accrualCursorUtc",
+        "lastTrustedUtc",
+        "pendingSettlement"
+      ],
+      "properties": {
+        "accrualCursorUtc": {
+          "type": "string",
+          "format": "utc-instant"
+        },
+        "lastTrustedUtc": {
+          "type": "string",
+          "format": "utc-instant"
+        },
+        "pendingSettlement": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OfflinePendingSettlement"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "OperationJournalEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "operationId",
+        "operationType",
+        "facilityJobType",
+        "requestHash",
+        "status",
+        "createdAtUtc",
+        "updatedAtUtc",
+        "completedAtUtc",
+        "serverReceiptId",
+        "errorCode",
+        "resultDigest",
+        "failureResolution",
+        "resolvedAtUtc"
+      ],
+      "properties": {
+        "operationId": {
+          "type": "string",
+          "format": "uuid-v7"
+        },
+        "operationType": {
+          "type": "string",
+          "enum": [
+            "OFFLINE_SETTLEMENT",
+            "FACILITY_JOB",
+            "PROMOTION",
+            "RECRUITMENT",
+            "REWARD",
+            "SAVE_RECOVERY",
+            "STORE_TRANSACTION",
+            "PRODUCTION_COMMAND",
+            "EQUIPMENT_GROWTH_COMMAND",
+            "REGION_POLICY",
+            "TAVERN_REFRESH",
+            "TAVERN_LOCK",
+            "TAVERN_HIRE",
+            "SPECIAL_RECRUIT",
+            "RAID_RESOLVE"
+          ]
+        },
+        "facilityJobType": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "BUILD",
+                "UPGRADE",
+                "PRODUCTION",
+                "CRAFT",
+                "TREATMENT"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "requestHash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "PREPARED",
+            "APPLYING",
+            "COMMITTED",
+            "ACKNOWLEDGED",
+            "FAILED_PERMANENT"
+          ]
+        },
+        "createdAtUtc": {
+          "type": "string",
+          "format": "utc-instant"
+        },
+        "updatedAtUtc": {
+          "type": "string",
+          "format": "utc-instant"
+        },
+        "completedAtUtc": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "utc-instant"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "serverReceiptId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "errorCode": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+              "maxLength": 64
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "resultDigest": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "failureResolution": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "DISCARDED_BY_USER"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "resolvedAtUtc": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "utc-instant"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "resultPayload": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object"
+            }
+          ]
+        }
+      }
+    },
+    "Settings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "masterVolume",
+        "musicVolume",
+        "sfxVolume",
+        "vibrationEnabled",
+        "battleSpeed"
+      ],
+      "properties": {
+        "masterVolume": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "musicVolume": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "sfxVolume": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "vibrationEnabled": {
+          "type": "boolean"
+        },
+        "battleSpeed": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        }
+      }
+    },
+    "RegionAccessPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "regionId",
+        "allowed"
+      ],
+      "properties": {
+        "regionId": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+          "maxLength": 64
+        },
+        "allowed": {
+          "type": "boolean"
+        }
+      }
+    },
+    "InventoryPolicies": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "autoSellMaxTier",
+        "protectQualityIds",
+        "autoEquipEnabled",
+        "upgradeThresholdBps",
+        "autoSellEnabled",
+        "protectBossEquipment",
+        "protectFirstDiscovery",
+        "discoveredEquipmentTemplateIds"
+      ],
+      "properties": {
+        "autoSellMaxTier": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5
+        },
+        "protectQualityIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+            "maxLength": 64
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        },
+        "autoEquipEnabled": {
+          "type": "boolean"
+        },
+        "upgradeThresholdBps": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "autoSellEnabled": {
+          "type": "boolean"
+        },
+        "protectBossEquipment": {
+          "type": "boolean"
+        },
+        "protectFirstDiscovery": {
+          "type": "boolean"
+        },
+        "discoveredEquipmentTemplateIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+            "maxLength": 64
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        }
+      }
+    },
+    "Profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "nickname",
+        "locale",
+        "playerExp",
+        "progressionFlagIds"
+      ],
+      "properties": {
+        "nickname": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20
+        },
+        "locale": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 16
+        },
+        "playerExp": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "progressionFlagIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+            "maxLength": 64
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        }
+      }
+    },
+    "Kingdom": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kingdomStageId",
+        "kingdomGold",
+        "kingdomExp",
+        "activeMercenaryLimit",
+        "ownedMercenaryLimit",
+        "pricingPolicy",
+        "regionAccessPolicies",
+        "inventoryPolicies",
+        "progressionFlagIds",
+        "facilityUpgradeCount"
+      ],
+      "properties": {
+        "kingdomStageId": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+          "maxLength": 64
+        },
+        "kingdomGold": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "kingdomExp": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "activeMercenaryLimit": {
+          "type": "integer",
+          "enum": [
+            4,
+            8,
+            12,
+            16
+          ]
+        },
+        "ownedMercenaryLimit": {
+          "type": "integer",
+          "minimum": 8,
+          "maximum": 24
+        },
+        "pricingPolicy": {
+          "type": "string",
+          "enum": [
+            "LOW",
+            "STANDARD",
+            "HIGH"
+          ]
+        },
+        "regionAccessPolicies": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RegionAccessPolicy"
+          },
+          "minItems": 0
+        },
+        "inventoryPolicies": {
+          "$ref": "#/$defs/InventoryPolicies"
+        },
+        "progressionFlagIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+            "maxLength": 64
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        },
+        "facilityUpgradeCount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      }
+    },
+    "Payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "profile",
+        "kingdom",
+        "mercenaries",
+        "managementNpcs",
+        "facilities",
+        "inventory",
+        "regions",
+        "recruitmentMockState",
+        "tutorial",
+        "offline",
+        "operationJournal",
+        "settings",
+        "economy",
+        "production",
+        "equipmentGrowth",
+        "progression",
+        "extensions"
+      ],
+      "properties": {
+        "profile": {
+          "$ref": "#/$defs/Profile"
+        },
+        "kingdom": {
+          "$ref": "#/$defs/Kingdom"
+        },
+        "mercenaries": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Mercenary"
+          },
+          "minItems": 0
+        },
+        "managementNpcs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ManagementNpc"
+          },
+          "minItems": 0
+        },
+        "facilities": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Facility"
+          },
+          "minItems": 8,
+          "maxItems": 8
+        },
+        "inventory": {
+          "$ref": "#/$defs/Inventory"
+        },
+        "regions": {
+          "$ref": "#/$defs/Regions"
+        },
+        "recruitmentMockState": {
+          "$ref": "#/$defs/RecruitmentMockState"
+        },
+        "tutorial": {
+          "$ref": "#/$defs/Tutorial"
+        },
+        "offline": {
+          "$ref": "#/$defs/Offline"
+        },
+        "operationJournal": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/OperationJournalEntry"
+          },
+          "minItems": 0
+        },
+        "settings": {
+          "$ref": "#/$defs/Settings"
+        },
+        "extensions": {
+          "type": "object",
+          "maxProperties": 0,
+          "additionalProperties": false
+        },
+        "economy": {
+          "$ref": "#/$defs/Economy"
+        },
+        "production": {
+          "$ref": "#/$defs/Production"
+        },
+        "equipmentGrowth": {
+          "$ref": "#/$defs/EquipmentGrowth"
+        },
+        "progression": {
+          "$ref": "#/$defs/Progression"
+        }
+      }
+    },
+    "Integrity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "integrityVersion",
+        "algorithm",
+        "canonicalization",
+        "payloadSha256",
+        "fileSha256"
+      ],
+      "properties": {
+        "integrityVersion": {
+          "const": 1
+        },
+        "algorithm": {
+          "const": "SHA-256"
+        },
+        "canonicalization": {
+          "const": "RFC8785"
+        },
+        "payloadSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "fileSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "Economy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "economyVersion",
+        "store"
+      ],
+      "properties": {
+        "economyVersion": {
+          "const": 1
+        },
+        "store": {
+          "$ref": "#/$defs/StoreEconomy"
+        }
+      }
+    },
+    "StoreEconomy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "stockVersion",
+        "stackLines",
+        "equipment",
+        "supplyState",
+        "ledger"
+      ],
+      "properties": {
+        "stockVersion": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "stackLines": {
+          "type": "array",
+          "maxItems": 96,
+          "items": {
+            "$ref": "#/$defs/StoreStackLine"
+          }
+        },
+        "equipment": {
+          "type": "array",
+          "maxItems": 96,
+          "items": {
+            "$ref": "#/$defs/StoreEquipment"
+          }
+        },
+        "supplyState": {
+          "$ref": "#/$defs/StoreSupplyState"
+        },
+        "ledger": {
+          "$ref": "#/$defs/EconomyLedger"
+        }
+      }
+    },
+    "StoreStackLine": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "stockLineId",
+        "productKind",
+        "productId",
+        "quantity",
+        "sourceType",
+        "firstAcquiredOperationId",
+        "lastAcquiredOperationId"
+      ],
+      "properties": {
+        "stockLineId": {
+          "type": "string",
+          "pattern": "^STACK:(ITEM|POTION):[A-Z][A-Z0-9_]*:(MERCENARY_SALE|SYSTEM_SUPPLY|PRODUCTION)$",
+          "maxLength": 192
+        },
+        "productKind": {
+          "enum": [
+            "ITEM",
+            "POTION"
+          ]
+        },
+        "productId": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]*$",
+          "maxLength": 64
+        },
+        "quantity": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9999
+        },
+        "sourceType": {
+          "enum": [
+            "MERCENARY_SALE",
+            "SYSTEM_SUPPLY",
+            "PRODUCTION"
+          ]
+        },
+        "firstAcquiredOperationId": {
+          "type": "string",
+          "format": "uuid-v7"
+        },
+        "lastAcquiredOperationId": {
+          "type": "string",
+          "format": "uuid-v7"
+        }
+      }
+    },
+    "StoreEquipment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "instanceId",
+        "equipmentTemplateId",
+        "tier",
+        "qualityId",
+        "enhancementLevel",
+        "refineOption",
+        "enhancementPityBps",
+        "enhancementAttemptCount",
+        "enhancementMaterialInvested",
+        "pendingRefineOption",
+        "refineRollCount",
+        "locked",
+        "equippedByMercenaryInstanceId",
+        "sourceContentVersion",
+        "generationOperationId",
+        "stockAcquiredAtUtc",
+        "stockAcquiredOperationId",
+        "sourceType"
+      ],
+      "properties": {
+        "instanceId": {
+          "type": "string",
+          "format": "uuid-v7"
+        },
+        "equipmentTemplateId": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]*$",
+          "maxLength": 64
+        },
+        "tier": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5
+        },
+        "qualityId": {
+          "enum": [
+            "QUALITY_COMMON",
+            "QUALITY_FINE",
+            "QUALITY_RARE",
+            "QUALITY_LEGACY",
+            "QUALITY_RELIC"
+          ]
+        },
+        "enhancementLevel": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10
+        },
+        "refineOption": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/RefineOption"
+            }
+          ]
+        },
+        "locked": {
+          "const": false
+        },
+        "equippedByMercenaryInstanceId": {
+          "type": "null"
+        },
+        "sourceContentVersion": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "generationOperationId": {
+          "type": "string",
+          "format": "uuid-v7"
+        },
+        "stockAcquiredAtUtc": {
+          "type": "string",
+          "format": "utc-instant"
+        },
+        "stockAcquiredOperationId": {
+          "type": "string",
+          "format": "uuid-v7"
+        },
+        "sourceType": {
+          "enum": [
+            "MERCENARY_SALE",
+            "SYSTEM_SUPPLY",
+            "PRODUCTION"
+          ]
+        },
+        "enhancementPityBps": {
+          "minimum": 0,
+          "maximum": 10000,
+          "type": "integer"
+        },
+        "enhancementAttemptCount": {
+          "minimum": 0,
+          "maximum": 9007199254740991,
+          "type": "integer"
+        },
+        "enhancementMaterialInvested": {
+          "items": {
+            "$ref": "#/$defs/EnhancementMaterialInvestment"
+          },
+          "maxItems": 4,
+          "type": "array"
+        },
+        "pendingRefineOption": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/RefineOption"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "refineRollCount": {
+          "minimum": 0,
+          "maximum": 9007199254740991,
+          "type": "integer"
+        }
+      }
+    },
+    "StoreSupplyState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "epoch",
+        "buyCountSinceRefresh",
+        "lastRefreshOperationId"
+      ],
+      "properties": {
+        "mode": {
+          "enum": [
+            "SYSTEM_SUPPLY",
+            "PRODUCTION_OWNED"
+          ]
+        },
+        "epoch": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "buyCountSinceRefresh": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 8
+        },
+        "lastRefreshOperationId": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "format": "uuid-v7"
+            }
+          ]
+        }
+      }
+    },
+    "EconomyLedger": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "nextSequence",
+        "prunedThroughSequence",
+        "prunedDigest",
+        "entries"
+      ],
+      "properties": {
+        "nextSequence": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "prunedThroughSequence": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "prunedDigest": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          ]
+        },
+        "entries": {
+          "type": "array",
+          "maxItems": 200,
+          "items": {
+            "$ref": "#/$defs/EconomyLedgerEntry"
+          }
+        }
+      }
+    },
+    "EconomyLedgerEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sequence",
+        "operationId",
+        "transactionType",
+        "actorMercenaryInstanceId",
+        "reasonCode",
+        "personalGoldDelta",
+        "kingdomGoldDelta",
+        "stockVersionAfter",
+        "committedAtUtc",
+        "requestHash",
+        "resultDigest",
+        "lines"
+      ],
+      "properties": {
+        "sequence": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "operationId": {
+          "type": "string",
+          "format": "uuid-v7"
+        },
+        "transactionType": {
+          "enum": [
+            "SET_PRICING_POLICY",
+            "SELL_TO_STORE",
+            "BUY_FROM_STORE",
+            "SYSTEM_SUPPLY",
+            "ENHANCE_EQUIPMENT",
+            "REFINE_EQUIPMENT",
+            "PROMOTION_START",
+            "TAVERN_REFRESH",
+            "TAVERN_HIRE"
+          ]
+        },
+        "actorMercenaryInstanceId": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "format": "uuid-v7"
+            }
+          ]
+        },
+        "reasonCode": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]*$",
+          "maxLength": 64
+        },
+        "personalGoldDelta": {
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        },
+        "kingdomGoldDelta": {
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        },
+        "stockVersionAfter": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "committedAtUtc": {
+          "type": "string",
+          "format": "utc-instant"
+        },
+        "requestHash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "resultDigest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "lines": {
+          "type": "array",
+          "maxItems": 32,
+          "items": {
+            "$ref": "#/$defs/EconomyLedgerLine"
+          }
+        }
+      }
+    },
+    "EconomyLedgerLine": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "lineNo",
+        "productKind",
+        "productId",
+        "quantity",
+        "unitPrice",
+        "lineTotal",
+        "stockDelta"
+      ],
+      "properties": {
+        "lineNo": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 32
+        },
+        "productKind": {
+          "enum": [
+            "ITEM",
+            "POTION",
+            "EQUIPMENT",
+            "SERVICE"
+          ]
+        },
+        "productId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 192
+        },
+        "quantity": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9999
+        },
+        "unitPrice": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "lineTotal": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "stockDelta": {
+          "type": "integer",
+          "minimum": -9999,
+          "maximum": 9999
+        }
+      }
+    },
+    "Production": {
+      "additionalProperties": false,
+      "properties": {
+        "productionVersion": {
+          "const": 1,
+          "type": "integer"
+        },
+        "currentTick": {
+          "minimum": 0,
+          "maximum": 9007199254740991,
+          "type": "integer"
+        },
+        "nextQueueNo": {
+          "minimum": 1,
+          "maximum": 9007199254740991,
+          "type": "integer"
+        },
+        "nextEventSequence": {
+          "minimum": 1,
+          "maximum": 9007199254740991,
+          "type": "integer"
+        },
+        "stockTargets": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "targetId": {
+                "minLength": 1,
+                "maxLength": 128,
+                "type": "string"
+              },
+              "priority": {
+                "minimum": 1,
+                "maximum": 9999,
+                "type": "integer"
+              },
+              "productKind": {
+                "enum": [
+                  "POTION",
+                  "EQUIPMENT"
+                ],
+                "type": "string"
+              },
+              "productId": {
+                "minLength": 1,
+                "maxLength": 128,
+                "type": "string"
+              },
+              "recipeId": {
+                "minLength": 1,
+                "maxLength": 128,
+                "type": "string"
+              },
+              "targetQuantity": {
+                "minimum": 0,
+                "maximum": 9007199254740991,
+                "type": "integer"
+              },
+              "minTarget": {
+                "minimum": 0,
+                "maximum": 9007199254740991,
+                "type": "integer"
+              },
+              "maxTarget": {
+                "minimum": 1,
+                "maximum": 9007199254740991,
+                "type": "integer"
+              },
+              "emergencyFloor": {
+                "minimum": 0,
+                "maximum": 9007199254740991,
+                "type": "integer"
+              },
+              "enabled": {
+                "type": "boolean"
+              },
+              "lastStopReason": {
+                "minLength": 1,
+                "maxLength": 128,
+                "type": "string"
+              }
+            },
+            "required": [
+              "targetId",
+              "priority",
+              "productKind",
+              "productId",
+              "recipeId",
+              "targetQuantity",
+              "minTarget",
+              "maxTarget",
+              "emergencyFloor",
+              "enabled",
+              "lastStopReason"
+            ],
+            "type": "object"
+          },
+          "maxItems": 64,
+          "type": "array"
+        },
+        "facilityQueues": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "facilityId": {
+                "enum": [
+                  "FAC_BLACKSMITH",
+                  "FAC_ALCHEMY",
+                  "FAC_INFIRMARY"
+                ],
+                "type": "string"
+              },
+              "stoppedReason": {
+                "minLength": 1,
+                "maxLength": 128,
+                "type": "string"
+              },
+              "jobs": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "jobId": {
+                      "minLength": 1,
+                      "maxLength": 128,
+                      "type": "string"
+                    },
+                    "queueNo": {
+                      "minimum": 1,
+                      "maximum": 9007199254740991,
+                      "type": "integer"
+                    },
+                    "jobKind": {
+                      "enum": [
+                        "CRAFT",
+                        "TREATMENT"
+                      ],
+                      "type": "string"
+                    },
+                    "recipeId": {
+                      "oneOf": [
+                        {
+                          "minLength": 1,
+                          "maxLength": 128,
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "targetMercenaryInstanceId": {
+                      "oneOf": [
+                        {
+                          "minLength": 1,
+                          "maxLength": 128,
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "quantity": {
+                      "minimum": 1,
+                      "maximum": 9007199254740991,
+                      "type": "integer"
+                    },
+                    "ticksTotal": {
+                      "minimum": 1,
+                      "maximum": 9007199254740991,
+                      "type": "integer"
+                    },
+                    "ticksRemaining": {
+                      "minimum": 0,
+                      "maximum": 9007199254740991,
+                      "type": "integer"
+                    },
+                    "status": {
+                      "enum": [
+                        "QUEUED",
+                        "RUNNING"
+                      ],
+                      "type": "string"
+                    },
+                    "reservedMaterials": {
+                      "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "itemId": {
+                            "minLength": 1,
+                            "maxLength": 128,
+                            "type": "string"
+                          },
+                          "quantity": {
+                            "minimum": 1,
+                            "maximum": 9007199254740991,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "itemId",
+                          "quantity"
+                        ],
+                        "type": "object"
+                      },
+                      "maxItems": 8,
+                      "type": "array"
+                    },
+                    "outputKind": {
+                      "oneOf": [
+                        {
+                          "enum": [
+                            "POTION",
+                            "EQUIPMENT",
+                            "TREATMENT"
+                          ],
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "outputId": {
+                      "oneOf": [
+                        {
+                          "minLength": 1,
+                          "maxLength": 128,
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "outputQuantity": {
+                      "minimum": 0,
+                      "maximum": 9007199254740991,
+                      "type": "integer"
+                    },
+                    "enqueuedOperationId": {
+                      "minLength": 1,
+                      "maxLength": 128,
+                      "type": "string"
+                    },
+                    "startedAtTick": {
+                      "oneOf": [
+                        {
+                          "minimum": 0,
+                          "maximum": 9007199254740991,
+                          "type": "integer"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "jobId",
+                    "queueNo",
+                    "jobKind",
+                    "recipeId",
+                    "targetMercenaryInstanceId",
+                    "quantity",
+                    "ticksTotal",
+                    "ticksRemaining",
+                    "status",
+                    "reservedMaterials",
+                    "outputKind",
+                    "outputId",
+                    "outputQuantity",
+                    "enqueuedOperationId",
+                    "startedAtTick"
+                  ],
+                  "type": "object"
+                },
+                "maxItems": 10,
+                "type": "array"
+              },
+              "lastCompletion": {
+                "oneOf": [
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "jobId": {
+                        "minLength": 1,
+                        "maxLength": 128,
+                        "type": "string"
+                      },
+                      "jobKind": {
+                        "enum": [
+                          "CRAFT",
+                          "TREATMENT"
+                        ],
+                        "type": "string"
+                      },
+                      "outputKind": {
+                        "enum": [
+                          "POTION",
+                          "EQUIPMENT",
+                          "TREATMENT"
+                        ],
+                        "type": "string"
+                      },
+                      "outputId": {
+                        "minLength": 1,
+                        "maxLength": 128,
+                        "type": "string"
+                      },
+                      "quantity": {
+                        "minimum": 1,
+                        "maximum": 9007199254740991,
+                        "type": "integer"
+                      },
+                      "completedAtTick": {
+                        "minimum": 0,
+                        "maximum": 9007199254740991,
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "jobId",
+                      "jobKind",
+                      "outputKind",
+                      "outputId",
+                      "quantity",
+                      "completedAtTick"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "facilityId",
+              "stoppedReason",
+              "jobs",
+              "lastCompletion"
+            ],
+            "type": "object"
+          },
+          "minItems": 3,
+          "maxItems": 3,
+          "type": "array"
+        },
+        "events": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "sequence": {
+                "minimum": 1,
+                "maximum": 9007199254740991,
+                "type": "integer"
+              },
+              "eventType": {
+                "minLength": 1,
+                "maxLength": 128,
+                "type": "string"
+              },
+              "facilityId": {
+                "minLength": 1,
+                "maxLength": 128,
+                "type": "string"
+              },
+              "jobId": {
+                "oneOf": [
+                  {
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "reasonCode": {
+                "minLength": 1,
+                "maxLength": 128,
+                "type": "string"
+              },
+              "tick": {
+                "minimum": 0,
+                "maximum": 9007199254740991,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "sequence",
+              "eventType",
+              "facilityId",
+              "jobId",
+              "reasonCode",
+              "tick"
+            ],
+            "type": "object"
+          },
+          "maxItems": 100,
+          "type": "array"
+        }
+      },
+      "required": [
+        "productionVersion",
+        "currentTick",
+        "nextQueueNo",
+        "nextEventSequence",
+        "stockTargets",
+        "facilityQueues",
+        "events"
+      ],
+      "type": "object"
+    },
+    "EnhancementMaterialInvestment": {
+      "additionalProperties": false,
+      "properties": {
+        "itemId": {
+          "minLength": 1,
+          "maxLength": 128,
+          "type": "string"
+        },
+        "quantity": {
+          "minimum": 1,
+          "maximum": 9007199254740991,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "itemId",
+        "quantity"
+      ],
+      "type": "object"
+    },
+    "EquipmentGrowth": {
+      "additionalProperties": false,
+      "properties": {
+        "growthVersion": {
+          "const": 1,
+          "type": "integer"
+        },
+        "nextEventSequence": {
+          "minimum": 1,
+          "maximum": 9007199254740991,
+          "type": "integer"
+        },
+        "events": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "sequence": {
+                "minimum": 1,
+                "maximum": 9007199254740991,
+                "type": "integer"
+              },
+              "eventType": {
+                "enum": [
+                  "EquipmentEnhancementAttempted",
+                  "EquipmentRefineRolled",
+                  "EquipmentRefineResolved",
+                  "EquipmentDismantled"
+                ],
+                "type": "string"
+              },
+              "equipmentInstanceId": {
+                "minLength": 1,
+                "maxLength": 128,
+                "type": "string"
+              },
+              "actorMercenaryInstanceId": {
+                "minLength": 1,
+                "maxLength": 128,
+                "type": "string"
+              },
+              "resultCode": {
+                "minLength": 1,
+                "maxLength": 128,
+                "type": "string"
+              },
+              "levelBefore": {
+                "oneOf": [
+                  {
+                    "minimum": 0,
+                    "maximum": 10,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "levelAfter": {
+                "oneOf": [
+                  {
+                    "minimum": 0,
+                    "maximum": 10,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "optionId": {
+                "oneOf": [
+                  {
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "createdAtUtc": {
+                "format": "utc-instant",
+                "type": "string"
+              }
+            },
+            "required": [
+              "sequence",
+              "eventType",
+              "equipmentInstanceId",
+              "actorMercenaryInstanceId",
+              "resultCode",
+              "levelBefore",
+              "levelAfter",
+              "optionId",
+              "createdAtUtc"
+            ],
+            "type": "object"
+          },
+          "maxItems": 100,
+          "type": "array"
+        }
+      },
+      "required": [
+        "growthVersion",
+        "nextEventSequence",
+        "events"
+      ],
+      "type": "object"
+    },
+    "Progression": {
+      "additionalProperties": false,
+      "properties": {
+        "progressionVersion": {
+          "const": 1,
+          "type": "integer"
+        },
+        "nextEventSequence": {
+          "minimum": 1,
+          "maximum": 9007199254740991,
+          "type": "integer"
+        },
+        "issuedSupplyKeys": {
+          "items": {
+            "minLength": 1,
+            "maxLength": 128,
+            "type": "string"
+          },
+          "maxItems": 120,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "events": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "sequence": {
+                "minimum": 1,
+                "maximum": 9007199254740991,
+                "type": "integer"
+              },
+              "eventType": {
+                "enum": [
+                  "ExperienceAwarded",
+                  "PromotionReady",
+                  "PromotionSupportIssued",
+                  "PromotionReviewStarted",
+                  "PromotionReviewCompleted",
+                  "PromotionApplied"
+                ],
+                "type": "string"
+              },
+              "mercenaryInstanceId": {
+                "minLength": 1,
+                "maxLength": 128,
+                "type": "string"
+              },
+              "fromRankId": {
+                "oneOf": [
+                  {
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "toRankId": {
+                "oneOf": [
+                  {
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "levelBefore": {
+                "oneOf": [
+                  {
+                    "minimum": 0,
+                    "maximum": 9007199254740991,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "levelAfter": {
+                "oneOf": [
+                  {
+                    "minimum": 0,
+                    "maximum": 9007199254740991,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "experienceDelta": {
+                "oneOf": [
+                  {
+                    "minimum": 0,
+                    "maximum": 9007199254740991,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "resultCode": {
+                "minLength": 1,
+                "maxLength": 128,
+                "type": "string"
+              },
+              "createdAtUtc": {
+                "format": "utc-instant",
+                "type": "string"
+              }
+            },
+            "required": [
+              "sequence",
+              "eventType",
+              "mercenaryInstanceId",
+              "fromRankId",
+              "toRankId",
+              "levelBefore",
+              "levelAfter",
+              "experienceDelta",
+              "resultCode",
+              "createdAtUtc"
+            ],
+            "type": "object"
+          },
+          "maxItems": 200,
+          "type": "array"
+        }
+      },
+      "required": [
+        "progressionVersion",
+        "nextEventSequence",
+        "issuedSupplyKeys",
+        "events"
+      ],
+      "type": "object"
+    },
+    "RegionEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "sequence": {
+          "minimum": 1,
+          "maximum": 9007199254740991,
+          "type": "integer"
+        },
+        "eventType": {
+          "enum": [
+            "RegionUnlocked",
+            "AccessPolicyChanged",
+            "HuntSettled"
+          ],
+          "type": "string"
+        },
+        "regionId": {
+          "minLength": 1,
+          "maxLength": 128,
+          "type": "string"
+        },
+        "mercenaryInstanceIds": {
+          "items": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "maxItems": 8,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "progressBefore": {
+          "oneOf": [
+            {
+              "minimum": 0,
+              "maximum": 100,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "progressAfter": {
+          "oneOf": [
+            {
+              "minimum": 0,
+              "maximum": 100,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "allowedBefore": {
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "allowedAfter": {
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "resultCode": {
+          "minLength": 1,
+          "maxLength": 128,
+          "type": "string"
+        },
+        "createdAtUtc": {
+          "format": "utc-instant",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sequence",
+        "eventType",
+        "regionId",
+        "mercenaryInstanceIds",
+        "progressBefore",
+        "progressAfter",
+        "allowedBefore",
+        "allowedAfter",
+        "resultCode",
+        "createdAtUtc"
+      ],
+      "type": "object"
+    },
+    "RecruitmentCandidate": {
+      "additionalProperties": false,
+      "properties": {
+        "candidateId": {
+          "format": "uuid-v7",
+          "type": "string"
+        },
+        "poolId": {
+          "maxLength": 64,
+          "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+          "type": "string"
+        },
+        "generationProfileId": {
+          "maxLength": 64,
+          "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+          "type": "string"
+        },
+        "nameSeed": {
+          "pattern": "^[0-9]+$",
+          "type": "string"
+        },
+        "appearanceSeed": {
+          "pattern": "^[0-9]+$",
+          "type": "string"
+        },
+        "growthSeed": {
+          "pattern": "^[0-9]+$",
+          "type": "string"
+        },
+        "displayName": {
+          "maxLength": 40,
+          "minLength": 1,
+          "type": "string"
+        },
+        "jobId": {
+          "maxLength": 64,
+          "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+          "type": "string"
+        },
+        "gradeId": {
+          "maxLength": 64,
+          "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+          "type": "string"
+        },
+        "personalityId": {
+          "maxLength": 64,
+          "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+          "type": "string"
+        },
+        "traitIds": {
+          "items": {
+            "maxLength": 64,
+            "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+            "type": "string"
+          },
+          "maxItems": 8,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "hireCost": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "locked": {
+          "type": "boolean"
+        },
+        "generatedAtUtc": {
+          "format": "utc-instant",
+          "type": "string"
+        }
+      },
+      "required": [
+        "candidateId",
+        "poolId",
+        "generationProfileId",
+        "nameSeed",
+        "appearanceSeed",
+        "growthSeed",
+        "displayName",
+        "jobId",
+        "gradeId",
+        "personalityId",
+        "traitIds",
+        "hireCost",
+        "locked",
+        "generatedAtUtc"
+      ],
+      "type": "object"
+    },
+    "RecruitmentTavernState": {
+      "additionalProperties": false,
+      "properties": {
+        "refreshSequence": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "lastRefreshAtUtc": {
+          "oneOf": [
+            {
+              "format": "utc-instant",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "nextFreeRefreshAtUtc": {
+          "oneOf": [
+            {
+              "format": "utc-instant",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "candidates": {
+          "items": {
+            "$ref": "#/$defs/RecruitmentCandidate"
+          },
+          "maxItems": 5,
+          "type": "array"
+        }
+      },
+      "required": [
+        "refreshSequence",
+        "lastRefreshAtUtc",
+        "nextFreeRefreshAtUtc",
+        "candidates"
+      ],
+      "type": "object"
+    },
+    "RecruitmentHistoryEntry": {
+      "additionalProperties": false,
+      "properties": {
+        "sequence": {
+          "maximum": 9007199254740991,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "operationId": {
+          "format": "uuid-v7",
+          "type": "string"
+        },
+        "poolId": {
+          "maxLength": 64,
+          "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+          "type": "string"
+        },
+        "poolType": {
+          "enum": [
+            "TAVERN",
+            "SPECIAL"
+          ],
+          "type": "string"
+        },
+        "paymentType": {
+          "enum": [
+            "KINGDOM_GOLD",
+            "TICKET",
+            "FREE_PREMIUM",
+            "PAID_PREMIUM"
+          ],
+          "type": "string"
+        },
+        "count": {
+          "const": 1,
+          "type": "integer"
+        },
+        "costAmount": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "resultInstanceIds": {
+          "items": {
+            "format": "uuid-v7",
+            "type": "string"
+          },
+          "maxItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "resultGradeIds": {
+          "items": {
+            "maxLength": 64,
+            "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+            "type": "string"
+          },
+          "maxItems": 1,
+          "type": "array"
+        },
+        "guaranteeReasonIds": {
+          "items": {
+            "maxLength": 64,
+            "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+            "type": "string"
+          },
+          "maxItems": 4,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "serverReceiptId": {
+          "oneOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "createdAtUtc": {
+          "format": "utc-instant",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sequence",
+        "operationId",
+        "poolId",
+        "poolType",
+        "paymentType",
+        "count",
+        "costAmount",
+        "resultInstanceIds",
+        "resultGradeIds",
+        "guaranteeReasonIds",
+        "serverReceiptId",
+        "createdAtUtc"
+      ],
+      "type": "object"
+    },
+    "RecruitmentEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "sequence": {
+          "maximum": 9007199254740991,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "eventType": {
+          "enum": [
+            "TavernRefreshed",
+            "CandidateLockChanged",
+            "CandidateHired",
+            "SpecialRecruitmentCompleted"
+          ],
+          "type": "string"
+        },
+        "operationId": {
+          "format": "uuid-v7",
+          "type": "string"
+        },
+        "subjectId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "type": "string"
+        },
+        "resultCode": {
+          "maxLength": 64,
+          "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+          "type": "string"
+        },
+        "createdAtUtc": {
+          "format": "utc-instant",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sequence",
+        "eventType",
+        "operationId",
+        "subjectId",
+        "resultCode",
+        "createdAtUtc"
+      ],
+      "type": "object"
+    },
+    "RaidPotionConsumption": {
+      "additionalProperties": false,
+      "properties": {
+        "mercenaryInstanceId": {
+          "format": "uuid",
+          "type": "string"
+        },
+        "potionId": {
+          "maxLength": 64,
+          "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+          "type": "string"
+        },
+        "quantity": {
+          "maximum": 9007199254740991,
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "mercenaryInstanceId",
+        "potionId",
+        "quantity"
+      ],
+      "type": "object"
+    },
+    "RaidContribution": {
+      "additionalProperties": false,
+      "properties": {
+        "mercenaryInstanceId": {
+          "format": "uuid",
+          "type": "string"
+        },
+        "damage": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "healing": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "preventedDamage": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "total": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "mercenaryInstanceId",
+        "damage",
+        "healing",
+        "preventedDamage",
+        "total"
+      ],
+      "type": "object"
+    },
+    "RaidReward": {
+      "additionalProperties": false,
+      "properties": {
+        "rewardType": {
+          "enum": [
+            "ITEM",
+            "REGION_UNLOCK",
+            "PROGRESSION_FLAG"
+          ],
+          "type": "string"
+        },
+        "rewardId": {
+          "maxLength": 64,
+          "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+          "type": "string"
+        },
+        "quantity": {
+          "maximum": 9007199254740991,
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "rewardType",
+        "rewardId",
+        "quantity"
+      ],
+      "type": "object"
+    },
+    "RaidHistoryEntry": {
+      "additionalProperties": false,
+      "properties": {
+        "sequence": {
+          "maximum": 9007199254740991,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "operationId": {
+          "format": "uuid-v7",
+          "type": "string"
+        },
+        "raidId": {
+          "maxLength": 64,
+          "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+          "type": "string"
+        },
+        "difficulty": {
+          "enum": [
+            "NORMAL",
+            "HARD",
+            "CORRUPTED"
+          ],
+          "type": "string"
+        },
+        "resultCode": {
+          "maxLength": 64,
+          "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+          "type": "string"
+        },
+        "success": {
+          "type": "boolean"
+        },
+        "durationMs": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "targetPartId": {
+          "maxLength": 64,
+          "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+          "type": "string"
+        },
+        "partyMercenaryInstanceIds": {
+          "items": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "maxItems": 8,
+          "minItems": 6,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "brokenPartIds": {
+          "items": {
+            "maxLength": 64,
+            "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+            "type": "string"
+          },
+          "maxItems": 4,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "injuredMercenaryInstanceIds": {
+          "items": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "maxItems": 8,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "potionConsumptions": {
+          "items": {
+            "$ref": "#/$defs/RaidPotionConsumption"
+          },
+          "maxItems": 32,
+          "type": "array"
+        },
+        "contributions": {
+          "items": {
+            "$ref": "#/$defs/RaidContribution"
+          },
+          "maxItems": 8,
+          "type": "array"
+        },
+        "rewards": {
+          "items": {
+            "$ref": "#/$defs/RaidReward"
+          },
+          "maxItems": 16,
+          "type": "array"
+        },
+        "firstClear": {
+          "type": "boolean"
+        },
+        "unlockedRegionIds": {
+          "items": {
+            "maxLength": 64,
+            "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+            "type": "string"
+          },
+          "maxItems": 5,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "progressionFlagIds": {
+          "items": {
+            "maxLength": 64,
+            "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+            "type": "string"
+          },
+          "maxItems": 8,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "resultDigest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "settledAtUtc": {
+          "format": "utc-instant",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sequence",
+        "operationId",
+        "raidId",
+        "difficulty",
+        "resultCode",
+        "success",
+        "durationMs",
+        "targetPartId",
+        "partyMercenaryInstanceIds",
+        "brokenPartIds",
+        "injuredMercenaryInstanceIds",
+        "potionConsumptions",
+        "contributions",
+        "rewards",
+        "firstClear",
+        "unlockedRegionIds",
+        "progressionFlagIds",
+        "resultDigest",
+        "settledAtUtc"
+      ],
+      "type": "object"
+    }
+  }
+}

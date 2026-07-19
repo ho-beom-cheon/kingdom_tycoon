@@ -82,7 +82,7 @@ namespace KingdomTycoon.Infrastructure.Combat
         public CanonicalCombatCatalog(ContentCatalog catalog)
         {
             if (catalog == null) throw new ArgumentNullException(nameof(catalog));
-            if (catalog.ContentVersion is not (CompileTimeActiveContentVersionProvider.P06ContentVersion or CompileTimeActiveContentVersionProvider.P07ContentVersion or CompileTimeActiveContentVersionProvider.P08ContentVersion or CompileTimeActiveContentVersionProvider.P09ContentVersion or CompileTimeActiveContentVersionProvider.P10ContentVersion or CompileTimeActiveContentVersionProvider.P11ContentVersion or CompileTimeActiveContentVersionProvider.P12ContentVersion or CompileTimeActiveContentVersionProvider.P13ContentVersion))
+            if (catalog.ContentVersion is not (CompileTimeActiveContentVersionProvider.P06ContentVersion or CompileTimeActiveContentVersionProvider.P07ContentVersion or CompileTimeActiveContentVersionProvider.P08ContentVersion or CompileTimeActiveContentVersionProvider.P09ContentVersion or CompileTimeActiveContentVersionProvider.P10ContentVersion or CompileTimeActiveContentVersionProvider.P11ContentVersion or CompileTimeActiveContentVersionProvider.P12ContentVersion or CompileTimeActiveContentVersionProvider.P13ContentVersion or CompileTimeActiveContentVersionProvider.P14ContentVersion))
                 throw new CombatDomainException("P06_CONTENT_VERSION_UNSUPPORTED");
             ContentVersion = catalog.ContentVersion;
             jobs = catalog.GetTable("combat_job_profiles.csv").Rows.Where(Enabled).Select(row => new CombatJobProfile(row)).ToDictionary(value => value.JobId, StringComparer.Ordinal);
@@ -92,7 +92,7 @@ namespace KingdomTycoon.Infrastructure.Combat
                 .ToDictionary(group => group.Key, group => group.OrderBy(value => value.MonsterId, StringComparer.Ordinal).ToArray(), StringComparer.Ordinal);
             AutonomyRules = catalog.GetTable("autonomy_rules.csv").Rows.Select(row => new AutonomyRule(
                 row["state"], Int(row, "rule_no"), Int(row, "priority"), row["condition_type"], row["condition_value"], row["reason_code"], row["next_state"], row["enabled"] == "TRUE")).ToArray();
-            int requiredRegionCount = catalog.ContentVersion is CompileTimeActiveContentVersionProvider.P12ContentVersion or CompileTimeActiveContentVersionProvider.P13ContentVersion ? 5 : 1;
+            int requiredRegionCount = catalog.ContentVersion is CompileTimeActiveContentVersionProvider.P12ContentVersion or CompileTimeActiveContentVersionProvider.P13ContentVersion or CompileTimeActiveContentVersionProvider.P14ContentVersion ? 5 : 1;
             bool encountersValid = Enumerable.Range(1, requiredRegionCount).All(order =>
                 encounters.TryGetValue($"REGION_R0{order}", out EncounterCombatProfile[] values) && values.Sum(value => value.Weight) == 100);
             if (jobs.Count != 5 || !encountersValid)
@@ -171,7 +171,7 @@ namespace KingdomTycoon.Infrastructure.Combat
                 current = new P05ToP06ContentMigration(clock).Apply(current);
                 needsWrite = true;
             }
-            else if (current.Value<string>("contentVersion") is not (CompileTimeActiveContentVersionProvider.P06ContentVersion or CompileTimeActiveContentVersionProvider.P07ContentVersion or CompileTimeActiveContentVersionProvider.P08ContentVersion or CompileTimeActiveContentVersionProvider.P09ContentVersion or CompileTimeActiveContentVersionProvider.P10ContentVersion or CompileTimeActiveContentVersionProvider.P11ContentVersion or CompileTimeActiveContentVersionProvider.P12ContentVersion or CompileTimeActiveContentVersionProvider.P13ContentVersion))
+            else if (current.Value<string>("contentVersion") is not (CompileTimeActiveContentVersionProvider.P06ContentVersion or CompileTimeActiveContentVersionProvider.P07ContentVersion or CompileTimeActiveContentVersionProvider.P08ContentVersion or CompileTimeActiveContentVersionProvider.P09ContentVersion or CompileTimeActiveContentVersionProvider.P10ContentVersion or CompileTimeActiveContentVersionProvider.P11ContentVersion or CompileTimeActiveContentVersionProvider.P12ContentVersion or CompileTimeActiveContentVersionProvider.P13ContentVersion or CompileTimeActiveContentVersionProvider.P14ContentVersion))
             {
                 throw new CombatDomainException("P06_CONTENT_VERSION_UNSUPPORTED");
             }
