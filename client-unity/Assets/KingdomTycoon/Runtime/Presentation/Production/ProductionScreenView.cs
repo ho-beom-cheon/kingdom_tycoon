@@ -51,23 +51,23 @@ namespace KingdomTycoon.Presentation.Production
 
         public void ShowError(string code)
         {
-            statePanel.SetActive(true); stateTitle.text = "생산 현황을 표시할 수 없습니다"; stateBody.text = "저장 데이터는 변경하지 않았습니다.\n다시 열어 주세요.\n\n" + code;
+            Debug.LogWarning(code); statePanel.SetActive(true); stateTitle.text = "생산 현황을 표시할 수 없습니다"; stateBody.text = "저장 데이터는 변경하지 않았습니다.\n다시 열어 주세요.";
         }
 
         public void Render(ProductionOverviewDto value, int selectedIndex)
         {
-            statePanel.SetActive(false); meta.text = $"content.7  ·  tick {value.CurrentTick:N0}  ·  r{value.Revision}";
+            statePanel.SetActive(false); meta.text = $"콘텐츠 7  ·  생산 진행 {value.CurrentTick:N0}  ·  저장 {value.Revision}";
             for (int index = 0; index < facilityTexts.Length; index++)
             {
                 if (index >= value.Facilities.Count) { facilityTexts[index].text = "시설 정보 없음"; continue; }
-                ProductionFacilityDto item = value.Facilities[index]; string name = Name(item.FacilityId); string npc = string.IsNullOrEmpty(item.NpcProfession) ? "담당 NPC 없음" : $"{NpcName(item.NpcProfession)} · {ProficiencyName(item.Proficiency)}  XP {item.Xp:N0}";
-                facilityTexts[index].text = $"<size=30><color=#F2D47A>{name}</color></size>  Lv.{item.Level}\n{npc}\n큐 {item.QueueCount}/{item.QueueCapacity}  ·  남은 tick {item.RemainingTicks:N0}\n<color={(item.StoppedReason == "NONE" ? "#8ECF91" : "#E7A74C")}>{Reason(item.StoppedReason)}</color>";
+                ProductionFacilityDto item = value.Facilities[index]; string name = Name(item.FacilityId); string npc = string.IsNullOrEmpty(item.NpcProfession) ? "담당 관리인 없음" : $"{NpcName(item.NpcProfession)} · {ProficiencyName(item.Proficiency)}  숙련도 {item.Xp:N0}";
+                facilityTexts[index].text = $"<size=30><color=#F2D47A>{name}</color></size>  {item.Level}레벨\n{npc}\n대기열 {item.QueueCount}/{item.QueueCapacity}  ·  남은 진행 {item.RemainingTicks:N0}\n<color={(item.StoppedReason == "NONE" ? "#8ECF91" : "#E7A74C")}>{Reason(item.StoppedReason)}</color>";
             }
             targetsText.text = "";
             for (int index = 0; index < value.Targets.Count; index++)
             {
                 StockTargetDto target = value.Targets[index]; string marker = index == selectedIndex ? "▶" : " ";
-                targetsText.text += $"{marker} {ProductName(target.ProductId),-11}  {target.Current}+{target.Queued}/{target.Target}  {(target.Enabled ? "AUTO" : "OFF")}\n";
+                targetsText.text += $"{marker} {ProductName(target.ProductId),-11}  {target.Current}+{target.Queued}/{target.Target}  {(target.Enabled ? "자동" : "꺼짐")}\n";
             }
             selectedIndex = Mathf.Clamp(selectedIndex, 0, Math.Max(0, value.Targets.Count - 1));
             StockTargetDto selected = value.Targets.Count == 0 ? null : value.Targets[selectedIndex];
@@ -85,9 +85,9 @@ namespace KingdomTycoon.Presentation.Production
         private static string Reason(string value) => value switch
         {
             "NONE" => "생산 가능", "P09_FACILITY_LOCKED" => "시설을 먼저 건설하세요", "P09_FACILITY_INACTIVE" => "시설 가동을 확인하세요",
-            "P09_NPC_REQUIRED" => "담당 NPC를 배치하세요", "P09_MATERIAL_INSUFFICIENT" => "재료가 부족합니다", "P09_QUEUE_FULL" => "대기열이 가득 찼습니다",
-            "P09_TARGET_REACHED" => "목표 재고를 확보했습니다", "P09_OUTPUT_CAPACITY" => "상점 수용량이 부족합니다", "P09_PROFICIENCY_REQUIRED" => "NPC 숙련도가 부족합니다",
-            "P09_RECIPE_LOCKED" => "시설 레벨이 부족합니다", _ => value
+            "P09_NPC_REQUIRED" => "담당 관리인을 배치하세요", "P09_MATERIAL_INSUFFICIENT" => "재료가 부족합니다", "P09_QUEUE_FULL" => "대기열이 가득 찼습니다",
+            "P09_TARGET_REACHED" => "목표 재고를 확보했습니다", "P09_OUTPUT_CAPACITY" => "상점 수용량이 부족합니다", "P09_PROFICIENCY_REQUIRED" => "관리인 숙련도가 부족합니다",
+            "P09_RECIPE_LOCKED" => "시설 레벨이 부족합니다", _ => "생산 조건을 확인하세요"
         };
     }
 }

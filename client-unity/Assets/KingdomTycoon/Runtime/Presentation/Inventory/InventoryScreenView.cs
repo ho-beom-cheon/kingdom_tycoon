@@ -45,10 +45,10 @@ namespace KingdomTycoon.Presentation.Inventory
             capacity.text = $"재료 {snapshot.Items.Count(value => value.Kind == "ITEM")}/{snapshot.ItemSlots}   장비 {snapshot.Items.Count(value => value.Kind == "EQUIPMENT")}/{snapshot.EquipmentSlots}   포션 {snapshot.Items.Count(value => value.Kind == "POTION")}/{snapshot.PotionSlots}";
             InventoryItemDto[] values = snapshot.Items.Take(30).ToArray();
             grid.text = values.Length == 0 ? "보관 중인 아이템이 없습니다." : string.Join("\n", values.Select((value, index) =>
-                $"{index + 1:00}  [{value.Kind}] {value.Name}  x{value.Quantity}  {(value.Locked ? "잠금" : string.Empty)}"));
+                $"{index + 1:00}  [{Kind(value.Kind)}] {DisplayName(value.Name)}  {value.Quantity}개  {(value.Locked ? "잠금" : string.Empty)}"));
             InventoryItemDto first = values.FirstOrDefault();
             detail.text = first == null ? "아이템을 선택하면 상세 정보가 표시됩니다." :
-                $"{first.Name}\n품질  {first.Quality ?? "-"}\n티어  {first.Tier}\n장비 점수  {Math.Max(0, first.Score)}\n\n공격력  +95\n치명타  +500\n이동 속도  +0";
+                $"{DisplayName(first.Name)}\n품질  {Quality(first.Quality)}\n단계  {first.Tier}\n장비 점수  {Math.Max(0, first.Score)}\n\n공격력  +95\n치명타  +500\n이동 속도  +0";
         }
 
         public void ShowState(InventoryUiState state, string diagnostic = null)
@@ -59,7 +59,7 @@ namespace KingdomTycoon.Presentation.Inventory
             {
                 InventoryUiState.Loading => "인벤토리를 불러오는 중입니다.",
                 InventoryUiState.Locked => "인벤토리가 아직 잠겨 있습니다.",
-                InventoryUiState.Error => "인벤토리를 표시할 수 없습니다.\n" + (diagnostic ?? "P07_ERROR"),
+                InventoryUiState.Error => "인벤토리를 표시할 수 없습니다.\n잠시 후 다시 열어 주세요.",
                 _ => string.Empty
             };
         }
@@ -67,5 +67,25 @@ namespace KingdomTycoon.Presentation.Inventory
         public void ShowPolicy(bool visible) => policyModal.SetActive(visible);
         public void ShowSale(bool visible) => saleModal.SetActive(visible);
         public void ShowLoot(bool visible) => lootModal.SetActive(visible);
+        private static string Kind(string value) => value switch { "ITEM" => "재료", "EQUIPMENT" => "장비", "POTION" => "물약", _ => "물품" };
+        private static string Quality(string value) => value switch { "QUALITY_COMMON" => "일반", "QUALITY_FINE" => "고급", "QUALITY_RARE" => "희귀", "QUALITY_LEGACY" => "영웅", "QUALITY_RELIC" => "유물", null => "-", _ => "표준" };
+        private static string DisplayName(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value)) return "이름 없는 물품";
+            if (!value.StartsWith("EQ_", StringComparison.Ordinal)) return value.Contains('_') ? ItemName(value) : value;
+            string[] parts = value.Split('_');
+            if (parts.Length < 4) return "왕국 장비";
+            string tier = parts[1].StartsWith("T", StringComparison.Ordinal) ? parts[1].Substring(1) : parts[1];
+            return $"{tier}단계 {JobName(parts[2])} {SlotName(parts[3])}";
+        }
+
+        private static string JobName(string value) => value switch { "WARRIOR" => "전사", "GUARDIAN" => "수호자", "ARCHER" => "궁수", "MAGE" => "마법사", "CLERIC" => "성직자", _ => "공용" };
+        private static string SlotName(string value) => value switch { "WEAPON" => "무기", "ARMOR" => "갑옷", "HELMET" => "투구", "ACCESSORY" => "장신구", _ => "장비" };
+        private static string ItemName(string value) => value switch
+        {
+            "MAT_PROMO_BRONZE_EMBLEM" => "청동 승급 문장", "MAT_BOSS_HYDRA_VENOM" => "히드라 맹독", "MAT_BOSS_HYDRA_SCALE" => "히드라 비늘",
+            "MAT_BOSS_HYDRA_HEART" => "히드라 심장", "MAT_BOSS_DRAGON_HORN" => "고룡의 뿔", "MAT_BOSS_ASH_CORE" => "잿빛 핵",
+            "MAT_BOSS_DRAGON_SCALE" => "고룡의 비늘", "MAT_BOSS_DRAGON_HEART" => "고룡의 심장", "POT_HEAL_SMALL" => "소형 회복 물약", _ => "왕국 재료"
+        };
     }
 }

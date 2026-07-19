@@ -131,7 +131,7 @@ namespace KingdomTycoon.Editor
 
             Image selector = Panel("P08_MERC_SELECTOR", safe.transform, new Color32(44, 41, 37, 255)); SetRect(selector.rectTransform, new Vector2(0, .805f), new Vector2(1, .88f), Vector2.zero, Vector2.zero);
             TMP_Text mercenary = Text("Mercenary", selector.transform, "레온 · 선택됨", 25, TextAlignmentOptions.Left, new Vector2(.035f, .08f), new Vector2(.35f, .92f));
-            TMP_Text merchant = Text("MerchantStatus", selector.transform, "● 영업 중  상점 Lv.2", 23, TextAlignmentOptions.Right, new Vector2(.52f, .08f), new Vector2(.965f, .92f), new Color32(142, 207, 145, 255));
+            TMP_Text merchant = Text("MerchantStatus", selector.transform, "● 영업 중  상점 2레벨", 23, TextAlignmentOptions.Right, new Vector2(.52f, .08f), new Vector2(.965f, .92f), new Color32(142, 207, 145, 255));
 
             Image tabs = Panel("P08_CATEGORY_TABS", safe.transform, new Color32(39, 36, 32, 255)); SetRect(tabs.rectTransform, new Vector2(0, .73f), new Vector2(1, .805f), Vector2.zero, Vector2.zero);
             Button buy = Button("P08_TAB_BUY", tabs.transform, "구매", new Color32(126, 83, 42, 255)); SetRect(buy.GetComponent<RectTransform>(), new Vector2(.02f, .05f), new Vector2(.13f, .95f), Vector2.zero, Vector2.zero);
@@ -153,7 +153,7 @@ namespace KingdomTycoon.Editor
             {
                 Button row = Button("ProductRow_" + index.ToString("00"), pool.transform, string.Empty, new Color32(48, 46, 42, 245));
                 RectTransform rect = row.GetComponent<RectTransform>(); rect.anchorMin = new Vector2(.018f, 1); rect.anchorMax = new Vector2(.982f, 1); rect.pivot = new Vector2(.5f, 1); rect.anchoredPosition = new Vector2(0, -8 - index * 122); rect.sizeDelta = new Vector2(0, 112);
-                TMP_Text label = row.transform.Find("Label").GetComponent<TMP_Text>(); label.text = $"상품 {index + 1}\n<size=20><color=#B9B0A3>재고 {index + 2}</color></size>  <color=#F2D47A>{(index + 1) * 35:N0} G</color>"; label.alignment = TextAlignmentOptions.MidlineLeft; label.margin = new Vector4(28, 6, 20, 6);
+                TMP_Text label = row.transform.Find("Label").GetComponent<TMP_Text>(); label.text = $"상품 {index + 1}\n<size=20><color=#B9B0A3>재고 {index + 2}</color></size>  <color=#F2D47A>{(index + 1) * 35:N0} 골드</color>"; label.alignment = TextAlignmentOptions.MidlineLeft; label.margin = new Vector4(28, 6, 20, 6);
                 rows[index] = row; rowLabels[index] = label;
             }
             StoreProductVirtualList virtualList = pool.GetComponent<StoreProductVirtualList>(); virtualList.Configure(rows, rowLabels);
@@ -161,13 +161,13 @@ namespace KingdomTycoon.Editor
             Image detail = Panel("P08_DETAIL_PANEL", content.transform, new Color32(58, 54, 48, 255)); SetRect(detail.rectTransform, new Vector2(.595f, .12f), new Vector2(.98f, .98f), Vector2.zero, Vector2.zero);
             TMP_Text detailTitle = Text("DetailTitle", detail.transform, "소형 회복 물약", 34, TextAlignmentOptions.Left, new Vector2(.06f, .84f), new Vector2(.94f, .96f), new Color32(242, 212, 122, 255));
             Image compare = Panel("P08_COMPARE_PANEL", detail.transform, new Color32(45, 42, 38, 255)); SetRect(compare.rectTransform, new Vector2(.05f, .33f), new Vector2(.95f, .82f), Vector2.zero, Vector2.zero);
-            TMP_Text detailBody = Text("DetailBody", compare.transform, "POTION · SYSTEM\n\n재고  8\n티어  -\n품질  일반\n\n<size=36><color=#F2D47A>35 G</color></size>\n\n개인 골드에서 결제하고\n왕국 금고로 이전합니다.", 24, TextAlignmentOptions.TopLeft, new Vector2(.07f, .06f), new Vector2(.93f, .94f));
+            TMP_Text detailBody = Text("DetailBody", compare.transform, "물약 · 왕국 보급\n\n재고  8\n단계  -\n품질  일반\n\n<size=36><color=#F2D47A>35 골드</color></size>\n\n개인 골드에서 결제하고\n왕국 금고로 이전합니다.", 24, TextAlignmentOptions.TopLeft, new Vector2(.07f, .06f), new Vector2(.93f, .94f));
             Button minus = Button("P08_QUANTITY_MINUS", detail.transform, "−", new Color32(74, 68, 60, 255)); SetRect(minus.GetComponent<RectTransform>(), new Vector2(.06f, .21f), new Vector2(.22f, .31f), Vector2.zero, Vector2.zero);
             Text("Quantity", detail.transform, "1", 28, TextAlignmentOptions.Center, new Vector2(.23f, .21f), new Vector2(.38f, .31f));
             Button plus = Button("P08_QUANTITY_PLUS", detail.transform, "+", new Color32(74, 68, 60, 255)); SetRect(plus.GetComponent<RectTransform>(), new Vector2(.39f, .21f), new Vector2(.55f, .31f), Vector2.zero, Vector2.zero);
             Button primary = Button("P08_PRIMARY_ACTION", detail.transform, "구매 견적 보기", new Color32(174, 111, 47, 255)); SetRect(primary.GetComponent<RectTransform>(), new Vector2(.58f, .2f), new Vector2(.95f, .32f), Vector2.zero, Vector2.zero);
             TMP_Text actionLabel = primary.transform.Find("Label").GetComponent<TMP_Text>();
-            Button policy = Button("P08_POLICY_CONTROL", detail.transform, "가격 정책  STANDARD", new Color32(78, 68, 54, 255)); SetRect(policy.GetComponent<RectTransform>(), new Vector2(.06f, .06f), new Vector2(.95f, .17f), Vector2.zero, Vector2.zero);
+            Button policy = Button("P08_POLICY_CONTROL", detail.transform, "가격 정책  표준", new Color32(78, 68, 54, 255)); SetRect(policy.GetComponent<RectTransform>(), new Vector2(.06f, .06f), new Vector2(.95f, .17f), Vector2.zero, Vector2.zero);
             TMP_Text policyLabel = policy.transform.Find("Label").GetComponent<TMP_Text>();
 
             Image activityPanel = Panel("P08_ACTIVITY_STRIP", content.transform, new Color32(51, 44, 35, 255)); SetRect(activityPanel.rectTransform, new Vector2(.02f, .015f), new Vector2(.98f, .1f), Vector2.zero, Vector2.zero);

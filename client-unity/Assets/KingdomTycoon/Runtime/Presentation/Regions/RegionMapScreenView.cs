@@ -54,13 +54,13 @@ namespace KingdomTycoon.Presentation.Regions
         }
 
         public void ShowLoading() { state.SetActive(true); stateTitle.text = "왕국 지도를 펼치는 중"; stateBody.text = "지역 개방 조건과 파견 정책을 불러오고 있습니다."; }
-        public void ShowError(string code) { state.SetActive(true); stateTitle.text = "지도를 불러오지 못했습니다"; stateBody.text = "저장 데이터는 변경하지 않았습니다.\n\n" + code; }
+        public void ShowError(string code) { Debug.LogWarning(code); state.SetActive(true); stateTitle.text = "지도를 불러오지 못했습니다"; stateBody.text = "저장 데이터는 변경하지 않았습니다.\n잠시 후 다시 열어 주세요."; }
         public void HideToast() => toast.SetActive(false);
         public void ShowToast(string message) { toastText.text = message; toast.SetActive(true); }
 
         public void Render(RegionOverviewDto value, int selectedIndex)
         {
-            state.SetActive(false); meta.text = $"content.10  ·  r{value.Revision}  ·  5개 지역";
+            state.SetActive(false); meta.text = $"콘텐츠 10  ·  저장 {value.Revision}  ·  5개 지역";
             kingdomStatus.text = $"{Stage(value.KingdomStageId)}  ·  개방 {value.UnlockedCount}/5  ·  파견 정책 정상";
             selectedIndex = Mathf.Clamp(selectedIndex, 0, value.Regions.Count - 1);
             for (int index = 0; index < regionButtons.Length && index < value.Regions.Count; index++)
@@ -73,7 +73,7 @@ namespace KingdomTycoon.Presentation.Regions
                 if (image != null) image.color = selected ? new Color32(191, 133, 53, 255) : node.Unlocked ? new Color32(43, 84, 78, 255) : new Color32(49, 54, 58, 245);
             }
             RegionSummaryDto row = value.Regions[selectedIndex]; regionTitle.text = row.Unlocked ? row.Name : "봉인된 개척지";
-            regionTier.text = $"TIER {row.Tier}  ·  {Environment(row.EnvironmentTag)}  ·  최소 {Rank(row.MinimumRankId)}  ·  권장 전투력 {row.RecommendedPower:N0}";
+            regionTier.text = $"{row.Tier}단계  ·  {Environment(row.EnvironmentTag)}  ·  최소 {Rank(row.MinimumRankId)}  ·  권장 전투력 {row.RecommendedPower:N0}";
             regionProgress.text = $"지역 조사도  <color=#F4D27A>{row.ProgressPercent}%</color>";
             progressFill.rectTransform.anchorMax = new Vector2(Mathf.Clamp01(row.ProgressPercent / 100f), 1f);
             var checklist = new StringBuilder();
@@ -88,9 +88,9 @@ namespace KingdomTycoon.Presentation.Regions
             hunt.interactable = row.Unlocked && row.Allowed && eligible.Length > 0;
         }
 
-        private static string Stage(string value) => value switch { "KINGDOM_1" => "초기 왕국", "KINGDOM_2" => "성장 왕국", "KINGDOM_3" => "번영 왕국", "KINGDOM_4" => "대왕국", _ => value };
-        private static string Rank(string value) => value switch { "RANK_APPRENTICE" => "수습", "RANK_REGULAR" => "정식", "RANK_SKILLED" => "숙련", "RANK_ELITE" => "정예", "RANK_HERO" => "영웅", "RANK_LEGEND" => "전설", null => "-", _ => value };
-        private static string Environment(string value) => value switch { "MEADOW" => "초원", "FOREST" => "고대림", "MINE" => "폐광", "SWAMP" => "습지", "FROST_RUIN" => "서리 유적", _ => value };
-        private static string Result(string value) => value switch { "P12_READY" => "개척대가 다음 명령을 기다립니다.", "P12_REGION_UNLOCKED" => "새 지역이 왕국 지도에 등록됐습니다.", "P12_POLICY_UPDATED" => "파견 정책을 갱신했습니다.", "P12_HUNT_SETTLED" => "사냥 기록과 조사도를 반영했습니다.", _ => value };
+        private static string Stage(string value) => value switch { "KINGDOM_1" => "초기 왕국", "KINGDOM_2" => "성장 왕국", "KINGDOM_3" => "번영 왕국", "KINGDOM_4" => "대왕국", _ => "왕국" };
+        private static string Rank(string value) => value switch { "RANK_APPRENTICE" => "수습", "RANK_REGULAR" => "정식", "RANK_SKILLED" => "숙련", "RANK_ELITE" => "정예", "RANK_HERO" => "영웅", "RANK_LEGEND" => "전설", null => "-", _ => "등급 미정" };
+        private static string Environment(string value) => value switch { "MEADOW" => "초원", "FOREST" => "고대림", "MINE" => "폐광", "SWAMP" => "습지", "FROST_RUIN" => "서리 유적", _ => "미확인 지형" };
+        private static string Result(string value) => value switch { "P12_READY" => "개척대가 다음 명령을 기다립니다.", "P12_REGION_UNLOCKED" => "새 지역이 왕국 지도에 등록됐습니다.", "P12_POLICY_UPDATED" => "파견 정책을 갱신했습니다.", "P12_HUNT_SETTLED" => "사냥 기록과 조사도를 반영했습니다.", _ => "개척 기록을 확인해 주세요." };
     }
 }

@@ -1,0 +1,5 @@
+store_level,max_tier,max_quality_order,boss_allowed,policy_change_allowed,max_stack_lines,max_equipment_lines,status,enabled
+1,1,2,FALSE,FALSE,32,12,TUNABLE,TRUE
+2,2,3,FALSE,TRUE,48,24,TUNABLE,TRUE
+3,4,4,FALSE,TRUE,64,48,TUNABLE,TRUE
+4,5,5,TRUE,TRUE,96,96,TUNABLE,TRUE

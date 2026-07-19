@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using KingdomTycoon.Infrastructure.Content;
 using KingdomTycoon.Presentation.Inventory;
+using KingdomTycoon.Presentation.Navigation;
 using TMPro;
 using UnityEditor;
 using UnityEditor.AddressableAssets;
@@ -85,6 +86,9 @@ namespace KingdomTycoon.Editor
             Image top = Image("TopBar", safe.transform, new Color32(31, 41, 52, 255)); SetRect(top.rectTransform, new Vector2(0, .9f), Vector2.one, Vector2.zero, Vector2.zero);
             Text("Title", top.transform, "왕국 창고 · 인벤토리", 40, TextAlignmentOptions.Left, new Vector2(.025f, .15f), new Vector2(.45f, .88f));
             TMP_Text capacity = Text("Capacity", top.transform, "재료 4/24   장비 3/16   포션 2/8", 24, TextAlignmentOptions.Right, new Vector2(.5f, .2f), new Vector2(.97f, .82f));
+            Button kingdom = Button("P07_RETURN_KINGDOM", top.transform, "왕국으로", new Color32(72, 88, 102, 255)); SetAt(kingdom.GetComponent<RectTransform>(), new Vector2(.91f, .5f), new Vector2(210, 68));
+            kingdom.gameObject.AddComponent<SceneNavigationButton>().Configure(kingdom, "Kingdom", false);
+            SetRect(capacity.rectTransform, new Vector2(.47f, .2f), new Vector2(.83f, .82f), Vector2.zero, Vector2.zero);
 
             Image content = Image("ContentRoot", safe.transform, new Color32(22, 30, 38, 255)); SetRect(content.rectTransform, Vector2.zero, new Vector2(1, .9f), Vector2.zero, Vector2.zero);
             Image toolbar = Image("Toolbar", content.transform, new Color32(27, 37, 47, 255)); SetRect(toolbar.rectTransform, new Vector2(0, .9f), Vector2.one, Vector2.zero, Vector2.zero);
@@ -98,14 +102,14 @@ namespace KingdomTycoon.Editor
                 int column = index % 3; int row = index / 3;
                 Image card = Image("ItemCard_" + index.ToString("00"), gridPanel.transform, index == 0 ? new Color32(129, 86, 46, 255) : new Color32(43, 57, 68, 255));
                 SetRect(card.rectTransform, new Vector2(.03f + column * .32f, .73f - row * .23f), new Vector2(.31f + column * .32f, .94f - row * .23f), Vector2.zero, Vector2.zero);
-                Text("Icon", card.transform, index % 4 == 0 ? "⚔" : index % 4 == 1 ? "◆" : index % 4 == 2 ? "✦" : "●", 42, TextAlignmentOptions.Center, new Vector2(.04f, .35f), new Vector2(.3f, .94f));
-                Text("Name", card.transform, index == 0 ? "정교한 사냥 활\n희귀 · T1  🔒" : $"왕국 재료 {index + 1}\nx{index + 2}", 21, TextAlignmentOptions.Left, new Vector2(.32f, .12f), new Vector2(.96f, .9f));
+                Text("Icon", card.transform, index % 4 == 0 ? "무" : index % 4 == 1 ? "재" : index % 4 == 2 ? "특" : "물", 34, TextAlignmentOptions.Center, new Vector2(.04f, .35f), new Vector2(.3f, .94f));
+                Text("Name", card.transform, index == 0 ? "정교한 사냥 활\n희귀 · 1단계 · 잠금" : $"왕국 재료 {index + 1}\n{index + 2}개", 21, TextAlignmentOptions.Left, new Vector2(.32f, .12f), new Vector2(.96f, .9f));
             }
             TMP_Text gridText = Text("GridData", gridPanel.transform, string.Empty, 1, TextAlignmentOptions.TopLeft, Vector2.zero, new Vector2(.01f, .01f));
 
             Image drawer = Image("P07_UI_ITEM_DETAIL", content.transform, new Color32(31, 41, 52, 255)); SetRect(drawer.rectTransform, new Vector2(.64f, 0), new Vector2(1, .9f), new Vector2(10, 0), Vector2.zero);
             Text("DetailTitle", drawer.transform, "정교한 사냥 활", 34, TextAlignmentOptions.Left, new Vector2(.06f, .86f), new Vector2(.92f, .97f));
-            Text("Quality", drawer.transform, "희귀 · WEAPON · BOW · T1       🔒", 23, TextAlignmentOptions.Left, new Vector2(.06f, .79f), new Vector2(.94f, .87f));
+            Text("Quality", drawer.transform, "희귀 · 무기 · 활 · 1단계 · 잠금", 23, TextAlignmentOptions.Left, new Vector2(.06f, .79f), new Vector2(.94f, .87f));
             Image compare = Image("P07_UI_COMPARE", drawer.transform, new Color32(23, 31, 39, 255)); SetRect(compare.rectTransform, new Vector2(.05f, .31f), new Vector2(.95f, .77f), Vector2.zero, Vector2.zero);
             TMP_Text detail = Text("CompareData", compare.transform, "장비 점수  18,420  (+2,640)\n\n공격력       123  →  218   +95\n치명타       2,561 → 3,061  +500\n방어력       38   →  38       0\n이동 속도    7,959 → 7,959    0", 24, TextAlignmentOptions.TopLeft, new Vector2(.06f, .08f), new Vector2(.94f, .93f));
             Button equip = Button("P07_UI_EQUIP", drawer.transform, "장착", new Color32(57, 127, 88, 255)); SetAt(equip.GetComponent<RectTransform>(), new Vector2(.18f, .12f), new Vector2(180, 72));
@@ -118,7 +122,7 @@ namespace KingdomTycoon.Editor
             Button back = Button("P07_UI_RETURN", potion.transform, "창고로 회수", new Color32(72, 88, 102, 255)); SetAt(back.GetComponent<RectTransform>(), new Vector2(.72f, .2f), new Vector2(260, 72));
 
             Image saleModal = Modal("P07_UI_SELL_MODAL", viewObject.transform, new Vector2(.34f, .3f), new Vector2(.66f, .7f), "판매 확인", "왕국 재료 2개를 판매합니다.\n개인 골드 +12"); saleModal.gameObject.SetActive(false);
-            Image policyModal = Modal("P07_UI_POLICY_MODAL", viewObject.transform, new Vector2(.29f, .16f), new Vector2(.71f, .84f), "자동 판매 · 보호 정책", "자동 장착   ON\n자동 판매   ON · 최대 T1\n교체 기준   +500 bps\n\n보호 품질   희귀 / 유산 / 유물\n보스 장비 보호   ON\n첫 발견 보호      ON"); policyModal.gameObject.SetActive(false);
+            Image policyModal = Modal("P07_UI_POLICY_MODAL", viewObject.transform, new Vector2(.29f, .16f), new Vector2(.71f, .84f), "자동 판매 · 보호 정책", "자동 장착   켜짐\n자동 판매   켜짐 · 최대 1단계\n교체 기준   +5%\n\n보호 품질   희귀 / 유산 / 유물\n보스 장비 보호   켜짐\n첫 발견 보호      켜짐"); policyModal.gameObject.SetActive(false);
             Image lootModal = Modal("P07_UI_OVERFLOW", viewObject.transform, new Vector2(.25f, .14f), new Vector2(.75f, .86f), "사냥 전리품", "보관  재료 2 · 장비 1\n자동 장착  성직자 무기\n자동 판매  +28 개인 골드\n\n용량 초과 폐기  0"); lootModal.gameObject.SetActive(false);
             Image state = Modal("P07_UI_STATE", viewObject.transform, new Vector2(.18f, .18f), new Vector2(.82f, .82f), "인벤토리", "인벤토리를 불러오는 중입니다."); state.gameObject.SetActive(false);
             TMP_Text stateText = state.transform.Find("Body").GetComponent<TMP_Text>();
@@ -233,7 +237,7 @@ namespace KingdomTycoon.Editor
             TMP_Text detail = Find(nodes, "CompareData").GetComponent<TMP_Text>(); TMP_Text stateBody = state.transform.Find("Body").GetComponent<TMP_Text>();
             string output = Path.GetFullPath(Path.Combine(UnityEngine.Application.dataPath, "..", "..", "docs", "reports", "captures", "P07")); Directory.CreateDirectory(output);
             Hide(potion, policy, sale, loot, state); Capture(root, output, "p07_01_items.png", 1920, 1080);
-            detail.text = "희귀 · WEAPON · BOW · T1  🔒\n장착 슬롯  WEAPON\n품질 배율  1.18\n강화  +0"; Capture(root, output, "p07_02_equipment.png", 1920, 1080);
+            detail.text = "희귀 · 무기 · 활 · 1단계 · 잠금\n장착 슬롯  무기\n품질 배율  1.18\n강화  +0"; Capture(root, output, "p07_02_equipment.png", 1920, 1080);
             detail.text = "장비 점수  18,420  (+2,640)\n\n공격력  123 → 218   +95\n치명타  2,561 → 3,061   +500\n최대 체력  909 → 909   0"; Capture(root, output, "p07_03_compare.png", 1920, 1080);
             detail.text = "자동 장착 완료\n성직자 · WEAPON\n기존  없음\n신규  수습 성직자 철퇴\n교체 점수 +6,100"; Capture(root, output, "p07_04_auto_equip.png", 1920, 1080);
             policy.SetActive(true); Capture(root, output, "p07_05_policy.png", 1920, 1080); policy.SetActive(false);

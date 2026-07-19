@@ -78,7 +78,7 @@ namespace KingdomTycoon.Presentation.Mercenaries
             if (AppRoot.Instance == null)
             {
                 roster.gameObject.SetActive(true);
-                roster.BindState(MercenaryRosterUiState.ERROR, "Bootstrap 씬에서 실행해 주세요.");
+                roster.BindState(MercenaryRosterUiState.ERROR, "첫 화면에서 실행해 주세요.");
                 yield break;
             }
             service = AppRoot.Instance.Services.Get<MercenaryRosterService>();
@@ -151,7 +151,7 @@ namespace KingdomTycoon.Presentation.Mercenaries
                 roster.BindRoster(dto, portraits.Resolve);
                 roster.BindFilterSummary(query);
                 roster.BindState(dto.TotalOwned == 0 ? MercenaryRosterUiState.EMPTY : MercenaryRosterUiState.CONTENT,
-                    dto.TotalOwned == 0 ? "보유한 용병이 없습니다. 용병 모집은 P13에서 개방됩니다." : string.Empty);
+                    dto.TotalOwned == 0 ? "보유한 용병이 없습니다. 모집 화면에서 첫 용병을 고용해 보세요." : string.Empty);
                 if (selectedId != null)
                 {
                     bool stillVisible = false;
@@ -164,7 +164,7 @@ namespace KingdomTycoon.Presentation.Mercenaries
                 {
                     debugLabel.gameObject.SetActive(Debug.isDebugBuild);
                     debugLabel.text = Debug.isDebugBuild
-                        ? $"P05 · {CompileTimeActiveContentVersionProvider.P05ContentVersion} · r{service.Revision} · {dto.FilteredCount}/{dto.TotalOwned}"
+                        ? $"용병 명단 · 저장 {service.Revision}회 · {dto.FilteredCount}/{dto.TotalOwned}명"
                         : string.Empty;
                 }
             }
@@ -366,7 +366,7 @@ namespace KingdomTycoon.Presentation.Mercenaries
             "MERCENARY_ACTIVE_CHANGE_STATE_FORBIDDEN" => "현재 상태에서는 활동 여부를 변경할 수 없습니다.",
             "MERCENARY_SAVE_REVISION_CONFLICT" => "다른 변경 사항이 있어 다시 불러왔습니다.",
             "MERCENARY_NOT_FOUND" => "용병을 찾을 수 없습니다.",
-            _ => code
+            _ => "요청을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요."
         };
 
         private static GameObject FindKingdomWorldCanvas()

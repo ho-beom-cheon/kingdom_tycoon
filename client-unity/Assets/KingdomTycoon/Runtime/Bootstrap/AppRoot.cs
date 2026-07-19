@@ -17,6 +17,7 @@ using KingdomTycoon.Infrastructure.Progression;
 using KingdomTycoon.Infrastructure.Regions;
 using KingdomTycoon.Infrastructure.Recruitment;
 using KingdomTycoon.Infrastructure.Raids;
+using KingdomTycoon.Infrastructure.OfflineTutorial;
 using KingdomTycoon.Services;
 using KingdomTycoon.UI;
 using UnityEngine;
@@ -38,6 +39,8 @@ namespace KingdomTycoon.Bootstrap
         public bool IsInitialized => Services != null && Services.IsInitialized;
 
         public CommonUiRoot CommonUiRoot => GetComponentInChildren<CommonUiRoot>(true);
+
+        public static string TestPersistentDataPath { get; set; }
 
         private void Awake()
         {
@@ -66,16 +69,17 @@ namespace KingdomTycoon.Bootstrap
             TextAsset p12SaveSchema = Resources.Load<TextAsset>("Contracts/save.content.10.schema");
             TextAsset p13SaveSchema = Resources.Load<TextAsset>("Contracts/save.content.11.schema");
             TextAsset p14SaveSchema = Resources.Load<TextAsset>("Contracts/save.content.12.schema");
+            TextAsset p15SaveSchema = Resources.Load<TextAsset>("Contracts/save.content.13.schema");
             if (saveSchema == null)
             {
                 throw new System.InvalidOperationException("P03 save schema resource is missing.");
             }
 
             TextAsset p04Template = Resources.Load<TextAsset>("Contracts/p04-new-game.template");
-            TextAsset newGameTemplate = Resources.Load<TextAsset>("Contracts/p14-new-game.template");
+            TextAsset newGameTemplate = Resources.Load<TextAsset>("Contracts/p15-new-game.template");
             if (newGameTemplate == null)
             {
-                throw new InvalidOperationException("P14 new-game template resource is missing.");
+                throw new InvalidOperationException("P15 new-game template resource is missing.");
             }
             if (p04Template == null) throw new InvalidOperationException("P04 migration template resource is missing.");
             TextAsset p05MigrationGolden = Resources.Load<TextAsset>("Contracts/p05-migration-after.golden");
@@ -89,7 +93,10 @@ namespace KingdomTycoon.Bootstrap
             if (p12SaveSchema == null) throw new InvalidOperationException("P12 save schema resource is missing.");
             if (p13SaveSchema == null) throw new InvalidOperationException("P13 save schema resource is missing.");
             if (p14SaveSchema == null) throw new InvalidOperationException("P14 save schema resource is missing.");
-            Services.Register(new SaveService(UnityEngine.Application.persistentDataPath, saveSchema.text, p07SaveSchema.text, p08SaveSchema.text, p09SaveSchema.text, p10SaveSchema.text, p11SaveSchema.text, p12SaveSchema.text, p13SaveSchema.text, p14SaveSchema.text));
+            if (p15SaveSchema == null) throw new InvalidOperationException("P15 save schema resource is missing.");
+            string persistentDataPath = UnityEngine.Application.persistentDataPath;
+            if (!string.IsNullOrWhiteSpace(TestPersistentDataPath)) persistentDataPath = TestPersistentDataPath;
+            Services.Register(new SaveService(persistentDataPath, saveSchema.text, p07SaveSchema.text, p08SaveSchema.text, p09SaveSchema.text, p10SaveSchema.text, p11SaveSchema.text, p12SaveSchema.text, p13SaveSchema.text, p14SaveSchema.text, p15SaveSchema.text));
             IStreamingAssetReader contentReader = UnityEngine.Application.platform == RuntimePlatform.Android
                 ? new AndroidStreamingAssetReader(UnityEngine.Application.streamingAssetsPath)
                 : new LocalStreamingAssetReader(UnityEngine.Application.streamingAssetsPath);
@@ -105,6 +112,7 @@ namespace KingdomTycoon.Bootstrap
             Services.Register(new RegionGameService(new SystemTrustedUtcClock()));
             Services.Register(new RecruitmentGameService(new SystemTrustedUtcClock()));
             Services.Register(new RaidGameService(new SystemTrustedUtcClock()));
+            Services.Register(new OfflineTutorialGameService(new SystemTrustedUtcClock()));
             Services.Register(new SceneFlowService());
             Services.InitializeAll();
         }
@@ -144,6 +152,7 @@ namespace KingdomTycoon.Bootstrap
             Services.Get<ProductionGameService>().Bootstrap();
             Services.Get<EquipmentGrowthGameService>().Bootstrap();
             Services.Get<RaidGameService>().Bootstrap();
+            Services.Get<OfflineTutorialGameService>().Bootstrap();
         }
 
         private void OnDestroy()

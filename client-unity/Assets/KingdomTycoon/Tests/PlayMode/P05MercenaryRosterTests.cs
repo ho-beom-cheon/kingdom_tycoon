@@ -172,7 +172,7 @@ namespace KingdomTycoon.Tests.PlayMode
             string id = AppRoot.Instance.Services.Get<MercenaryRosterService>().GetRoster().Cards.First().InstanceId;
             presenter.SelectForFixture(id);
             yield return new WaitForSecondsRealtime(0.25f);
-            var expected = new[] { "전투 능력치는 P06", "장비 변경은 P07", "승급 심사는 P11", "사냥" };
+            var expected = new[] { "사냥을 시작하면", "장비", "승급 심사", "사냥" };
             for (int index = 0; index < 4; index++)
             {
                 presenter.DrawerView.GetTabButton(index).onClick.Invoke();

@@ -56,15 +56,15 @@ namespace KingdomTycoon.Editor
             Image header = Panel("P10_HEADER", safe.transform, new Color32(54, 39, 27, 255)); SetRect(header.rectTransform, new Vector2(0, .865f), Vector2.one, Vector2.zero, Vector2.zero);
             Text("Title", header.transform, "대장간 · 장비 공방", 43, TextAlignmentOptions.Left, new Vector2(.025f, .17f), new Vector2(.38f, .88f), new Color32(245, 207, 111, 255));
             Text("Subtitle", header.transform, "강화 · 재련 · 안전 분해", 22, TextAlignmentOptions.Left, new Vector2(.31f, .21f), new Vector2(.58f, .82f), new Color32(201, 190, 170, 255));
-            TMP_Text meta = Text("P10_META", header.transform, "content.8  ·  r0  ·  Gold 500", 22, TextAlignmentOptions.Right, new Vector2(.58f, .17f), new Vector2(.88f, .84f));
+            TMP_Text meta = Text("P10_META", header.transform, "콘텐츠 8  ·  저장 0  ·  개인 골드 500", 22, TextAlignmentOptions.Right, new Vector2(.58f, .17f), new Vector2(.88f, .84f));
             Button close = Button("P10_CLOSE", header.transform, "닫기", new Color32(83, 69, 57, 255), 23); SetRect(close.GetComponent<RectTransform>(), new Vector2(.89f, .14f), new Vector2(.98f, .86f), Vector2.zero, Vector2.zero);
 
-            TMP_Text facility = Text("P10_FACILITY_STATUS", safe.transform, "대장간 Lv.3  ·  <color=#8ED6A3>가동 중</color>", 23, TextAlignmentOptions.Left, new Vector2(.018f, .80f), new Vector2(.43f, .855f), new Color32(213, 203, 184, 255));
+            TMP_Text facility = Text("P10_FACILITY_STATUS", safe.transform, "대장간 3레벨  ·  <color=#8ED6A3>가동 중</color>", 23, TextAlignmentOptions.Left, new Vector2(.018f, .80f), new Vector2(.43f, .855f), new Color32(213, 203, 184, 255));
             Image itemCard = Panel("P10_ITEM_CARD", safe.transform, new Color32(38, 43, 46, 255)); SetRect(itemCard.rectTransform, new Vector2(0, .14f), new Vector2(.42f, .79f), Vector2.zero, Vector2.zero);
             Image itemAccent = Panel("ItemAccent", itemCard.transform, new Color32(197, 145, 56, 255)); SetRect(itemAccent.rectTransform, new Vector2(0, 0), new Vector2(.012f, 1), Vector2.zero, Vector2.zero);
-            Text("CardEyebrow", itemCard.transform, "SELECTED EQUIPMENT", 18, TextAlignmentOptions.Left, new Vector2(.055f, .86f), new Vector2(.94f, .95f), new Color32(113, 210, 190, 255));
+            Text("CardEyebrow", itemCard.transform, "선택한 장비", 18, TextAlignmentOptions.Left, new Vector2(.055f, .86f), new Vector2(.94f, .95f), new Color32(113, 210, 190, 255));
             TMP_Text itemTitle = Text("P10_ITEM_TITLE", itemCard.transform, "EQ_T3_WARRIOR_WEAPON  <color=#F1C96A>+6</color>", 32, TextAlignmentOptions.Left, new Vector2(.055f, .68f), new Vector2(.95f, .87f));
-            TMP_Text itemStats = Text("P10_ITEM_STATS", itemCard.transform, "Tier 3  ·  희귀\n전투력 <size=42><color=#F4E5B2>472</color></size>\n강화 천장 12%  ·  1/4", 25, TextAlignmentOptions.TopLeft, new Vector2(.055f, .30f), new Vector2(.95f, .67f));
+            TMP_Text itemStats = Text("P10_ITEM_STATS", itemCard.transform, "3단계  ·  희귀\n전투력 <size=42><color=#F4E5B2>472</color></size>\n강화 천장 12%  ·  1/4", 25, TextAlignmentOptions.TopLeft, new Vector2(.055f, .30f), new Vector2(.95f, .67f));
             Button previous = Button("P10_PREVIOUS", itemCard.transform, "‹ 이전", new Color32(66, 72, 73, 255), 23); SetRect(previous.GetComponent<RectTransform>(), new Vector2(.055f, .16f), new Vector2(.46f, .29f), Vector2.zero, Vector2.zero);
             Button next = Button("P10_NEXT", itemCard.transform, "다음 ›", new Color32(66, 72, 73, 255), 23); SetRect(next.GetComponent<RectTransform>(), new Vector2(.54f, .16f), new Vector2(.945f, .29f), Vector2.zero, Vector2.zero);
             Button enhance = Button("P10_ENHANCE", itemCard.transform, "강화 시도", new Color32(184, 112, 45, 255), 27); SetRect(enhance.GetComponent<RectTransform>(), new Vector2(.055f, .035f), new Vector2(.945f, .145f), Vector2.zero, Vector2.zero);

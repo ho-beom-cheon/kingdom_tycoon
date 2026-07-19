@@ -33,10 +33,24 @@ namespace KingdomTycoon.Presentation.Mercenaries.Views
             portrait.sprite = sprite;
             portrait.enabled = sprite != null;
             nameText.text = dto.DisplayName;
-            identityText.text = $"{dto.JobName} · {dto.GradeName} · {dto.RankName} Lv.{dto.Level}";
-            stateText.text = (dto.Active ? "활동" : "대기") + " · " + dto.AutonomyState
+            identityText.text = $"{dto.JobName} · {Grade(dto.GradeName)} · {dto.RankName} 레벨 {dto.Level}";
+            stateText.text = (dto.Active ? "활동" : "대기") + " · " + AutonomyText(dto.AutonomyState)
                 + (dto.Injured ? " · 부상" : dto.PromotionReady ? " · 승급 가능" : string.Empty);
         }
+
+        private static string AutonomyText(string state) => state switch
+        {
+            "IDLE" => "휴식",
+            "HUNTING" => "사냥 중",
+            "RETURNING" => "귀환 중",
+            "INJURED" => "회복 중",
+            _ => "대기"
+        };
+
+        private static string Grade(string value) => value switch
+        {
+            "C" => "일반 등급", "B" => "고급 등급", "A" => "희귀 등급", "S" => "영웅 등급", "SS" => "전설 등급", _ => value ?? "등급 미정"
+        };
 
         public void ResetView()
         {

@@ -46,7 +46,7 @@ namespace KingdomTycoon.Presentation.Production
 
         private void Refresh() { overview = service.GetOverview(); selectedIndex = Mathf.Clamp(selectedIndex, 0, Math.Max(0, overview.Targets.Count - 1)); view.Render(overview, selectedIndex); }
         private void RunAutomation() => Execute("자동 보충을 계산했습니다.", (id, hash) => new RunProductionAutomationCommand(id, overview.Revision, hash));
-        private void Advance() => Execute("생산 tick을 진행했습니다.", (id, hash) => new AdvanceProductionTicksCommand(id, overview.Revision, hash, 10));
+        private void Advance() => Execute("생산을 10회 진행했습니다.", (id, hash) => new AdvanceProductionTicksCommand(id, overview.Revision, hash, 10));
 
         private void ChangeTarget(int delta)
         {

@@ -42,7 +42,7 @@ namespace KingdomTycoon.Presentation.Kingdom.Views
         {
             if (dto == null || dto.FacilityId != facilityId) throw new ArgumentException("Facility DTO does not match this view.", nameof(dto));
             BoundState = dto.State;
-            label.text = dto.Name + "  Lv." + dto.Level + StateSuffix(dto);
+            label.text = dto.Name + "  레벨 " + dto.Level + StateSuffix(dto);
             bool locked = dto.State == "LOCKED";
             bool construction = dto.State is "BUILDING" or "UPGRADING";
             stateOverlay.gameObject.SetActive(locked || construction);
@@ -55,7 +55,7 @@ namespace KingdomTycoon.Presentation.Kingdom.Views
         private static string StateSuffix(FacilityWorldDto dto)
         {
             if (dto.State is "BUILDING" or "UPGRADING") return dto.RemainingSeconds > 0 ? $"  {dto.RemainingSeconds / 60}:{dto.RemainingSeconds % 60:00}" : "  완료";
-            if (dto.State == "STOPPED") return "  · NPC 필요";
+            if (dto.State == "STOPPED") return "  · 담당자 필요";
             if (dto.State == "BUILDABLE") return "  · 건설 가능";
             return string.Empty;
         }

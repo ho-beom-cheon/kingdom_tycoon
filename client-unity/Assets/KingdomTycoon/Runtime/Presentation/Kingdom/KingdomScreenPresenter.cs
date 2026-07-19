@@ -38,7 +38,7 @@ namespace KingdomTycoon.Presentation.Kingdom
             while (AppRoot.Instance != null && !AppRoot.Instance.Services.Get<FacilityGameService>().IsBootstrapped) yield return null;
             if (AppRoot.Instance == null)
             {
-                statusLabel.text = "Bootstrap 씬에서 실행해 주세요.";
+                statusLabel.text = "첫 화면에서 실행해 주세요.";
                 yield break;
             }
             service = AppRoot.Instance.Services.Get<FacilityGameService>();
@@ -62,13 +62,23 @@ namespace KingdomTycoon.Presentation.Kingdom
         public void Refresh()
         {
             KingdomScreenDto dto = screenQuery.Execute();
-            stageLabel.text = "왕국 " + dto.StageId;
+            stageLabel.text = StageName(dto.StageId);
             goldLabel.text = "골드 " + dto.KingdomGold.ToString("N0");
-            statusLabel.text = dto.Recovered ? "저장 파일을 복구했습니다." : "콘텐츠 " + dto.ContentVersion + " · 저장 r" + dto.SaveRevision;
+            statusLabel.text = dto.Recovered ? "저장 파일을 복구했습니다." : $"자료 적용 완료 · 저장 {dto.SaveRevision}회";
             foreach (FacilityWorldView view in facilityViews) view.Bind(dto.Facilities.Single(value => value.FacilityId == view.FacilityId));
             if (selectedFacilityId != null) drawer.Bind(detailQuery.Execute(selectedFacilityId));
             IsBound = true;
         }
+
+        private static string StageName(string stageId) => stageId switch
+        {
+            "KINGDOM_1" => "초기 왕국",
+            "KINGDOM_2" => "성장 왕국",
+            "KINGDOM_3" => "번영 왕국",
+            "KINGDOM_4" => "대왕국",
+            "KINGDOM_5" => "통일 왕국",
+            _ => "왕국"
+        };
 
         private void SelectFacility(string facilityId)
         {

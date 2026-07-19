@@ -71,7 +71,7 @@ namespace KingdomTycoon.Presentation.Mercenaries.Views
             current = dto ?? throw new ArgumentNullException(nameof(dto));
             if (newSelection) tabIndex = 0;
             portrait.sprite = sprite; portrait.enabled = sprite != null;
-            identity.text = $"{dto.DisplayName}\n{dto.JobName} · {dto.GradeName} · {dto.RankName} Lv.{dto.Level}";
+            identity.text = $"{dto.DisplayName}\n{dto.JobName} · {Grade(dto.GradeName)} · {dto.RankName} 레벨 {dto.Level}";
             activeLabel.text = dto.Active ? "활동 해제" : "활동 배치";
             error.text = string.Empty;
             RenderTab();
@@ -104,16 +104,57 @@ namespace KingdomTycoon.Presentation.Mercenaries.Views
             if (current == null) return;
             body.text = tabIndex switch
             {
-                0 => $"레벨 {current.Level}/{current.RankMaxLevel}\nEXP {current.Exp}\n성격 {current.PersonalityName}\n특성 {string.Join(", ", current.TraitNames)}\n개인 골드 {current.PersonalGold}\n기여도 {current.Contribution}\n현재 행동 {current.AutonomyState}\n행동 이유 {current.ReasonCode}\n지역 {current.CurrentRegionId ?? "왕국"}\n전투 능력치는 P06에서 개방됩니다.",
-                1 => $"무기 {Slot("WEAPON")}\n갑옷 {Slot("ARMOR")}\n투구 {Slot("HELMET")}\n장신구 {Slot("ACCESSORY")}\n물약 {PotionSummary()}\n장비 변경은 P07에서 개방됩니다.",
-                2 => $"{current.RankName} · 최대 레벨 {current.RankMaxLevel}\n{current.GradeName}\nEXP {current.Exp}\n승급 {current.PromotionStatus}\n기여도 {current.Contribution}\n승급 심사는 P11에서 개방됩니다.",
+                0 => $"레벨 {current.Level}/{current.RankMaxLevel}\n경험치 {current.Exp}\n성격 {current.PersonalityName}\n특성 {string.Join(", ", current.TraitNames)}\n개인 골드 {current.PersonalGold}\n기여도 {current.Contribution}\n현재 행동 {AutonomyText(current.AutonomyState)}\n행동 이유 {ReasonText(current.ReasonCode)}\n지역 {RegionText(current.CurrentRegionId)}\n사냥을 시작하면 전투 능력치를 확인할 수 있습니다.",
+                1 => $"무기 {Slot("WEAPON")}\n갑옷 {Slot("ARMOR")}\n투구 {Slot("HELMET")}\n장신구 {Slot("ACCESSORY")}\n물약 {PotionSummary()}\n가방에서 장비를 변경할 수 있습니다.",
+                2 => $"{current.RankName} · 최대 레벨 {current.RankMaxLevel}\n{Grade(current.GradeName)}\n경험치 {current.Exp}\n승급 {PromotionText(current.PromotionStatus)}\n기여도 {current.Contribution}\n승급 심사에서 다음 등급에 도전할 수 있습니다.",
                 _ => $"사냥 {Record("huntCount")}\n처치 {Record("killCount")}\n레이드 클리어 {Record("raidClearCount")}\n수집 아이템 {Record("itemsCollected")}"
             };
         }
 
-        private string Slot(string key) => current.EquipmentSlots.TryGetValue(key, out string value) && value != null ? value : "비어 있음";
+        private string Slot(string key) => current.EquipmentSlots.TryGetValue(key, out string value) && value != null ? "장착됨" : "비어 있음";
         private long Record(string key) => current.Records.TryGetValue(key, out long value) ? value : 0;
-        private string PotionSummary() => current.PotionStacks.Count == 0 ? "없음" : string.Join(", ", current.PotionStacks);
+        private string PotionSummary() => current.PotionStacks.Count == 0 ? "없음" : $"{current.PotionStacks.Count}종 보유";
+
+        private static string AutonomyText(string state) => state switch
+        {
+            "IDLE" => "휴식",
+            "HUNTING" => "사냥 중",
+            "RETURNING" => "귀환 중",
+            "INJURED" => "회복 중",
+            _ => "대기"
+        };
+
+        private static string ReasonText(string reason) => reason switch
+        {
+            null or "" or "NONE" => "없음",
+            "NO_ACTIVE_HUNT" => "진행 중인 사냥이 없음",
+            "INJURED" => "부상 회복 필요",
+            "PARTY_FULL" => "파티 인원 초과",
+            _ => "현재 상황에 따라 자동 결정"
+        };
+
+        private static string RegionText(string region) => region switch
+        {
+            "REGION_R01" => "푸른 초원",
+            "REGION_R02" => "안개 숲",
+            "REGION_R03" => "붉은 협곡",
+            "REGION_R04" => "얼어붙은 고원",
+            "REGION_R05" => "마왕성 외곽",
+            _ => "왕국"
+        };
+
+        private static string PromotionText(string status) => status switch
+        {
+            "READY" => "도전 가능",
+            "IN_REVIEW" => "심사 중",
+            "COMPLETED" => "완료",
+            _ => "조건 미달"
+        };
+
+        private static string Grade(string value) => value switch
+        {
+            "C" => "일반 등급", "B" => "고급 등급", "A" => "희귀 등급", "S" => "영웅 등급", "SS" => "전설 등급", _ => value ?? "등급 미정"
+        };
 
         private void StartAnimation(bool opening)
         {

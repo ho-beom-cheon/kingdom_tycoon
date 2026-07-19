@@ -78,16 +78,16 @@ namespace KingdomTycoon.Presentation.Recruitment
         {
             overview = value; selectedIndex = Math.Clamp(selectedIndex, 0, Math.Max(0, value.Candidates.Count - 1));
             walletText.text = $"왕국 골드  <color=#F4D27A>{value.KingdomGold:N0}</color>    모집권  <color=#83E0C5>{value.Tickets}</color>    무료 프리미엄  <color=#8ED7FF>{value.FreePremium:N0}</color>";
-            capacityText.text = $"숙소  {value.Owned} / {value.Limit}"; authorityText.text = value.Authority == "MOCK_ONLY" ? "DEVELOPMENT MOCK" : "SERVER VERIFIED";
+            capacityText.text = $"숙소  {value.Owned} / {value.Limit}"; authorityText.text = value.Authority == "MOCK_ONLY" ? "개발용 모의 모집" : "서버 검증 완료";
             for (int index = 0; index < candidateButtons.Length; index++)
             {
                 bool visible = index < value.Candidates.Count; candidateButtons[index].gameObject.SetActive(visible); if (!visible) continue;
-                RecruitmentCandidateDto candidate = value.Candidates[index]; candidateLabels[index].text = $"<size=17>{Grade(candidate.GradeId)}</size>\n<b>{candidate.DisplayName}</b>\n<size=18>{Job(candidate.JobId)}</size>\n<size=16>{candidate.HireCost:N0} G {(candidate.Locked ? "  ◆ 잠금" : string.Empty)}</size>";
+                RecruitmentCandidateDto candidate = value.Candidates[index]; candidateLabels[index].text = $"<size=17>{Grade(candidate.GradeId)}</size>\n<b>{candidate.DisplayName}</b>\n<size=18>{Job(candidate.JobId)}</size>\n<size=16>{candidate.HireCost:N0} 골드 {(candidate.Locked ? "  ◆ 잠금" : string.Empty)}</size>";
                 candidateButtons[index].GetComponent<Image>().color = index == selectedIndex ? new Color32(116, 82, 45, 255) : GradeColor(candidate.GradeId);
             }
             RenderSelected();
             long s = value.Pity.TryGetValue("PITY_S_PLUS", out long sValue) ? sValue : 0; long ss = value.Pity.TryGetValue("PITY_SS", out long ssValue) ? ssValue : 0;
-            pitySLabel.text = $"S 이상 보장  {s} / 10"; pitySsLabel.text = $"SS 하드 천장  {ss} / 80"; SetProgress(pitySFill, s / 10f); SetProgress(pitySsFill, ss / 80f);
+            pitySLabel.text = $"영웅 이상 보장  {s} / 10"; pitySsLabel.text = $"전설 확정 천장  {ss} / 80"; SetProgress(pitySFill, s / 10f); SetProgress(pitySsFill, ss / 80f);
             bool capacity = value.Owned >= value.Limit; specialRecruitButton.interactable = !capacity && (value.Tickets > 0 || value.FreePremium >= 300); specialRecruitLabel.text = capacity ? "숙소가 가득 찼습니다" : value.Tickets > 0 ? "모집권 1장으로 특별 모집" : "무료 프리미엄 300으로 모집";
             if (historyLines != null) historyText.text = historyLines.Count == 0 ? "아직 모집 기록이 없습니다." : string.Join("\n", historyLines.Select(HistoryLine));
             if (value.Candidates.Count == 0 && currentTab == "TAVERN") ShowState("주점이 조용합니다", "무료 갱신으로 새로운 후보를 불러오세요."); else HideState();
@@ -118,19 +118,19 @@ namespace KingdomTycoon.Presentation.Recruitment
         {
             RecruitmentCandidateDto value = Selected(); if (value == null) { detailTitle.text = "후보를 기다리는 중"; detailBody.text = "갱신 후 후보의 직업과 등급을 비교할 수 있습니다."; lockButton.interactable = hireButton.interactable = false; return; }
             detailTitle.text = value.DisplayName; detailBody.text = $"{Grade(value.GradeId)}  ·  {Job(value.JobId)}\n\n잠재 등급은 고정되지만 성장과 장비, 승급으로 전투 역할이 확장됩니다.\n\n고용비  <color=#F4D27A>{value.HireCost:N0} 왕국 골드</color>";
-            lockButton.interactable = true; hireButton.interactable = overview.Owned < overview.Limit && overview.KingdomGold >= value.HireCost; lockLabel.text = value.Locked ? "후보 잠금 해제" : "후보 잠금"; hireLabel.text = overview.Owned >= overview.Limit ? "숙소가 가득 찼습니다" : $"{value.HireCost:N0} G로 고용";
+            lockButton.interactable = true; hireButton.interactable = overview.Owned < overview.Limit && overview.KingdomGold >= value.HireCost; lockLabel.text = value.Locked ? "후보 잠금 해제" : "후보 잠금"; hireLabel.text = overview.Owned >= overview.Limit ? "숙소가 가득 찼습니다" : $"{value.HireCost:N0} 골드로 고용";
             DateTimeOffset now = DateTimeOffset.UtcNow; bool free = !overview.NextFreeRefreshAt.HasValue || now >= overview.NextFreeRefreshAt.Value; refreshLabel.text = free ? "무료 후보 갱신" : $"즉시 갱신  ·  골드 사용";
         }
 
         private RecruitmentCandidateDto Selected() => overview != null && selectedIndex < overview.Candidates.Count ? overview.Candidates[selectedIndex] : null;
         private static string Job(string id) => id switch { "JOB_WARRIOR" => "전사", "JOB_GUARDIAN" => "수호자", "JOB_ARCHER" => "궁수", "JOB_MAGE" => "마법사", "JOB_CLERIC" => "성직자", _ => id };
-        private static string Grade(string id) => id?.Replace("GRADE_", string.Empty) ?? "-";
+        private static string Grade(string id) => id switch { "GRADE_C" => "일반", "GRADE_B" => "고급", "GRADE_A" => "희귀", "GRADE_S" => "영웅", "GRADE_SS" => "전설", _ => "등급 미정" };
         private static Color GradeColor(string id) => id switch { "GRADE_A" => new Color32(48, 77, 115, 255), "GRADE_B" => new Color32(50, 84, 57, 255), "GRADE_S" => new Color32(82, 60, 120, 255), "GRADE_SS" => new Color32(130, 91, 36, 255), _ => new Color32(62, 63, 61, 255) };
         private static void SetProgress(Image fill, float value) => fill.rectTransform.anchorMax = new Vector2(Mathf.Clamp01(value), 1);
         private static void SetTabColor(Button button, bool active) { ColorBlock colors = button.colors; button.GetComponent<Image>().color = active ? new Color32(132, 82, 39, 255) : new Color32(35, 48, 49, 255); button.colors = colors; }
         private static string HistoryLine(string raw)
         {
-            string[] values = raw.Split('|'); if (values.Length < 4) return raw; string type = values[0] == "TAVERN" ? "주점 고용" : "특별 모집"; return $"<color=#D9B96D>{type}</color>    {Grade(values[1])} 용병    비용 {values[2]}    <size=17>{values[3].Replace("T", " ").Replace(".000Z", " UTC")}</size>";
+            string[] values = raw.Split('|'); if (values.Length < 4) return "모집 기록을 확인할 수 없습니다."; string type = values[0] == "TAVERN" ? "주점 고용" : "특별 모집"; return $"<color=#D9B96D>{type}</color>    {Grade(values[1])} 용병    비용 {values[2]}    <size=17>{values[3].Replace("T", " ").Replace(".000Z", " 세계 표준시")}</size>";
         }
     }
 }

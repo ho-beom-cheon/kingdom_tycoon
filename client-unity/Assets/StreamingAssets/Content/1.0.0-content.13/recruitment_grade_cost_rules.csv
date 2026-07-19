@@ -1,0 +1,4 @@
+grade_id,hire_cost_multiplier_bps,status,enabled
+GRADE_C,10000,TUNABLE,TRUE
+GRADE_B,15000,TUNABLE,TRUE
+GRADE_A,25000,TUNABLE,TRUE
