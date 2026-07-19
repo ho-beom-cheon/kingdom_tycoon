@@ -39,6 +39,11 @@ namespace KingdomTycoon.Tests.PlayMode
             InventoryGameService inventory = AppRoot.Instance.Services.Get<InventoryGameService>();
             FacilityGameService game = AppRoot.Instance.Services.Get<FacilityGameService>();
             var draft = game.Snapshot();
+            draft["payload"]!["inventory"]!["itemStacks"] = new Newtonsoft.Json.Linq.JArray();
+            draft["payload"]!["inventory"]!["equipment"] = new Newtonsoft.Json.Linq.JArray();
+            draft["payload"]!["kingdom"]!["inventoryPolicies"]!["discoveredEquipmentTemplateIds"] = new Newtonsoft.Json.Linq.JArray();
+            foreach (Newtonsoft.Json.Linq.JObject mercenary in draft["payload"]!["mercenaries"]!.Children<Newtonsoft.Json.Linq.JObject>())
+                foreach (Newtonsoft.Json.Linq.JProperty slot in mercenary["equipmentSlots"]!.Children<Newtonsoft.Json.Linq.JProperty>()) slot.Value = Newtonsoft.Json.Linq.JValue.CreateNull();
             string[] party = draft["payload"]!["mercenaries"]!.Children<Newtonsoft.Json.Linq.JObject>().Take(4).Select(value => value.Value<string>("instanceId")).ToArray();
             InventorySettlementMutation result = inventory.ApplyTerminalLoot(draft, System.Guid.Parse("019f8320-1800-7000-8000-000000000002"), 4, party);
             Assert.That(result.RetainedItems, Is.EqualTo(1));

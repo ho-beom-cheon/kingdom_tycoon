@@ -164,6 +164,22 @@ namespace KingdomTycoon.Tests.EditMode
         }
 
         [Test]
+        public void InvariantValidatorAcceptsCanonicalEquipmentTemplateIdLink()
+        {
+            JObject document = StrictJson.ParseObject(ReadAsset("KingdomTycoon/Resources/Contracts/p05-migration-after.golden.json"));
+            JObject mercenary = (JObject)document["payload"]!["mercenaries"]![0]!;
+            string instanceId = "019f7cd2-8800-7002-8000-000000000099";
+            mercenary["equipmentSlots"]!["WEAPON"] = instanceId;
+            ((JArray)document["payload"]!["inventory"]!["equipment"]!).Add(new JObject
+            {
+                ["instanceId"] = instanceId,
+                ["equipmentTemplateId"] = "EQ_T1_WARRIOR_WEAPON",
+                ["equippedByMercenaryInstanceId"] = mercenary.Value<string>("instanceId")
+            });
+            Assert.That(() => new MercenaryInvariantValidator().Validate(document, catalog), Throws.Nothing);
+        }
+
+        [Test]
         public void ActivityToggle_CommitsOnce_ReplayDoesNotCommit_StaleRevisionConflicts()
         {
             string id = roster.GetRoster().Cards[0].InstanceId;
