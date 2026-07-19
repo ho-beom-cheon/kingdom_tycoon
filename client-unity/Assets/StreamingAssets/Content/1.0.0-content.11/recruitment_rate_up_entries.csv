@@ -1,0 +1,2 @@
+rate_up_group_id,job_id,weight,status,enabled
+RATE_UP_WARRIOR,JOB_WARRIOR,100,TUNABLE,TRUE

@@ -1,0 +1,6 @@
+region_id,victory_progress,elite_bonus_progress,progress_cap,unlock_next_at_percent,status,enabled
+REGION_R01,20,25,100,100,TUNABLE,TRUE
+REGION_R02,12,20,100,100,TUNABLE,TRUE
+REGION_R03,10,20,100,100,TUNABLE,TRUE
+REGION_R04,8,18,100,100,TUNABLE,TRUE
+REGION_R05,6,15,100,100,TUNABLE,TRUE

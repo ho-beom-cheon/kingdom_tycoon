@@ -17,6 +17,7 @@ using KingdomTycoon.Infrastructure.Production;
 using KingdomTycoon.Infrastructure.EquipmentGrowth;
 using KingdomTycoon.Infrastructure.Progression;
 using KingdomTycoon.Infrastructure.Regions;
+using KingdomTycoon.Infrastructure.Recruitment;
 using KingdomTycoon.Services;
 using Newtonsoft.Json.Linq;
 
@@ -35,6 +36,7 @@ namespace KingdomTycoon.Infrastructure.Facilities
         private readonly bool p10Enabled;
         private readonly bool p11Enabled;
         private readonly bool p12Enabled;
+        private readonly bool p13Enabled;
         private readonly SemaphoreSlim commitGate = new(1, 1);
         private SaveService saveService;
         private ContentCatalogService contentService;
@@ -53,6 +55,7 @@ namespace KingdomTycoon.Infrastructure.Facilities
             p10Enabled = StrictJson.ParseObject(newGameTemplateJson).Value<string>("contentVersion") == CompileTimeActiveContentVersionProvider.P10ContentVersion;
             p11Enabled = StrictJson.ParseObject(newGameTemplateJson).Value<string>("contentVersion") == CompileTimeActiveContentVersionProvider.P11ContentVersion;
             p12Enabled = StrictJson.ParseObject(newGameTemplateJson).Value<string>("contentVersion") == CompileTimeActiveContentVersionProvider.P12ContentVersion;
+            p13Enabled = StrictJson.ParseObject(newGameTemplateJson).Value<string>("contentVersion") == CompileTimeActiveContentVersionProvider.P13ContentVersion;
             this.p04MigrationTemplateJson = p04MigrationTemplateJson ?? newGameTemplateJson;
         }
 
@@ -85,7 +88,7 @@ namespace KingdomTycoon.Infrastructure.Facilities
             {
                 if (saveService.Repository is not AtomicSaveRepository atomicRepository)
                     throw new InvalidOperationException("SAVE_CREATE_REPOSITORY_UNSUPPORTED");
-                INewGameFactory factory = p12Enabled ? new P12NewGameFactory(newGameTemplateJson) : p11Enabled ? new P11NewGameFactory(newGameTemplateJson) : p10Enabled ? new P10NewGameFactory(newGameTemplateJson) : p09Enabled ? new P09NewGameFactory(newGameTemplateJson) : p08Enabled ? new P08NewGameFactory(newGameTemplateJson) : p07Enabled ? new P07NewGameFactory(newGameTemplateJson) : p06Enabled ? new P06NewGameFactory(newGameTemplateJson) : p05Enabled ? new P05NewGameFactory(newGameTemplateJson) : new P04NewGameFactory(newGameTemplateJson);
+                INewGameFactory factory = p13Enabled ? new P13NewGameFactory(newGameTemplateJson) : p12Enabled ? new P12NewGameFactory(newGameTemplateJson) : p11Enabled ? new P11NewGameFactory(newGameTemplateJson) : p10Enabled ? new P10NewGameFactory(newGameTemplateJson) : p09Enabled ? new P09NewGameFactory(newGameTemplateJson) : p08Enabled ? new P08NewGameFactory(newGameTemplateJson) : p07Enabled ? new P07NewGameFactory(newGameTemplateJson) : p06Enabled ? new P06NewGameFactory(newGameTemplateJson) : p05Enabled ? new P05NewGameFactory(newGameTemplateJson) : new P04NewGameFactory(newGameTemplateJson);
                 SaveLoadResult created = new SingleProfileCreator(saveService.PersistentDataPath, atomicRepository, saveService.Validator)
                     .CreateOrResume(factory, clock.UtcNow);
                 if (!created.Success) throw new InvalidOperationException(created.ErrorCode ?? "SAVE_CREATE_FAILED");
@@ -120,27 +123,32 @@ namespace KingdomTycoon.Infrastructure.Facilities
                 JObject migrated = new P07ToP08ContentMigration().Apply(CurrentDocument);
                 Commit(migrated, Revision, clock.UtcNow);
             }
-            else if (CurrentDocument.Value<string>("contentVersion") == CompileTimeActiveContentVersionProvider.P08ContentVersion && (p09Enabled || p10Enabled || p11Enabled || p12Enabled))
+            else if (CurrentDocument.Value<string>("contentVersion") == CompileTimeActiveContentVersionProvider.P08ContentVersion && (p09Enabled || p10Enabled || p11Enabled || p12Enabled || p13Enabled))
             {
                 JObject migrated = new P08ToP09ContentMigration().Apply(CurrentDocument, new P09ProductionCatalog(contentService.Catalog).DefaultTargets());
                 Commit(migrated, Revision, clock.UtcNow);
             }
-            if (CurrentDocument.Value<string>("contentVersion") == CompileTimeActiveContentVersionProvider.P09ContentVersion && (p10Enabled || p11Enabled || p12Enabled))
+            if (CurrentDocument.Value<string>("contentVersion") == CompileTimeActiveContentVersionProvider.P09ContentVersion && (p10Enabled || p11Enabled || p12Enabled || p13Enabled))
             {
                 JObject migrated = new P09ToP10ContentMigration().Apply(CurrentDocument);
                 Commit(migrated, Revision, clock.UtcNow);
             }
-            if (CurrentDocument.Value<string>("contentVersion") == CompileTimeActiveContentVersionProvider.P10ContentVersion && (p11Enabled || p12Enabled))
+            if (CurrentDocument.Value<string>("contentVersion") == CompileTimeActiveContentVersionProvider.P10ContentVersion && (p11Enabled || p12Enabled || p13Enabled))
             {
                 JObject migrated = new P10ToP11ContentMigration().Apply(CurrentDocument);
                 Commit(migrated, Revision, clock.UtcNow);
             }
-            if (CurrentDocument.Value<string>("contentVersion") == CompileTimeActiveContentVersionProvider.P11ContentVersion && p12Enabled)
+            if (CurrentDocument.Value<string>("contentVersion") == CompileTimeActiveContentVersionProvider.P11ContentVersion && (p12Enabled || p13Enabled))
             {
                 JObject migrated = new P11ToP12ContentMigration().Apply(CurrentDocument);
                 Commit(migrated, Revision, clock.UtcNow);
             }
-            else if (CurrentDocument.Value<string>("contentVersion") is not (CompileTimeActiveContentVersionProvider.P04ContentVersion or CompileTimeActiveContentVersionProvider.P05ContentVersion or CompileTimeActiveContentVersionProvider.P06ContentVersion or CompileTimeActiveContentVersionProvider.P07ContentVersion or CompileTimeActiveContentVersionProvider.P08ContentVersion or CompileTimeActiveContentVersionProvider.P09ContentVersion or CompileTimeActiveContentVersionProvider.P10ContentVersion or CompileTimeActiveContentVersionProvider.P11ContentVersion or CompileTimeActiveContentVersionProvider.P12ContentVersion))
+            if (CurrentDocument.Value<string>("contentVersion") == CompileTimeActiveContentVersionProvider.P12ContentVersion && p13Enabled)
+            {
+                JObject migrated = new P12ToP13ContentMigration().Apply(CurrentDocument);
+                Commit(migrated, Revision, clock.UtcNow);
+            }
+            else if (CurrentDocument.Value<string>("contentVersion") is not (CompileTimeActiveContentVersionProvider.P04ContentVersion or CompileTimeActiveContentVersionProvider.P05ContentVersion or CompileTimeActiveContentVersionProvider.P06ContentVersion or CompileTimeActiveContentVersionProvider.P07ContentVersion or CompileTimeActiveContentVersionProvider.P08ContentVersion or CompileTimeActiveContentVersionProvider.P09ContentVersion or CompileTimeActiveContentVersionProvider.P10ContentVersion or CompileTimeActiveContentVersionProvider.P11ContentVersion or CompileTimeActiveContentVersionProvider.P12ContentVersion or CompileTimeActiveContentVersionProvider.P13ContentVersion))
             {
                 throw new InvalidOperationException("SAVE_CONTENT_VERSION_UNSUPPORTED");
             }

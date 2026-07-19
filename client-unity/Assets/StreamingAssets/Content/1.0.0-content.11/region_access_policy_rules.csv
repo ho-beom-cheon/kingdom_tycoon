@@ -1,0 +1,6 @@
+region_id,party_min,party_max,default_allowed_on_unlock,manual_toggle_allowed,require_town_safe,status,enabled
+REGION_R01,1,4,TRUE,TRUE,TRUE,TUNABLE,TRUE
+REGION_R02,1,4,TRUE,TRUE,TRUE,TUNABLE,TRUE
+REGION_R03,1,4,TRUE,TRUE,TRUE,TUNABLE,TRUE
+REGION_R04,1,4,TRUE,TRUE,TRUE,TUNABLE,TRUE
+REGION_R05,1,4,TRUE,TRUE,TRUE,TUNABLE,TRUE

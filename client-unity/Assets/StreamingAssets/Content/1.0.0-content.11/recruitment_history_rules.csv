@@ -1,0 +1,2 @@
+history_rule_id,history_max_entries,event_max_entries,pending_request_max_entries,result_reveal_seconds,status,enabled
+RECRUITMENT_HISTORY_V1,100,200,50,1,TUNABLE,TRUE

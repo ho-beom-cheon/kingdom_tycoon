@@ -58,7 +58,7 @@ namespace KingdomTycoon.Infrastructure.Progression
 
         public P11ProgressionCatalog(ContentCatalog catalog)
         {
-            if (catalog?.ContentVersion is not (CompileTimeActiveContentVersionProvider.P11ContentVersion or CompileTimeActiveContentVersionProvider.P12ContentVersion))
+            if (catalog?.ContentVersion is not (CompileTimeActiveContentVersionProvider.P11ContentVersion or CompileTimeActiveContentVersionProvider.P12ContentVersion or CompileTimeActiveContentVersionProvider.P13ContentVersion))
                 throw new ProgressionDomainException("P11_CONTENT_VERSION_UNSUPPORTED");
             ranks = catalog.GetTable("mercenary_ranks.csv").Rows.Where(Enabled).Select(row => new RankRule
             {
@@ -146,7 +146,7 @@ namespace KingdomTycoon.Infrastructure.Progression
 
         public void Bootstrap()
         {
-            if (!game.IsBootstrapped || game.CurrentDocument.Value<string>("contentVersion") is not (CompileTimeActiveContentVersionProvider.P11ContentVersion or CompileTimeActiveContentVersionProvider.P12ContentVersion))
+            if (!game.IsBootstrapped || game.CurrentDocument.Value<string>("contentVersion") is not (CompileTimeActiveContentVersionProvider.P11ContentVersion or CompileTimeActiveContentVersionProvider.P12ContentVersion or CompileTimeActiveContentVersionProvider.P13ContentVersion))
                 throw new ProgressionDomainException("P11_CONTENT_VERSION_UNSUPPORTED");
             catalog = new P11ProgressionCatalog(content.Catalog);
             inventoryCatalog = new CanonicalInventoryCatalog(content.Catalog);

@@ -1,0 +1,6 @@
+region_id,previous_region_id,previous_progress_required,kingdom_stage_id,elite_source_region_id,elite_kill_required,facility_id,facility_level_required,raid_id,raid_clear_required,status,enabled
+REGION_R01,,0,KINGDOM_1,,0,,0,,0,CONFIRMED,TRUE
+REGION_R02,REGION_R01,100,KINGDOM_2,,0,,0,,0,CONFIRMED,TRUE
+REGION_R03,REGION_R02,100,KINGDOM_3,REGION_R02,1,,0,,0,CONFIRMED,TRUE
+REGION_R04,REGION_R03,100,KINGDOM_3,REGION_R03,1,FAC_ALCHEMY,2,,0,CONFIRMED,TRUE
+REGION_R05,REGION_R04,100,KINGDOM_4,,0,,0,RAID_HYDRA,1,CONFIRMED,TRUE
