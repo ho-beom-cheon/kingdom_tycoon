@@ -2,9 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using KingdomTycoon.Bootstrap;
 using KingdomTycoon.Infrastructure.Content;
+using KingdomTycoon.Presentation.Navigation;
 using KingdomTycoon.Presentation.Kingdom.Views;
 using KingdomTycoon.Presentation.Store;
+using KingdomTycoon.UI;
 using TMPro;
 using UnityEditor;
 using UnityEditor.AddressableAssets;
@@ -12,6 +15,7 @@ using UnityEditor.AddressableAssets.Settings;
 using UnityEditor.AddressableAssets.Settings.GroupSchemas;
 using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
+using UnityEditor.Events;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -26,6 +30,7 @@ namespace KingdomTycoon.Editor
         public const string ScreenPath = GeneratedRoot + "/Prefabs/P08_STORE_SCREEN.prefab";
         public const string MarkerPath = GeneratedRoot + "/P08Store.marker.asset";
         public const string ScenePath = "Assets/KingdomTycoon/Scenes/Kingdom.unity";
+        public const string BootstrapScenePath = "Assets/KingdomTycoon/Scenes/Bootstrap.unity";
         public const string Fingerprint = "p08-store-v1-75-tables-24-rows-six-states";
         private const string GroupName = "Content-P08-Store-v1";
         private const string SpriteRoot = GeneratedRoot + "/Sprites";
@@ -52,6 +57,7 @@ namespace KingdomTycoon.Editor
             ValidateContent();
             GenerateAssets();
             GenerateScreen();
+            IntegrateBootstrapScene();
             IntegrateKingdomScene();
             P08GeneratedAssetVerifier.Verify();
             Debug.Log("P08 store setup completed.");
@@ -204,8 +210,52 @@ namespace KingdomTycoon.Editor
             if (drawer == null) throw new BuildFailedException("P08_FACILITY_DRAWER_MISSING");
             Transform oldEntry = drawer.transform.Find("P08_STORE_OPEN_BUTTON"); if (oldEntry != null) Object.DestroyImmediate(oldEntry.gameObject);
             Button open = Button("P08_STORE_OPEN_BUTTON", drawer.transform, "상점 입장", new Color32(174, 111, 47, 255)); SetRect(open.GetComponent<RectTransform>(), new Vector2(.06f, .16f), new Vector2(.94f, .27f), Vector2.zero, Vector2.zero);
-            StoreEntryButton entry = open.gameObject.AddComponent<StoreEntryButton>(); entry.Configure(drawer, presenter, open); open.gameObject.SetActive(false);
+            open.gameObject.AddComponent<CanvasGroup>();
+            StoreEntryButton entry = open.gameObject.AddComponent<StoreEntryButton>(); entry.Configure(drawer, presenter, open);
+            UnityEventTools.AddPersistentListener(open.onClick, entry.OpenStore);
             EditorSceneManager.MarkSceneDirty(scene); EditorSceneManager.SaveScene(scene);
+        }
+
+        public static void IntegrateBootstrapScene()
+        {
+            Scene scene = EditorSceneManager.OpenScene(BootstrapScenePath, OpenSceneMode.Single);
+            AppRoot appRoot = Object.FindFirstObjectByType<AppRoot>(FindObjectsInactive.Include)
+                ?? throw new BuildFailedException("P08_APP_ROOT_MISSING");
+            foreach (Transform duplicate in appRoot.transform.Cast<Transform>().Where(value => value.name == "P08_PRESENTATION_CAMERA").Skip(1).ToArray())
+                Object.DestroyImmediate(duplicate.gameObject);
+            Transform cameraTransform = appRoot.transform.Find("P08_PRESENTATION_CAMERA");
+            Camera camera;
+            if (cameraTransform == null)
+            {
+                var cameraObject = new GameObject("P08_PRESENTATION_CAMERA", typeof(Camera));
+                cameraObject.transform.SetParent(appRoot.transform, false);
+                camera = cameraObject.GetComponent<Camera>();
+            }
+            else camera = cameraTransform.GetComponent<Camera>() ?? cameraTransform.gameObject.AddComponent<Camera>();
+            camera.clearFlags = CameraClearFlags.SolidColor;
+            camera.backgroundColor = new Color32(12, 17, 20, 255);
+            camera.cullingMask = 0;
+            camera.depth = -100f;
+            camera.orthographic = true;
+            camera.nearClipPlane = .1f;
+            camera.farClipPlane = 10f;
+
+            CommonUiRoot common = Object.FindFirstObjectByType<CommonUiRoot>(FindObjectsInactive.Include)
+                ?? throw new BuildFailedException("P08_COMMON_UI_ROOT_MISSING");
+            Transform hud = common.transform.Find("HudCanvas/SafeArea") ?? throw new BuildFailedException("P08_HUD_SAFE_AREA_MISSING");
+            foreach (string name in new[] { "NAV_KINGDOM", "NAV_HUNT" })
+            {
+                Transform old = hud.Find(name);
+                if (old != null) Object.DestroyImmediate(old.gameObject);
+            }
+            Button kingdom = Button("NAV_KINGDOM", hud, "왕국", new Color32(88, 104, 80, 255));
+            SetRect(kingdom.GetComponent<RectTransform>(), new Vector2(.25f, 0f), new Vector2(.41f, 0f), new Vector2(0f, 16f), new Vector2(0f, 96f));
+            kingdom.gameObject.AddComponent<SceneNavigationButton>().Configure(kingdom, "Kingdom", true);
+            Button hunt = Button("NAV_HUNT", hud, "사냥터", new Color32(126, 83, 42, 255));
+            SetRect(hunt.GetComponent<RectTransform>(), new Vector2(.59f, 0f), new Vector2(.75f, 0f), new Vector2(0f, 16f), new Vector2(0f, 96f));
+            hunt.gameObject.AddComponent<SceneNavigationButton>().Configure(hunt, "Region", false);
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorSceneManager.SaveScene(scene);
         }
 
         internal static IReadOnlyList<string> ExpectedAddresses => Assets.Select(value => value.Address).ToArray();
@@ -294,6 +344,21 @@ namespace KingdomTycoon.Editor
             if (invalidButtons.Length > 0) throw new BuildFailedException("P08_TOUCH_TARGET_INVALID: " + string.Join(", ", invalidButtons));
             FacilityDrawerView drawer = Object.FindFirstObjectByType<FacilityDrawerView>(FindObjectsInactive.Include);
             if (drawer == null || drawer.GetComponentsInChildren<Transform>(true).Count(value => value.name == "P08_STORE_OPEN_BUTTON") != 1) throw new BuildFailedException("P08_SCENE_ENTRY_INVALID");
+            StoreEntryButton entry = drawer.GetComponentInChildren<StoreEntryButton>(true);
+            if (entry == null || !entry.gameObject.activeSelf || entry.GetComponent<CanvasGroup>() == null) throw new BuildFailedException("P08_SCENE_ENTRY_LIFECYCLE_INVALID");
+            Button entryButton = entry.GetComponent<Button>();
+            if (entryButton == null || entryButton.onClick.GetPersistentEventCount() != 1
+                || entryButton.onClick.GetPersistentTarget(0) != entry
+                || entryButton.onClick.GetPersistentMethodName(0) != nameof(StoreEntryButton.OpenStore))
+                throw new BuildFailedException("P08_SCENE_ENTRY_BINDING_INVALID");
+
+            Scene bootstrap = EditorSceneManager.OpenScene(P08StoreSetup.BootstrapScenePath, OpenSceneMode.Single);
+            AppRoot appRoot = Object.FindFirstObjectByType<AppRoot>(FindObjectsInactive.Include);
+            if (appRoot == null || appRoot.transform.Cast<Transform>().Count(value => value.name == "P08_PRESENTATION_CAMERA" && value.GetComponent<Camera>() != null) != 1)
+                throw new BuildFailedException("P08_PRESENTATION_CAMERA_INVALID");
+            SceneNavigationButton[] navigation = Object.FindObjectsByType<SceneNavigationButton>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            if (navigation.Count(value => value.TargetScene == "Kingdom") != 1 || navigation.Count(value => value.TargetScene == "Region") != 1)
+                throw new BuildFailedException("P08_SCENE_NAVIGATION_INVALID");
         }
     }
 

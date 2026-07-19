@@ -347,6 +347,8 @@ namespace KingdomTycoon.Infrastructure.Economy
         {
             EnsureReady(); JObject cycleStart = game.Snapshot(); int replayed = ExistingCycleCommandCount(cycleStart, cycleOperationId);
             if (replayed > 0) return replayed;
+            EnsureSystemSupply();
+            cycleStart = game.Snapshot();
             int commands = 0;
             string[] mercenaryIds = cycleStart["payload"]!["mercenaries"]!.Children<JObject>()
                 .Where(value => value["autonomy"]!.Value<string>("state") is "IDLE_TOWN" or "RETURN_TOWN" or "SELL_LOOT" or "BUY_CONSUMABLES" or "EVALUATE_EQUIPMENT" or "BUY_EQUIPMENT")
