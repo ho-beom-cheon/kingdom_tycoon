@@ -37,8 +37,9 @@ namespace KingdomTycoon.Infrastructure.Recruitment
 
         public RecruitmentCatalog(ContentCatalog catalog)
         {
-            if (catalog?.ContentVersion != CompileTimeActiveContentVersionProvider.P13ContentVersion)
+            if (catalog?.ContentVersion is not (CompileTimeActiveContentVersionProvider.P13ContentVersion or CompileTimeActiveContentVersionProvider.P14ContentVersion))
                 throw new RecruitmentDomainException("P13_CONTENT_VERSION_UNSUPPORTED");
+            ContentVersion = catalog.ContentVersion;
             tavernRules = catalog.GetTable("recruitment_tavern_rules.csv").Rows.Where(Enabled).ToDictionary(
                 row => Int(row, "tavern_level"), row => new TavernRule(Int(row, "tavern_level"), row["pool_id"], Int(row, "candidate_count"), Int(row, "max_locked"), Long(row, "free_refresh_seconds"), Long(row, "paid_refresh_cost")));
             pools = catalog.GetTable("recruitment_pools.csv").Rows.Where(Enabled).ToDictionary(row => row["pool_id"], row =>
@@ -66,6 +67,7 @@ namespace KingdomTycoon.Infrastructure.Recruitment
         }
 
         public TavernRule Tavern(int level) => tavernRules.TryGetValue(Math.Clamp(level, 1, 4), out TavernRule value) ? value : throw new RecruitmentDomainException("P13_TAVERN_RULE_NOT_FOUND");
+        public string ContentVersion { get; }
         public Pool GetPool(string id) => pools.TryGetValue(id ?? string.Empty, out Pool value) ? value : throw new RecruitmentDomainException("P13_POOL_NOT_FOUND");
         public IReadOnlyList<PoolEntry> Entries(string poolId) => entries.TryGetValue(poolId ?? string.Empty, out IReadOnlyList<PoolEntry> value) ? value : throw new RecruitmentDomainException("P13_POOL_NOT_FOUND");
         public IReadOnlyList<PityRule> Pity(string group) => string.IsNullOrEmpty(group) ? Array.Empty<PityRule>() : pityRules.TryGetValue(group, out IReadOnlyList<PityRule> value) ? value : throw new RecruitmentDomainException("P13_CONTENT_INVALID");
@@ -217,12 +219,12 @@ namespace KingdomTycoon.Infrastructure.Recruitment
                 _ => throw new RecruitmentDomainException("P13_PAYMENT_NOT_ALLOWED")
             };
             long balance = wallet.Value<long>(walletField); if (balance < pool.Cost) throw new RecruitmentDomainException("P13_PREMIUM_BALANCE_INSUFFICIENT"); wallet[walletField] = balance - pool.Cost;
-            var random = new RecruitmentRandom(command.OperationId, CompileTimeActiveContentVersionProvider.P13ContentVersion);
+            var random = new RecruitmentRandom(command.OperationId, catalog.ContentVersion);
             JArray pity = (JArray)state["pityCounters"]!.DeepClone(); var reasons = new JArray(); int minimumOrder = 0;
             foreach (RecruitmentCatalog.PityRule rule in catalog.Pity(pool.PityGroupId))
             {
                 JObject counter = pity.Children<JObject>().SingleOrDefault(value => value.Value<string>("pityGroupId") == rule.GroupId && value.Value<string>("pityRuleId") == rule.Id);
-                if (counter == null) { counter = new JObject { ["pityGroupId"] = rule.GroupId, ["pityRuleId"] = rule.Id, ["pullCount"] = 0, ["lastUpdatedContentVersion"] = CompileTimeActiveContentVersionProvider.P13ContentVersion }; pity.Add(counter); }
+                if (counter == null) { counter = new JObject { ["pityGroupId"] = rule.GroupId, ["pityRuleId"] = rule.Id, ["pullCount"] = 0, ["lastUpdatedContentVersion"] = catalog.ContentVersion }; pity.Add(counter); }
                 if (counter.Value<long>("pullCount") + 1 >= rule.TriggerCount && catalog.GradeOrder(rule.GuaranteedGradeId) > minimumOrder)
                 { minimumOrder = catalog.GradeOrder(rule.GuaranteedGradeId); reasons.Clear(); reasons.Add(rule.Id); }
             }
@@ -232,18 +234,18 @@ namespace KingdomTycoon.Infrastructure.Recruitment
             {
                 JObject counter = pity.Children<JObject>().Single(value => value.Value<string>("pityGroupId") == rule.GroupId && value.Value<string>("pityRuleId") == rule.Id);
                 counter["pullCount"] = catalog.GradeOrder(selected.GradeId) >= catalog.GradeOrder(rule.ResetGradeId) ? 0 : counter.Value<long>("pullCount") + 1;
-                counter["lastUpdatedContentVersion"] = CompileTimeActiveContentVersionProvider.P13ContentVersion;
+                counter["lastUpdatedContentVersion"] = catalog.ContentVersion;
             }
             JArray featured = (JArray)state["featuredGuarantees"]!.DeepClone(); RecruitmentCatalog.RateUpRule rate = catalog.RateUp(pool.RateUpGroupId); string forced = null; string[] excluded = Array.Empty<string>();
             if (rate != null && catalog.GradeOrder(selected.GradeId) >= catalog.GradeOrder("GRADE_S"))
             {
                 JObject guarantee = featured.Children<JObject>().SingleOrDefault(value => value.Value<string>("pityGroupId") == pool.PityGroupId && value.Value<string>("rateUpGroupId") == rate.Id);
-                if (guarantee == null) { guarantee = new JObject { ["pityGroupId"] = pool.PityGroupId, ["rateUpGroupId"] = rate.Id, ["state"] = "NONE", ["lastUpdatedContentVersion"] = CompileTimeActiveContentVersionProvider.P13ContentVersion }; featured.Add(guarantee); }
+                if (guarantee == null) { guarantee = new JObject { ["pityGroupId"] = pool.PityGroupId, ["rateUpGroupId"] = rate.Id, ["state"] = "NONE", ["lastUpdatedContentVersion"] = catalog.ContentVersion }; featured.Add(guarantee); }
                 bool guaranteedFeatured = guarantee.Value<string>("state") == "NEXT_S_OR_SS_FEATURED";
                 bool featuredHit = guaranteedFeatured || random.Next() % 10000UL < (ulong)rate.FeaturedShare;
                 if (featuredHit) { forced = rate.FeaturedJobs[random.Index(rate.FeaturedJobs.Length)]; guarantee["state"] = "NONE"; if (guaranteedFeatured) reasons.Add("RATE_UP_GUARANTEED"); }
                 else { excluded = rate.FeaturedJobs; guarantee["state"] = rate.FailureMode; }
-                guarantee["lastUpdatedContentVersion"] = CompileTimeActiveContentVersionProvider.P13ContentVersion;
+                guarantee["lastUpdatedContentVersion"] = catalog.ContentVersion;
             }
             JObject mercenary = generator.Special(selected, pool, forced, excluded, command.OperationId, random, now);
             pity = new JArray(pity.Children<JObject>().OrderBy(value => value.Value<string>("pityGroupId"), StringComparer.Ordinal).ThenBy(value => value.Value<string>("pityRuleId"), StringComparer.Ordinal));
@@ -278,7 +280,7 @@ namespace KingdomTycoon.Infrastructure.Recruitment
 
         public void Bootstrap()
         {
-            if (!game.IsBootstrapped || content.Catalog?.ContentVersion != CompileTimeActiveContentVersionProvider.P13ContentVersion || !roster.IsBootstrapped) throw new RecruitmentDomainException("P13_CONTENT_VERSION_UNSUPPORTED");
+            if (!game.IsBootstrapped || content.Catalog?.ContentVersion is not (CompileTimeActiveContentVersionProvider.P13ContentVersion or CompileTimeActiveContentVersionProvider.P14ContentVersion) || !roster.IsBootstrapped) throw new RecruitmentDomainException("P13_CONTENT_VERSION_UNSUPPORTED");
             catalog = new RecruitmentCatalog(content.Catalog); generator = new RecruitmentMercenaryGenerator(catalog, ids); gateway = new DevelopmentRecruitmentGateway(catalog, ids); IsBootstrapped = true;
             if (!State(game.Snapshot())["tavern"]!["candidates"]!.Any()) Refresh(CreateRefreshCommand(true));
         }
@@ -312,7 +314,7 @@ namespace KingdomTycoon.Infrastructure.Recruitment
                 long gold = draft["payload"]!["kingdom"]!.Value<long>("kingdomGold"); if (gold < rule.PaidCost) throw new RecruitmentDomainException("P13_KINGDOM_GOLD_INSUFFICIENT");
                 draft["payload"]!["kingdom"]!["kingdomGold"] = gold - rule.PaidCost; AppendEconomy(draft, command, "TAVERN_REFRESH", -rule.PaidCost, rule.PoolId, now);
             }
-            var random = new RecruitmentRandom(command.OperationId, CompileTimeActiveContentVersionProvider.P13ContentVersion); RecruitmentCatalog.Pool pool = catalog.GetPool(rule.PoolId);
+            var random = new RecruitmentRandom(command.OperationId, catalog.ContentVersion); RecruitmentCatalog.Pool pool = catalog.GetPool(rule.PoolId);
             var values = tavern["candidates"]!.Children<JObject>().Where(value => value.Value<bool>("locked")).Select(value => (JObject)value.DeepClone()).Take(rule.MaxLocked).ToList();
             while (values.Count < rule.CandidateCount) values.Add(generator.Candidate(pool, command.OperationId, random, now));
             tavern["candidates"] = new JArray(values.OrderBy(value => value.Value<string>("candidateId"), StringComparer.Ordinal)); tavern["refreshSequence"] = tavern.Value<long>("refreshSequence") + 1; tavern["lastRefreshAtUtc"] = Format(now); tavern["nextFreeRefreshAtUtc"] = Format(now.AddSeconds(rule.FreeSeconds));

@@ -1,0 +1,6 @@
+region_id,recommended_party_size,recommended_potion_quantity,danger_power_ratio_bps,inventory_reserve_slots,status,enabled
+REGION_R01,2,2,8000,4,TUNABLE,TRUE
+REGION_R02,3,3,8000,5,TUNABLE,TRUE
+REGION_R03,4,4,8000,6,TUNABLE,TRUE
+REGION_R04,4,5,8000,7,TUNABLE,TRUE
+REGION_R05,4,6,8000,8,TUNABLE,TRUE
