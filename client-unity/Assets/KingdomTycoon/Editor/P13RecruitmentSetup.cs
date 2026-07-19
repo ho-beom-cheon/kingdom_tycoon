@@ -119,7 +119,7 @@ namespace KingdomTycoon.Editor
             marker.fingerprint = Fingerprint; EditorUtility.SetDirty(marker); AssetDatabase.SaveAssets(); AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
         }
 
-        private static void IntegrateBootstrapScene()
+        public static void IntegrateBootstrapScene()
         {
             Scene scene = EditorSceneManager.OpenScene(BootstrapScenePath, OpenSceneMode.Single); CommonUiRoot common = Object.FindFirstObjectByType<CommonUiRoot>(FindObjectsInactive.Include) ?? throw new BuildFailedException("P13_COMMON_UI_ROOT_MISSING");
             Transform screenCanvas = common.transform.Find("ScreenCanvas") ?? throw new BuildFailedException("P13_SCREEN_CANVAS_MISSING"); foreach (Transform old in screenCanvas.Cast<Transform>().Where(value => value.name == "P13_RECRUITMENT_SCREEN").ToArray()) Object.DestroyImmediate(old.gameObject);

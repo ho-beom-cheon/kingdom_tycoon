@@ -25,7 +25,7 @@ namespace KingdomTycoon.Editor
         public const string ScreenPath = GeneratedRoot + "/RegionCombatScreen.prefab";
         public const string MarkerPath = GeneratedRoot + "/P06Combat.marker.asset";
         public const string RegionScenePath = "Assets/KingdomTycoon/Scenes/Region.unity";
-        public const string Fingerprint = "p06-combat-v1.1-region-safearea-addresses";
+        public const string Fingerprint = "p06-combat-p17-release-art-v1.0.0";
         private const string GroupName = "Content-P06-Combat-v1";
 
         private static readonly (string Name, string Address, Color Color)[] Assets =
@@ -80,13 +80,12 @@ namespace KingdomTycoon.Editor
             foreach ((string name, string address, Color color) in Assets)
             {
                 string path = GeneratedRoot + "/Sprites/" + name + ".asset";
-                Texture2D texture = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
-                if (texture == null)
-                {
-                    texture = new Texture2D(16, 16, TextureFormat.RGBA32, false) { name = name, filterMode = FilterMode.Point, wrapMode = TextureWrapMode.Clamp };
-                    var pixels = Enumerable.Repeat(color, 256).ToArray(); texture.SetPixels(pixels); texture.Apply(false, true);
-                    AssetDatabase.CreateAsset(texture, path);
-                }
+                AssetDatabase.DeleteAsset(path);
+                var texture = new Texture2D(16, 16, TextureFormat.RGBA32, false) { name = name, filterMode = FilterMode.Point, wrapMode = TextureWrapMode.Clamp };
+                var pixels = new Color[256];
+                for (int y = 0; y < 16; y++) for (int x = 0; x < 16; x++) pixels[y * 16 + x] = ReleasePixel(name, x, y, color);
+                texture.SetPixels(pixels); texture.Apply(false, true);
+                AssetDatabase.CreateAsset(texture, path);
                 AddressableAssetEntry entry = settings.CreateOrMoveEntry(AssetDatabase.AssetPathToGUID(path), group);
                 entry.address = address; entry.SetLabel("P06-Combat", true, true);
             }
@@ -94,6 +93,60 @@ namespace KingdomTycoon.Editor
             if (marker == null) { marker = ScriptableObject.CreateInstance<P06GeneratedAssetMarker>(); AssetDatabase.CreateAsset(marker, MarkerPath); }
             marker.fingerprint = Fingerprint; EditorUtility.SetDirty(marker); EditorUtility.SetDirty(settings);
             AssetDatabase.SaveAssets(); AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+        }
+
+        private static Color ReleasePixel(string name, int x, int y, Color baseColor)
+        {
+            Color clear = new(0, 0, 0, 0);
+            Color outline = new(.11f, .09f, .09f, 1f);
+            Color light = Color.Lerp(baseColor, Color.white, .24f);
+            Color dark = Color.Lerp(baseColor, Color.black, .34f);
+            int dx = x - 8;
+            int dy = y - 8;
+
+            if (name == "TILE_MEADOW")
+            {
+                if ((x * 5 + y * 3) % 11 == 0) return light;
+                if ((x + y * 2) % 13 == 0) return dark;
+                return baseColor;
+            }
+            if (name == "PROJECTILE") return Math.Abs(dx) + Math.Abs(dy) <= 4 ? (Math.Abs(dx) + Math.Abs(dy) <= 2 ? Color.white : baseColor) : clear;
+            if (name == "MISSING") return (x / 4 + y / 4) % 2 == 0 ? new Color(1, 0, 1, 1) : outline;
+            if (name.StartsWith("STATUS_", StringComparison.Ordinal))
+            {
+                int radius = dx * dx + dy * dy;
+                if (radius is > 42 and <= 55) return outline;
+                if (radius <= 42)
+                {
+                    bool mark = name switch
+                    {
+                        "STATUS_POISON" => ((dx == -3 || dx == 3) && dy >= 1) || (dy == -3 && Math.Abs(dx) <= 3),
+                        "STATUS_BURN" => (Math.Abs(dx) <= 2 && dy is >= -5 and <= 4) || (dx == -3 && dy is >= -2 and <= 1),
+                        "STATUS_SLOW" => Math.Abs(dx) <= 1 || Math.Abs(dy) <= 1,
+                        "STATUS_TAUNT" => (Math.Abs(dx) <= 1 && dy >= -4) || (dy == 4 && Math.Abs(dx) <= 1),
+                        "STATUS_BARRIER" => Math.Abs(dx) + Math.Abs(dy) is >= 4 and <= 6,
+                        "STATUS_BLESSING" => Math.Abs(dx) <= 1 || Math.Abs(dy) <= 1,
+                        _ => false
+                    };
+                    return mark ? light : baseColor;
+                }
+                return clear;
+            }
+
+            bool monster = name.StartsWith("MONSTER_", StringComparison.Ordinal);
+            bool head = dx * dx + (dy - 3) * (dy - 3) <= (monster ? 15 : 10);
+            bool body = Math.Abs(dx) <= (monster ? 5 : 4) && dy is >= -5 and <= 2;
+            bool legs = dy is >= -7 and <= -4 && (dx is >= -4 and <= -2 || dx is >= 2 and <= 4);
+            bool outlineBody = Math.Abs(dx) <= (monster ? 6 : 5) && dy is >= -7 and <= 4;
+            if (monster && dy >= 2 && (Math.Abs(dx) == 5 || Math.Abs(dx) == 6)) return outline;
+            if (!head && !body && !legs) return outlineBody ? outline : clear;
+            if (monster && dy == 4 && Math.Abs(dx) <= 2) return light;
+            if (name == "JOB_GUARDIAN" && x <= 5 && y is >= 4 and <= 11) return light;
+            if (name == "JOB_ARCHER" && x >= 11 && Math.Abs((y - 8) * (y - 8) + (x - 9) * (x - 9) - 16) <= 4) return light;
+            if (name == "JOB_MAGE" && dy >= 3 && Math.Abs(dx) <= 5 - (dy - 3)) return light;
+            if (name == "JOB_CLERIC" && (Math.Abs(dx) <= 1 || Math.Abs(dy) <= 1) && Math.Abs(dx) + Math.Abs(dy) <= 5) return light;
+            if (name == "JOB_WARRIOR" && x >= 11 && y is >= 3 and <= 13 && Math.Abs(x - 12) <= 1) return light;
+            return (x + y) % 4 == 0 ? light : ((x + y) % 3 == 0 ? dark : baseColor);
         }
 
         [MenuItem("Kingdom Tycoon/P06/Generate Region Combat Screen")]
@@ -120,7 +173,7 @@ namespace KingdomTycoon.Editor
             Image grid = Image("P06_UI_GRID", world.transform, new Color32(80, 112, 74, 180)); SetRect(grid.rectTransform, new Vector2(0.06f, 0.1f), new Vector2(0.94f, 0.84f), Vector2.zero, Vector2.zero);
 
             Image party = Image("PartyPanel", content.transform, new Color32(31, 42, 49, 255)); SetRect(party.rectTransform, new Vector2(0, 0.14f), new Vector2(0.24f, 0.9f), new Vector2(16, 8), new Vector2(-8, -8));
-            TMP_Text partyText = Text("P06_UI_MEMBER_CARD", party.transform, "파티 미편성", 24, TextAlignmentOptions.TopLeft, new Vector2(0.05f, 0.05f), new Vector2(0.95f, 0.95f)); partyText.enableWordWrapping = true;
+            TMP_Text partyText = Text("P06_UI_MEMBER_CARD", party.transform, "파티 미편성", 24, TextAlignmentOptions.TopLeft, new Vector2(0.05f, 0.05f), new Vector2(0.95f, 0.95f)); partyText.textWrappingMode = TextWrappingModes.Normal;
             Image bottom = Image("BottomBar", content.transform, new Color32(34, 45, 51, 255)); SetRect(bottom.rectTransform, Vector2.zero, new Vector2(1, 0.14f), Vector2.zero, Vector2.zero);
             TMP_Text autonomy = Text("P06_UI_AUTONOMY", bottom.transform, "사냥 준비", 26, TextAlignmentOptions.Left, new Vector2(0.02f, 0.15f), new Vector2(0.68f, 0.85f));
             Button recall = Button("P06_UI_RECALL", bottom.transform, "귀환", new Color32(165, 77, 58, 255)); SetButtonRect(recall.GetComponent<RectTransform>(), new Vector2(0.91f, 0.5f), new Vector2(268, 72));
