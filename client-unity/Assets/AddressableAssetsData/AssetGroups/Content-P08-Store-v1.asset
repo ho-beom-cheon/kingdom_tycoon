@@ -1,0 +1,106 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bbb281ee3bf0b054c82ac2347e9e782c, type: 3}
+  m_Name: Content-P08-Store-v1
+  m_EditorClassIdentifier: Unity.Addressables.Editor::UnityEditor.AddressableAssets.Settings.AddressableAssetGroup
+  m_GroupName: Content-P08-Store-v1
+  m_GUID: 36d9324a1fb7d094f90eb6d09d1aea36
+  m_SerializeEntries:
+  - m_GUID: 06425da66c7d3094b9fdadf73e235aaa
+    m_Address: P08/Store/Panel
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P08_STORE
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 079304c62add26e45b8d91e7a1db9747
+    m_Address: P08/Merchant/Portrait
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P08_MERCHANT
+    - P08_STORE
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 17e53736a0ca27d4da89eec88f187e5c
+    m_Address: P08/Policy/LOW
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P08_POLICY
+    - P08_STORE
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 24b7e4eb441d81e42a8cf90b960bce4f
+    m_Address: P08/Policy/HIGH
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P08_POLICY
+    - P08_STORE
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 2a32f99a1d83f5e4f8afe5da6bbf1888
+    m_Address: P08/Transaction/In
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P08_STORE
+    - P08_TRANSACTION
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 34b2dfdf475fe0842a888b0173a15313
+    m_Address: P08/State/Stock
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P08_STATE
+    - P08_STORE
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 848a46a77a1ac4c40bb2e1dbdb38faae
+    m_Address: P08/State/Error
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P08_STATE
+    - P08_STORE
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: c139f30e3f3bbbf48a03e0f14ded9885
+    m_Address: P08/Currency/KingdomGold
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P08_CURRENCY
+    - P08_STORE
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: ed91b3255b6b4c4469362f6909d11b1b
+    m_Address: P08/State/SoldOut
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P08_STATE
+    - P08_STORE
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: f14105291f7d1d540ba40c913325328b
+    m_Address: P08/Policy/STANDARD
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P08_POLICY
+    - P08_STORE
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: f472f2f693938df4c87127104a2b43d3
+    m_Address: P08/Transaction/Out
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P08_STORE
+    - P08_TRANSACTION
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: fff19568e38dbb9459a948d6c2cdb4b9
+    m_Address: P08/Currency/PersonalGold
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - P08_CURRENCY
+    - P08_STORE
+    FlaggedDuringContentUpdateRestriction: 0
+  m_ReadOnly: 0
+  m_Settings: {fileID: 11400000, guid: 50a16fd5bbff422489f2854e28312161, type: 2}
+  m_SchemaSet:
+    m_Schemas:
+    - {fileID: 11400000, guid: 049d12cc61f870c4fa89fbc312cefbdd, type: 2}
+    - {fileID: 11400000, guid: 6119608ddf278324499fcf21e02c151d, type: 2}
