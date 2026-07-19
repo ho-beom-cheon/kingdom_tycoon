@@ -1,0 +1,6 @@
+equipment_tier,stone_item_id,base_stone_quantity,quality_multiplier_enabled,enhancement_refund_bps,status,enabled
+1,MAT_ENHANCE_1,1,TRUE,7000,TUNABLE,TRUE
+2,MAT_ENHANCE_1,2,TRUE,7000,TUNABLE,TRUE
+3,MAT_ENHANCE_2,2,TRUE,7000,TUNABLE,TRUE
+4,MAT_ENHANCE_3,2,TRUE,7000,TUNABLE,TRUE
+5,MAT_ENHANCE_4,2,TRUE,7000,TUNABLE,TRUE

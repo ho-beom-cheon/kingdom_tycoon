@@ -1,0 +1,5 @@
+tavern_level,pool_id,candidate_count,max_locked,free_refresh_seconds,paid_refresh_cost,status,enabled
+1,TAVERN_L1,3,1,14400,250,TUNABLE,TRUE
+2,TAVERN_L1,4,1,10800,300,TUNABLE,TRUE
+3,TAVERN_L1,4,2,7200,400,TUNABLE,TRUE
+4,TAVERN_L4,5,2,3600,500,TUNABLE,TRUE

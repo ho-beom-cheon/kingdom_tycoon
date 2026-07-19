@@ -13,6 +13,7 @@ namespace KingdomTycoon.Infrastructure.Save
         private readonly string content8SchemaJson;
         private readonly string content9SchemaJson;
         private readonly string content10SchemaJson;
+        private readonly string content11SchemaJson;
 
         public SaveService(string persistentDataPath, string schemaJson)
             : this(persistentDataPath, schemaJson, null, null, null, null, null, null)
@@ -44,7 +45,7 @@ namespace KingdomTycoon.Infrastructure.Save
         {
         }
 
-        public SaveService(string persistentDataPath, string schemaJson, string content5SchemaJson, string content6SchemaJson, string content7SchemaJson, string content8SchemaJson, string content9SchemaJson, string content10SchemaJson)
+        public SaveService(string persistentDataPath, string schemaJson, string content5SchemaJson, string content6SchemaJson, string content7SchemaJson, string content8SchemaJson, string content9SchemaJson, string content10SchemaJson, string content11SchemaJson = null)
         {
             this.persistentDataPath = string.IsNullOrWhiteSpace(persistentDataPath)
                 ? throw new ArgumentException("Persistent data path is required.", nameof(persistentDataPath))
@@ -56,6 +57,7 @@ namespace KingdomTycoon.Infrastructure.Save
             this.content8SchemaJson = content8SchemaJson;
             this.content9SchemaJson = content9SchemaJson;
             this.content10SchemaJson = content10SchemaJson;
+            this.content11SchemaJson = content11SchemaJson;
         }
 
         public int InitializationOrder => 30;
@@ -74,7 +76,7 @@ namespace KingdomTycoon.Infrastructure.Save
                 ? new SaveDocumentValidator(schemaJson)
                 : content6SchemaJson == null
                     ? new SaveDocumentValidator(schemaJson, content5SchemaJson)
-                    : new SaveDocumentValidator(schemaJson, content5SchemaJson, content6SchemaJson, content7SchemaJson, content8SchemaJson, content9SchemaJson, content10SchemaJson);
+                    : new SaveDocumentValidator(schemaJson, content5SchemaJson, content6SchemaJson, content7SchemaJson, content8SchemaJson, content9SchemaJson, content10SchemaJson, content11SchemaJson);
             Migrations = new SaveMigrationRegistry(1);
             Repository = new AtomicSaveRepository(persistentDataPath, Validator);
         }

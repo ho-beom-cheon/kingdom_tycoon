@@ -52,7 +52,7 @@ namespace KingdomTycoon.Infrastructure.Regions
 
         public P12RegionCatalog(ContentCatalog catalog)
         {
-            if (catalog?.ContentVersion != CompileTimeActiveContentVersionProvider.P12ContentVersion)
+            if (catalog?.ContentVersion is not (CompileTimeActiveContentVersionProvider.P12ContentVersion or CompileTimeActiveContentVersionProvider.P13ContentVersion))
                 throw new RegionDomainException("P12_CONTENT_VERSION_UNSUPPORTED");
             regions = catalog.GetTable("regions.csv").Rows.Where(Enabled).Select(row => new RegionRule
             {
@@ -138,7 +138,7 @@ namespace KingdomTycoon.Infrastructure.Regions
 
         public void Bootstrap()
         {
-            if (!game.IsBootstrapped || game.CurrentDocument.Value<string>("contentVersion") != CompileTimeActiveContentVersionProvider.P12ContentVersion)
+            if (!game.IsBootstrapped || game.CurrentDocument.Value<string>("contentVersion") is not (CompileTimeActiveContentVersionProvider.P12ContentVersion or CompileTimeActiveContentVersionProvider.P13ContentVersion))
                 throw new RegionDomainException("P12_CONTENT_VERSION_UNSUPPORTED");
             catalog = new P12RegionCatalog(content.Catalog);
             IsBootstrapped = true;

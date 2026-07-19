@@ -44,7 +44,7 @@ namespace KingdomTycoon.Infrastructure.Production
 
         public P09ProductionCatalog(ContentCatalog catalog)
         {
-            if (catalog?.ContentVersion is not (CompileTimeActiveContentVersionProvider.P09ContentVersion or CompileTimeActiveContentVersionProvider.P10ContentVersion or CompileTimeActiveContentVersionProvider.P11ContentVersion or CompileTimeActiveContentVersionProvider.P12ContentVersion)) throw new ProductionDomainException("P09_CONTENT_MISSING");
+            if (catalog?.ContentVersion is not (CompileTimeActiveContentVersionProvider.P09ContentVersion or CompileTimeActiveContentVersionProvider.P10ContentVersion or CompileTimeActiveContentVersionProvider.P11ContentVersion or CompileTimeActiveContentVersionProvider.P12ContentVersion or CompileTimeActiveContentVersionProvider.P13ContentVersion)) throw new ProductionDomainException("P09_CONTENT_MISSING");
             facilities = catalog.GetTable("production_facility_rules.csv").Rows.Where(Enabled).Select(row => new FacilityRule
             {
                 Level = Int(row, "facility_level"), QueueCapacity = Int(row, "queue_capacity"), SpeedBps = Int(row, "speed_bps")
@@ -147,7 +147,7 @@ namespace KingdomTycoon.Infrastructure.Production
                 ["sourceContentVersion"] = contentVersion, ["generationOperationId"] = operationId.ToString("D"),
                 ["stockAcquiredAtUtc"] = "1970-01-01T00:00:00.000Z", ["stockAcquiredOperationId"] = operationId.ToString("D"), ["sourceType"] = "PRODUCTION"
             });
-            if (contentVersion is CompileTimeActiveContentVersionProvider.P10ContentVersion or CompileTimeActiveContentVersionProvider.P11ContentVersion or CompileTimeActiveContentVersionProvider.P12ContentVersion)
+            if (contentVersion is CompileTimeActiveContentVersionProvider.P10ContentVersion or CompileTimeActiveContentVersionProvider.P11ContentVersion or CompileTimeActiveContentVersionProvider.P12ContentVersion or CompileTimeActiveContentVersionProvider.P13ContentVersion)
             {
                 JObject created = (JObject)equipment.Last!;
                 created["enhancementPityBps"] = 0; created["enhancementAttemptCount"] = 0;
@@ -182,7 +182,7 @@ namespace KingdomTycoon.Infrastructure.Production
 
         public void Bootstrap()
         {
-            if (!game.IsBootstrapped || content.Catalog?.ContentVersion is not (CompileTimeActiveContentVersionProvider.P09ContentVersion or CompileTimeActiveContentVersionProvider.P10ContentVersion or CompileTimeActiveContentVersionProvider.P11ContentVersion or CompileTimeActiveContentVersionProvider.P12ContentVersion)) throw new ProductionDomainException("P09_CONTENT_MISSING");
+            if (!game.IsBootstrapped || content.Catalog?.ContentVersion is not (CompileTimeActiveContentVersionProvider.P09ContentVersion or CompileTimeActiveContentVersionProvider.P10ContentVersion or CompileTimeActiveContentVersionProvider.P11ContentVersion or CompileTimeActiveContentVersionProvider.P12ContentVersion or CompileTimeActiveContentVersionProvider.P13ContentVersion)) throw new ProductionDomainException("P09_CONTENT_MISSING");
             catalog = new P09ProductionCatalog(content.Catalog); stock = new P09StoreStockSink(content.Catalog); IsBootstrapped = true;
         }
 
