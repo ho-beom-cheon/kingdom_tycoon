@@ -71,6 +71,13 @@
       ],
       "schemaFile": "save.content.12.schema.json",
       "sha256": "fda61c2a1f3810a6cd3c0d69882614fe90c42cbe0d141974afa8de2e940b9642"
+    },
+    {
+      "contentVersions": [
+        "1.0.0-content.13"
+      ],
+      "schemaFile": "save.content.13.schema.json",
+      "sha256": "47f160d56262975029fdfcb26ca5938b5a6298c00a734116647c31d70a471d49"
     }
   ]
 }

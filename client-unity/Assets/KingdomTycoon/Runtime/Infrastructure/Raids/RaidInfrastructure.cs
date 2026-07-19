@@ -45,7 +45,7 @@ namespace KingdomTycoon.Infrastructure.Raids
 
         public P14RaidCatalog(ContentCatalog catalog)
         {
-            if (catalog?.ContentVersion != CompileTimeActiveContentVersionProvider.P14ContentVersion) throw new RaidDomainException("P14_CONTENT_VERSION_UNSUPPORTED");
+            if (catalog?.ContentVersion is not (CompileTimeActiveContentVersionProvider.P14ContentVersion or CompileTimeActiveContentVersionProvider.P15ContentVersion)) throw new RaidDomainException("P14_CONTENT_VERSION_UNSUPPORTED");
             raids = catalog.GetTable("raids.csv").Rows.Where(Enabled).ToDictionary(row => row["raid_id"], row => new RaidRule
             { Id = row["raid_id"], BossId = row["boss_monster_id"], MinimumRankId = row["min_rank_id"], PartyMin = Int(row, "party_min"), PartyMax = Int(row, "party_max"), FirstRewardGroupId = row["first_clear_reward_group_id"], TimeLimitSeconds = Int(row, "time_limit_sec") }, StringComparer.Ordinal);
             difficulties = catalog.GetTable("raid_difficulties.csv").Rows.Where(Enabled).ToDictionary(row => Key(row["raid_id"], row["difficulty"]), row => new DifficultyRule
@@ -107,7 +107,7 @@ namespace KingdomTycoon.Infrastructure.Raids
         public void Initialize(ServiceRegistry services) { save = services.Get<SaveService>(); content = services.Get<ContentCatalogService>(); game = services.Get<FacilityGameService>(); regions = services.Get<RegionGameService>(); }
         public void Bootstrap()
         {
-            if (!game.IsBootstrapped || content.Catalog?.ContentVersion != CompileTimeActiveContentVersionProvider.P14ContentVersion || !regions.IsBootstrapped) throw new RaidDomainException("P14_CONTENT_VERSION_UNSUPPORTED");
+            if (!game.IsBootstrapped || content.Catalog?.ContentVersion is not (CompileTimeActiveContentVersionProvider.P14ContentVersion or CompileTimeActiveContentVersionProvider.P15ContentVersion) || !regions.IsBootstrapped) throw new RaidDomainException("P14_CONTENT_VERSION_UNSUPPORTED");
             catalog = new P14RaidCatalog(content.Catalog); IsBootstrapped = true; NormalizeUnlocks();
         }
 

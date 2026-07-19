@@ -37,7 +37,7 @@ namespace KingdomTycoon.Infrastructure.Recruitment
 
         public RecruitmentCatalog(ContentCatalog catalog)
         {
-            if (catalog?.ContentVersion is not (CompileTimeActiveContentVersionProvider.P13ContentVersion or CompileTimeActiveContentVersionProvider.P14ContentVersion))
+            if (catalog?.ContentVersion is not (CompileTimeActiveContentVersionProvider.P13ContentVersion or CompileTimeActiveContentVersionProvider.P14ContentVersion or CompileTimeActiveContentVersionProvider.P15ContentVersion))
                 throw new RecruitmentDomainException("P13_CONTENT_VERSION_UNSUPPORTED");
             ContentVersion = catalog.ContentVersion;
             tavernRules = catalog.GetTable("recruitment_tavern_rules.csv").Rows.Where(Enabled).ToDictionary(
@@ -280,7 +280,7 @@ namespace KingdomTycoon.Infrastructure.Recruitment
 
         public void Bootstrap()
         {
-            if (!game.IsBootstrapped || content.Catalog?.ContentVersion is not (CompileTimeActiveContentVersionProvider.P13ContentVersion or CompileTimeActiveContentVersionProvider.P14ContentVersion) || !roster.IsBootstrapped) throw new RecruitmentDomainException("P13_CONTENT_VERSION_UNSUPPORTED");
+            if (!game.IsBootstrapped || content.Catalog?.ContentVersion is not (CompileTimeActiveContentVersionProvider.P13ContentVersion or CompileTimeActiveContentVersionProvider.P14ContentVersion or CompileTimeActiveContentVersionProvider.P15ContentVersion) || !roster.IsBootstrapped) throw new RecruitmentDomainException("P13_CONTENT_VERSION_UNSUPPORTED");
             catalog = new RecruitmentCatalog(content.Catalog); generator = new RecruitmentMercenaryGenerator(catalog, ids); gateway = new DevelopmentRecruitmentGateway(catalog, ids); IsBootstrapped = true;
             if (!State(game.Snapshot())["tavern"]!["candidates"]!.Any()) Refresh(CreateRefreshCommand(true));
         }
