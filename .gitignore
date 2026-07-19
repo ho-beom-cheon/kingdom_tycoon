@@ -32,6 +32,9 @@ hs_err_pid*
 .delivery/
 coverage/
 /artifacts/
+/p11-*.log
+/p11-*.xml
+/p10-capture-check.log
 **/__pycache__/
 *.py[cod]
 
