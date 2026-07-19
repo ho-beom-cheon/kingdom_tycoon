@@ -12,6 +12,7 @@ using KingdomTycoon.Infrastructure.Facilities;
 using KingdomTycoon.Infrastructure.Inventory;
 using KingdomTycoon.Infrastructure.Save;
 using KingdomTycoon.Infrastructure.Progression;
+using KingdomTycoon.Infrastructure.Regions;
 using KingdomTycoon.Services;
 using Newtonsoft.Json.Linq;
 using CombatSplitMix64 = KingdomTycoon.Domain.Combat.SplitMix64;
@@ -81,7 +82,7 @@ namespace KingdomTycoon.Infrastructure.Combat
         public CanonicalCombatCatalog(ContentCatalog catalog)
         {
             if (catalog == null) throw new ArgumentNullException(nameof(catalog));
-            if (catalog.ContentVersion is not (CompileTimeActiveContentVersionProvider.P06ContentVersion or CompileTimeActiveContentVersionProvider.P07ContentVersion or CompileTimeActiveContentVersionProvider.P08ContentVersion or CompileTimeActiveContentVersionProvider.P09ContentVersion or CompileTimeActiveContentVersionProvider.P10ContentVersion or CompileTimeActiveContentVersionProvider.P11ContentVersion))
+            if (catalog.ContentVersion is not (CompileTimeActiveContentVersionProvider.P06ContentVersion or CompileTimeActiveContentVersionProvider.P07ContentVersion or CompileTimeActiveContentVersionProvider.P08ContentVersion or CompileTimeActiveContentVersionProvider.P09ContentVersion or CompileTimeActiveContentVersionProvider.P10ContentVersion or CompileTimeActiveContentVersionProvider.P11ContentVersion or CompileTimeActiveContentVersionProvider.P12ContentVersion))
                 throw new CombatDomainException("P06_CONTENT_VERSION_UNSUPPORTED");
             ContentVersion = catalog.ContentVersion;
             jobs = catalog.GetTable("combat_job_profiles.csv").Rows.Where(Enabled).Select(row => new CombatJobProfile(row)).ToDictionary(value => value.JobId, StringComparer.Ordinal);
@@ -91,7 +92,10 @@ namespace KingdomTycoon.Infrastructure.Combat
                 .ToDictionary(group => group.Key, group => group.OrderBy(value => value.MonsterId, StringComparer.Ordinal).ToArray(), StringComparer.Ordinal);
             AutonomyRules = catalog.GetTable("autonomy_rules.csv").Rows.Select(row => new AutonomyRule(
                 row["state"], Int(row, "rule_no"), Int(row, "priority"), row["condition_type"], row["condition_value"], row["reason_code"], row["next_state"], row["enabled"] == "TRUE")).ToArray();
-            if (jobs.Count != 5 || !encounters.TryGetValue("REGION_R01", out EncounterCombatProfile[] r01) || r01.Sum(value => value.Weight) != 100)
+            int requiredRegionCount = catalog.ContentVersion == CompileTimeActiveContentVersionProvider.P12ContentVersion ? 5 : 1;
+            bool encountersValid = Enumerable.Range(1, requiredRegionCount).All(order =>
+                encounters.TryGetValue($"REGION_R0{order}", out EncounterCombatProfile[] values) && values.Sum(value => value.Weight) == 100);
+            if (jobs.Count != 5 || !encountersValid)
                 throw new CombatDomainException("P06_CONTENT_MISSING");
         }
 
@@ -131,6 +135,7 @@ namespace KingdomTycoon.Infrastructure.Combat
         private FacilityGameService game;
         private InventoryGameService inventory;
         private ProgressionGameService progression;
+        private RegionGameService regions;
         private CanonicalCombatCatalog catalog;
         private RuntimeSession session;
         private RecallHuntResult lastTerminalResult;
@@ -151,6 +156,8 @@ namespace KingdomTycoon.Infrastructure.Combat
             catch (InvalidOperationException) { inventory = null; }
             try { progression = services.Get<ProgressionGameService>(); }
             catch (InvalidOperationException) { progression = null; }
+            try { regions = services.Get<RegionGameService>(); }
+            catch (InvalidOperationException) { regions = null; }
         }
 
         public void Bootstrap()
@@ -164,7 +171,7 @@ namespace KingdomTycoon.Infrastructure.Combat
                 current = new P05ToP06ContentMigration(clock).Apply(current);
                 needsWrite = true;
             }
-            else if (current.Value<string>("contentVersion") is not (CompileTimeActiveContentVersionProvider.P06ContentVersion or CompileTimeActiveContentVersionProvider.P07ContentVersion or CompileTimeActiveContentVersionProvider.P08ContentVersion or CompileTimeActiveContentVersionProvider.P09ContentVersion or CompileTimeActiveContentVersionProvider.P10ContentVersion or CompileTimeActiveContentVersionProvider.P11ContentVersion))
+            else if (current.Value<string>("contentVersion") is not (CompileTimeActiveContentVersionProvider.P06ContentVersion or CompileTimeActiveContentVersionProvider.P07ContentVersion or CompileTimeActiveContentVersionProvider.P08ContentVersion or CompileTimeActiveContentVersionProvider.P09ContentVersion or CompileTimeActiveContentVersionProvider.P10ContentVersion or CompileTimeActiveContentVersionProvider.P11ContentVersion or CompileTimeActiveContentVersionProvider.P12ContentVersion))
             {
                 throw new CombatDomainException("P06_CONTENT_VERSION_UNSUPPORTED");
             }
@@ -191,9 +198,10 @@ namespace KingdomTycoon.Infrastructure.Combat
             Require(session == null, "P06_COMBAT_INVARIANT");
             Require(command.ExpectedRevision == Revision, "P06_SAVE_REVISION_CONFLICT");
             Require(RegionUnlocked(command.RegionId), "P06_REGION_NOT_AVAILABLE");
-            string[] party = command.PartyMercenaryInstanceIds.Select(value => value.ToString("D")).ToArray();
-            Require(party.Distinct(StringComparer.Ordinal).Count() == party.Length, "P06_PARTY_DUPLICATE");
             JObject current = game.Snapshot();
+            string[] party = command.PartyMercenaryInstanceIds.Select(value => value.ToString("D")).ToArray();
+            if (regions?.IsBootstrapped == true) regions.ValidateDeployment(current, command.RegionId, party);
+            Require(party.Distinct(StringComparer.Ordinal).Count() == party.Length, "P06_PARTY_DUPLICATE");
             var mercenaries = current["payload"]!["mercenaries"]!.Children<JObject>().ToDictionary(value => value.Value<string>("instanceId"), StringComparer.Ordinal);
             foreach (string id in party)
             {
@@ -274,7 +282,7 @@ namespace KingdomTycoon.Infrastructure.Combat
 
         public void Shutdown()
         {
-            SnapshotChanged = null; HuntSettled = null; session = null; catalog = null; progression = null; inventory = null; game = null; content = null; save = null; IsBootstrapped = false;
+            SnapshotChanged = null; HuntSettled = null; session = null; catalog = null; regions = null; progression = null; inventory = null; game = null; content = null; save = null; IsBootstrapped = false;
         }
 
         private RuntimeSession NewSession(Guid huntId, string regionId, string[] party, IReadOnlyDictionary<string, JObject> mercenaries)
@@ -343,6 +351,8 @@ namespace KingdomTycoon.Infrastructure.Combat
             if (progression?.IsBootstrapped == true)
                 progression.ApplyCombatSettlement(draft, completed.Party, completed.Experience, completed.RegionId,
                     completed.CompletedBattles, completed.EliteKills, completed.BossContributions, clock.UtcNow);
+            if (regions?.IsBootstrapped == true)
+                regions.ApplyHuntSettlement(draft, completed.RegionId, completed.Party, completed.EliteKills, completed.KillCount > 0, clock.UtcNow);
             var terminalDigest = new JObject
             {
                 ["operationId"] = completed.HuntOperationId.ToString("D"), ["revisionBefore"] = before, ["revisionAfter"] = before + 1,

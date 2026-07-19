@@ -1,0 +1,6 @@
+job_id,low_hp_weight,threat_weight,weakness_weight,cluster_weight,ally_danger_weight,distance_weight,finish_weight,retarget_ticks,hysteresis_bps,preferred_min_milli,preferred_max_milli,status,enabled
+JOB_WARRIOR,150,20,40,0,20,-10,180,5,1500,0,1600,TUNABLE,TRUE
+JOB_GUARDIAN,30,180,0,20,220,-5,20,5,2000,0,1800,TUNABLE,TRUE
+JOB_ARCHER,60,-30,180,30,0,25,80,5,1800,4500,6500,TUNABLE,TRUE
+JOB_MAGE,30,-20,40,240,0,20,20,5,1800,3800,6000,TUNABLE,TRUE
+JOB_CLERIC,0,-60,0,0,300,15,0,5,2500,4200,5500,TUNABLE,TRUE

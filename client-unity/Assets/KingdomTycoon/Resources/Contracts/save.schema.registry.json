@@ -50,6 +50,13 @@
       ],
       "schemaFile": "save.content.9.schema.json",
       "sha256": "7eb2ee415a4500ecfb6985ea388405050110cac06431e748e45b661730ccd1e2"
+    },
+    {
+      "contentVersions": [
+        "1.0.0-content.10"
+      ],
+      "schemaFile": "save.content.10.schema.json",
+      "sha256": "96a6cf679f2223deaa1613ba3694147081388cb7ecf578cb4c4fd5fa087304c1"
     }
   ]
 }
