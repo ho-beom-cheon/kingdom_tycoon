@@ -1,6 +1,9 @@
 using System.Collections;
 using System.Linq;
 using KingdomTycoon.Bootstrap;
+using KingdomTycoon.Presentation.Combat;
+using KingdomTycoon.Presentation.Kingdom.Views;
+using KingdomTycoon.Presentation.Navigation;
 using KingdomTycoon.Presentation.Store;
 using NUnit.Framework;
 using UnityEngine;
@@ -43,6 +46,46 @@ namespace KingdomTycoon.Tests.PlayMode
             foreach (string id in RequiredIds) Assert.That(nodes.Count(value => value.name == id), Is.EqualTo(1), id);
             Assert.That(presenter.View.ProductList.PoolSize, Is.EqualTo(24));
             Assert.That(Object.FindObjectsByType<StoreEntryButton>(FindObjectsInactive.Include, FindObjectsSortMode.None).Length, Is.EqualTo(1));
+            Assert.That(Camera.allCamerasCount, Is.GreaterThanOrEqualTo(1));
+        }
+
+        [UnityTest]
+        public IEnumerator SelectingStoreRevealsEntryAndOpensStoreScreen()
+        {
+            StoreScreenPresenter presenter = null;
+            yield return LoadKingdom(value => presenter = value);
+            StoreEntryButton entry = Object.FindFirstObjectByType<StoreEntryButton>(FindObjectsInactive.Include);
+            Assert.That(entry.gameObject.activeSelf, Is.True);
+            Assert.That(entry.IsVisible, Is.False);
+
+            FacilityWorldView store = Object.FindObjectsByType<FacilityWorldView>(FindObjectsSortMode.None).Single(value => value.FacilityId == "FAC_STORE");
+            store.GetComponentInChildren<Button>(true).onClick.Invoke();
+            yield return null;
+
+            Assert.That(entry.IsVisible, Is.True);
+            Assert.That(entry.GetComponent<CanvasGroup>().alpha, Is.EqualTo(1f));
+            entry.GetComponent<Button>().onClick.Invoke();
+            yield return null;
+            Assert.That(presenter.IsOpen, Is.True);
+        }
+
+        [UnityTest]
+        public IEnumerator PersistentNavigationLoadsRegionAndReturnsToKingdom()
+        {
+            StoreScreenPresenter presenter = null;
+            yield return LoadKingdom(value => presenter = value);
+            SceneNavigationButton hunt = Object.FindObjectsByType<SceneNavigationButton>(FindObjectsInactive.Include, FindObjectsSortMode.None).Single(value => value.TargetScene == "Region");
+            hunt.GetComponent<Button>().onClick.Invoke();
+            yield return new WaitUntil(() => SceneManager.GetActiveScene().name == "Region");
+            Assert.That(Object.FindFirstObjectByType<RegionCombatPresenter>(), Is.Not.Null);
+            Assert.That(Camera.allCamerasCount, Is.GreaterThanOrEqualTo(1));
+
+            SceneNavigationButton kingdom = Object.FindObjectsByType<SceneNavigationButton>(FindObjectsInactive.Include, FindObjectsSortMode.None).Single(value => value.TargetScene == "Kingdom");
+            yield return null;
+            Assert.That(kingdom.GetComponent<Button>().interactable, Is.True);
+            kingdom.GetComponent<Button>().onClick.Invoke();
+            yield return new WaitUntil(() => SceneManager.GetActiveScene().name == "Kingdom");
+            Assert.That(Object.FindFirstObjectByType<StoreScreenPresenter>(FindObjectsInactive.Include), Is.Not.Null);
         }
 
         [UnityTest]

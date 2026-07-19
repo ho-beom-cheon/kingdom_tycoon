@@ -155,6 +155,21 @@ namespace KingdomTycoon.Tests.EditMode
         }
 
         [Test]
+        public void AutonomyCycleCreatesInitialSupplyWithoutOpeningStoreScreen()
+        {
+            OpenStore();
+            Assert.That(economy.GetStorefront().Products, Is.Empty);
+
+            int commands = economy.RunStoreAutonomyCycle(Guid.Parse("018f0000-0000-7000-8000-000000000910"));
+
+            Assert.That(commands, Is.InRange(1, 48));
+            Assert.That(economy.GetStorefront().Products, Is.Not.Empty);
+            JObject supply = (JObject)game.Snapshot()["payload"]!["economy"]!["store"]!["supplyState"]!;
+            Assert.That(supply["lastRefreshOperationId"]!.Type, Is.EqualTo(JTokenType.String));
+            Assert.That(supply.Value<long>("epoch"), Is.GreaterThanOrEqualTo(1));
+        }
+
+        [Test]
         public void EighthPurchaseTriggersDeterministicExplicitSupplyEpochRefresh()
         {
             OpenStore(); EconomyOperationResult initial = economy.EnsureSystemSupply(); Assert.That(initial, Is.Not.Null);
