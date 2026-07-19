@@ -60,3 +60,6 @@
 - `reports/P08_ECONOMY_STORE_REPORT.md`: P08 경제·상점·자율 거래, Save content.6, UI, Android 검증
 - `design/TYCOON_P09_PRODUCTION_NPC_COMPLETE_DESIGN_v1.0.md`: P09 생산·NPC 최종 구현 계약
 - `reports/P09_PRODUCTION_NPC_REPORT.md`: P09 생산 큐·재고 목표·NPC 숙련·치료, Save content.7 검증
+- `reports/P16_SERVER_SKELETON_IMPLEMENTATION_EVIDENCE.md`: P16 서버 권위 API, Unity 게이트웨이, PostgreSQL 통합 검증
+- `design/TYCOON_P17_BALANCE_OPTIMIZATION_RC_COMPLETE_DESIGN_v1.0.md`: P17 밸런스·최적화·한국어 UI·Android RC 최종 계약
+- `reports/P17_BALANCE_OPTIMIZATION_RC_IMPLEMENTATION_EVIDENCE.md`: P17 출시 자산, 전체 QA, 무경고 Android RC 구현 증적

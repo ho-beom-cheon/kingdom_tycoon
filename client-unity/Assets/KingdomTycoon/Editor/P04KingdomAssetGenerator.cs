@@ -63,7 +63,7 @@ namespace KingdomTycoon.Editor
 
             foreach (FacilityVisualSpec spec in Facilities)
             {
-                Sprite baseSprite = GenerateSprite(spec.AssetId, 256, 256, new Vector2(0.5f, 0.1f), (x, y) => FacilityPixel(x, y, spec.Color));
+                Sprite baseSprite = GenerateSprite(spec.AssetId, 256, 256, new Vector2(0.5f, 0.1f), (x, y) => FacilityPixel(x, y, spec.Color, spec.FacilityId));
                 CreateFacilityPrefab(spec, baseSprite, locked, construction, stopped);
                 Register(settings, group, PrefabPath(spec), spec.Address);
             }
@@ -219,16 +219,67 @@ namespace KingdomTycoon.Editor
             if (y < 270) { r = (byte)(r * 0.72f); g = (byte)(g * 0.80f); b = (byte)(b * 0.70f); }
             return new Color32(r, g, b, 255);
         }
-        private static Color32 FacilityPixel(int x, int y, Color32 color)
+        private static Color32 FacilityPixel(int x, int y, Color32 color, string facilityId)
         {
-            bool roof = y >= 130 && y <= 215 && Math.Abs(x - 128) <= (215 - y) * 3 / 2 + 24;
-            bool body = x >= 48 && x <= 208 && y >= 28 && y < 150;
-            bool door = x >= 108 && x <= 148 && y >= 28 && y <= 94;
-            if (door) return new Color32(55, 42, 34, 255);
-            if (roof) return new Color32((byte)Mathf.Min(255, color.r + 28), (byte)Mathf.Min(255, color.g + 18), (byte)Mathf.Min(255, color.b + 12), 255);
-            if (body) return color;
+            Color32 outline = new(37, 31, 29, 255);
+            Color32 shadow = new(43, 39, 35, 190);
+            Color32 wallDark = Shade(color, -28);
+            Color32 wallLight = Shade(color, 22);
+            Color32 roof = Shade(color, -42);
+            Color32 roofLight = Shade(color, 8);
+            Color32 gold = new(222, 176, 76, 255);
+
+            float dx = (x - 128f) / 112f;
+            float dy = (y - 25f) / 23f;
+            if (dx * dx + dy * dy <= 1f) return shadow;
+
+            bool bodyOutline = x >= 42 && x <= 214 && y >= 24 && y <= 150;
+            bool body = x >= 47 && x <= 209 && y >= 29 && y <= 147;
+            bool roofOutline = y >= 132 && y <= 224 && Math.Abs(x - 128) <= (224 - y) * 3 / 2 + 28;
+            bool roofInner = y >= 137 && y <= 218 && Math.Abs(x - 128) <= (218 - y) * 3 / 2 + 24;
+            if (roofOutline && !roofInner) return outline;
+            if (roofInner) return ((x + y) / 12) % 2 == 0 ? roofLight : roof;
+            if (bodyOutline && !body) return outline;
+            if (body)
+            {
+                if (x is >= 105 and <= 151 && y <= 96) return x is 109 or 110 or 146 or 147 ? outline : new Color32(67, 48, 35, 255);
+                bool window = (x is >= 62 and <= 92 || x is >= 164 and <= 194) && y is >= 82 and <= 119;
+                if (window)
+                {
+                    if (x % 30 is 2 or 3 || y is 84 or 85 or 116 or 117) return outline;
+                    return new Color32(241, 196, 92, 255);
+                }
+                if (y % 18 is 0 or 1) return wallDark;
+                if (x < 70 && y > 115) return wallLight;
+                if (IsFacilitySymbol(facilityId, x, y)) return gold;
+                return color;
+            }
             return new Color32(0, 0, 0, 0);
         }
+
+        private static bool IsFacilitySymbol(string id, int x, int y)
+        {
+            int sx = x - 128;
+            int sy = y - 171;
+            return id switch
+            {
+                "FAC_TAVERN" => (sx is >= -17 and <= 8 && sy is >= -14 and <= 10) || (sx is >= 8 and <= 18 && sy is >= -9 and <= 5 && Math.Abs(sx - 8) + Math.Abs(sy + 2) >= 7),
+                "FAC_LODGE" => sy is >= -10 and <= 9 && ((sx is >= -20 and <= 20) || sx is >= -24 and <= -18),
+                "FAC_GUILD" => Math.Abs(sx) <= 18 && sy <= 15 && sy >= -18 && Math.Abs(sx) <= 22 - Math.Abs(sy + 4) / 2,
+                "FAC_STORE" => sy is >= -14 and <= 13 && ((sy >= 5 && Math.Abs(sx) <= 22) || (sy < 5 && ((sx + 24) / 9) % 2 == 0)),
+                "FAC_BLACKSMITH" => (sy is >= -5 and <= 5 && sx is >= -23 and <= 18) || (sx is >= -10 and <= 9 && sy is >= -18 and <= 13),
+                "FAC_ALCHEMY" => (Math.Abs(sx) <= 7 && sy is >= 5 and <= 18) || (sx * sx + (sy + 6) * (sy + 6) <= 18 * 18 && sy <= 7),
+                "FAC_WAREHOUSE" => Math.Abs(sx) <= 22 && Math.Abs(sy) <= 17 && (Math.Abs(sx) >= 17 || Math.Abs(sy) >= 12 || Math.Abs(sx - sy) <= 2 || Math.Abs(sx + sy) <= 2),
+                "FAC_INFIRMARY" => (Math.Abs(sx) <= 7 && Math.Abs(sy) <= 22) || (Math.Abs(sy) <= 7 && Math.Abs(sx) <= 22),
+                _ => false
+            };
+        }
+
+        private static Color32 Shade(Color32 color, int amount) => new(
+            (byte)Mathf.Clamp(color.r + amount, 0, 255),
+            (byte)Mathf.Clamp(color.g + amount, 0, 255),
+            (byte)Mathf.Clamp(color.b + amount, 0, 255),
+            color.a);
         private static Color32 EllipsePixel(int x, int y, int width, int height, Color32 color)
         {
             float dx = (x - width / 2f) / (width / 2f); float dy = (y - height / 2f) / (height / 2f);
@@ -264,7 +315,9 @@ namespace KingdomTycoon.Editor
         private static TMP_Text CreateText(string name, Transform parent, string value, float size, TextAlignmentOptions alignment)
         {
             var gameObject = new GameObject(name, typeof(RectTransform), typeof(TextMeshProUGUI)); gameObject.transform.SetParent(parent, false);
-            TextMeshProUGUI text = gameObject.GetComponent<TextMeshProUGUI>(); text.text = value; text.fontSize = size; text.alignment = alignment; text.color = new Color32(244, 239, 222, 255); text.enableWordWrapping = true; text.raycastTarget = false; return text;
+            TextMeshProUGUI text = gameObject.GetComponent<TextMeshProUGUI>(); text.text = value; text.fontSize = size; text.alignment = alignment; text.color = new Color32(244, 239, 222, 255); text.textWrappingMode = TextWrappingModes.Normal; text.raycastTarget = false;
+            text.font = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/KingdomTycoon/ContentGenerated/P05Mercenary/Fonts/P05NotoSansKR.asset") ?? TMP_Settings.defaultFontAsset;
+            return text;
         }
         private static void Place(RectTransform rect, float x, float y, float width, float height) { rect.anchorMin = rect.anchorMax = new Vector2(x, y); rect.pivot = new Vector2(0.5f, 0.5f); rect.anchoredPosition = Vector2.zero; rect.sizeDelta = new Vector2(width, height); }
         private static void SetAnchors(RectTransform rect, Vector2 min, Vector2 max) { rect.anchorMin = min; rect.anchorMax = max; rect.offsetMin = rect.offsetMax = Vector2.zero; }

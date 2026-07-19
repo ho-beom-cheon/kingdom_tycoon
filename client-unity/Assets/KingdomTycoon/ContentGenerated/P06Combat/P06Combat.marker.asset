@@ -12,4 +12,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 142751256b52bd64b9ef187ceb8300bb, type: 3}
   m_Name: P06Combat.marker
   m_EditorClassIdentifier: KingdomTycoon.Editor::KingdomTycoon.Editor.P06GeneratedAssetMarker
-  fingerprint: p06-combat-v1.1-region-safearea-addresses
+  fingerprint: p06-combat-p17-release-art-v1.0.0
