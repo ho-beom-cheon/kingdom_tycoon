@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using KingdomTycoon.Infrastructure;
 using KingdomTycoon.Infrastructure.Save;
 using Newtonsoft.Json.Linq;
@@ -141,6 +143,11 @@ namespace KingdomTycoon.Application.Recruitment
     {
         string Authority { get; }
         bool IsOnline { get; }
-        SpecialRecruitmentReceipt Recruit(SpecialRecruitmentCommand command, JObject recruitmentState, DateTimeOffset now);
+        Task<SpecialRecruitmentReceipt> RecruitAsync(
+            SpecialRecruitmentCommand command,
+            JObject recruitmentState,
+            DateTimeOffset now,
+            CancellationToken cancellationToken);
     }
+
 }

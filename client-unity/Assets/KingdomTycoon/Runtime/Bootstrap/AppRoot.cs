@@ -110,7 +110,9 @@ namespace KingdomTycoon.Bootstrap
             Services.Register(new EquipmentGrowthGameService(new SystemTrustedUtcClock()));
             Services.Register(new ProgressionGameService(new SystemTrustedUtcClock()));
             Services.Register(new RegionGameService(new SystemTrustedUtcClock()));
-            Services.Register(new RecruitmentGameService(new SystemTrustedUtcClock()));
+            Services.Register(new RecruitmentGameService(
+                new SystemTrustedUtcClock(),
+                gatewayFactory: new ConfiguredRecruitmentGatewayFactory()));
             Services.Register(new RaidGameService(new SystemTrustedUtcClock()));
             Services.Register(new OfflineTutorialGameService(new SystemTrustedUtcClock()));
             Services.Register(new SceneFlowService());

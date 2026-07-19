@@ -5,6 +5,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using KingdomTycoon.Application.Abstractions;
 using KingdomTycoon.Application.Facilities.Commands;
 using KingdomTycoon.Application.Mercenaries;
@@ -20,6 +21,11 @@ using Newtonsoft.Json.Linq;
 
 namespace KingdomTycoon.Infrastructure.Recruitment
 {
+    public interface IRecruitmentGatewayFactory
+    {
+        IRecruitmentGateway Create(RecruitmentCatalog catalog, IUuidV7Provider ids);
+    }
+
     public sealed class RecruitmentCatalog
     {
         private readonly Dictionary<int, TavernRule> tavernRules;
@@ -208,8 +214,9 @@ namespace KingdomTycoon.Infrastructure.Recruitment
         public string Authority => "MOCK_ONLY";
         public bool IsOnline => true;
 
-        public SpecialRecruitmentReceipt Recruit(SpecialRecruitmentCommand command, JObject state, DateTimeOffset now)
+        public Task<SpecialRecruitmentReceipt> RecruitAsync(SpecialRecruitmentCommand command, JObject state, DateTimeOffset now, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             RecruitmentCatalog.Pool pool = catalog.GetPool(command.PoolId);
             if (pool.Type != "SPECIAL" || command.Count != 1) throw new RecruitmentDomainException("P13_SPECIAL_COUNT_UNSUPPORTED");
             if (pool.CostType != command.PaymentType) throw new RecruitmentDomainException("P13_PAYMENT_NOT_ALLOWED");
@@ -251,7 +258,7 @@ namespace KingdomTycoon.Infrastructure.Recruitment
             pity = new JArray(pity.Children<JObject>().OrderBy(value => value.Value<string>("pityGroupId"), StringComparer.Ordinal).ThenBy(value => value.Value<string>("pityRuleId"), StringComparer.Ordinal));
             featured = new JArray(featured.Children<JObject>().OrderBy(value => value.Value<string>("pityGroupId"), StringComparer.Ordinal).ThenBy(value => value.Value<string>("rateUpGroupId"), StringComparer.Ordinal));
             JObject digestSource = new JObject { ["operationId"] = command.OperationId.ToString("D"), ["walletAfter"] = wallet.DeepClone(), ["pityAfter"] = pity.DeepClone(), ["featuredAfter"] = featured.DeepClone(), ["mercenary"] = mercenary.DeepClone(), ["guarantees"] = reasons.DeepClone() };
-            return new SpecialRecruitmentReceipt("DEV-" + command.OperationId.ToString("N"), (state.Value<long?>("serverRevision") ?? 0) + 1, wallet, pity, featured, mercenary, reasons, Rfc8785Canonicalizer.ComputeSha256(digestSource));
+            return Task.FromResult(new SpecialRecruitmentReceipt("DEV-" + command.OperationId.ToString("N"), (state.Value<long?>("serverRevision") ?? 0) + 1, wallet, pity, featured, mercenary, reasons, Rfc8785Canonicalizer.ComputeSha256(digestSource)));
         }
     }
 
@@ -267,8 +274,10 @@ namespace KingdomTycoon.Infrastructure.Recruitment
         private RecruitmentCatalog catalog;
         private RecruitmentMercenaryGenerator generator;
         private IRecruitmentGateway gateway;
+        private readonly IRecruitmentGatewayFactory gatewayFactory;
 
-        public RecruitmentGameService(ITrustedUtcClock clock, IUuidV7Provider ids = null) { this.clock = clock ?? throw new ArgumentNullException(nameof(clock)); this.ids = ids ?? new SystemUuidV7Provider(); }
+        public RecruitmentGameService(ITrustedUtcClock clock, IUuidV7Provider ids = null, IRecruitmentGatewayFactory gatewayFactory = null)
+        { this.clock = clock ?? throw new ArgumentNullException(nameof(clock)); this.ids = ids ?? new SystemUuidV7Provider(); this.gatewayFactory = gatewayFactory; }
         public int InitializationOrder => 125;
         public bool IsBootstrapped { get; private set; }
         public event EventHandler Changed;
@@ -281,7 +290,8 @@ namespace KingdomTycoon.Infrastructure.Recruitment
         public void Bootstrap()
         {
             if (!game.IsBootstrapped || content.Catalog?.ContentVersion is not (CompileTimeActiveContentVersionProvider.P13ContentVersion or CompileTimeActiveContentVersionProvider.P14ContentVersion or CompileTimeActiveContentVersionProvider.P15ContentVersion) || !roster.IsBootstrapped) throw new RecruitmentDomainException("P13_CONTENT_VERSION_UNSUPPORTED");
-            catalog = new RecruitmentCatalog(content.Catalog); generator = new RecruitmentMercenaryGenerator(catalog, ids); gateway = new DevelopmentRecruitmentGateway(catalog, ids); IsBootstrapped = true;
+            catalog = new RecruitmentCatalog(content.Catalog); generator = new RecruitmentMercenaryGenerator(catalog, ids);
+            gateway = gatewayFactory?.Create(catalog, ids) ?? new DevelopmentRecruitmentGateway(catalog, ids); IsBootstrapped = true;
             if (!State(game.Snapshot())["tavern"]!["candidates"]!.Any()) Refresh(CreateRefreshCommand(true));
         }
 
@@ -337,14 +347,43 @@ namespace KingdomTycoon.Infrastructure.Recruitment
             AppendEconomy(draft, command, "TAVERN_HIRE", -cost, candidate.Value<string>("poolId"), now); AppendHistory(State(draft), command, candidate.Value<string>("poolId"), "TAVERN", "KINGDOM_GOLD", cost, snapshot, new JArray(), null, now); AppendEvent(State(draft), command, "CandidateHired", snapshot.Value<string>("instanceId"), "P13_CANDIDATE_HIRED", now); return Result(command, "P13_CANDIDATE_HIRED", snapshot.Value<string>("instanceId"));
         });
 
-        public RecruitmentOperationResult RecruitSpecial(SpecialRecruitmentCommand command) => Execute(command, (draft, now) =>
+        public RecruitmentOperationResult RecruitSpecial(SpecialRecruitmentCommand command) =>
+            RecruitSpecialAsync(command, CancellationToken.None).GetAwaiter().GetResult();
+
+        public async Task<RecruitmentOperationResult> RecruitSpecialAsync(SpecialRecruitmentCommand command, CancellationToken cancellationToken)
         {
-            RequireCapacity(draft); JObject state = State(draft); if (state.Value<string>("authority") != gateway.Authority || !gateway.IsOnline) throw new RecruitmentDomainException("P13_GATEWAY_OFFLINE");
-            SpecialRecruitmentReceipt receipt = gateway.Recruit(command, state, now); if (string.IsNullOrEmpty(receipt.ResultDigest)) throw new RecruitmentDomainException("P13_RECEIPT_INVALID");
-            JObject withMercenary = new CreateMercenaryFromSnapshot(new MercenaryInvariantValidator(), roster.Catalog).ExecuteInternal(draft, receipt.MercenarySnapshot); draft.RemoveAll(); foreach (JProperty property in withMercenary.Properties().ToArray()) { property.Remove(); draft.Add(property); }
-            state = State(draft); state["serverRevision"] = receipt.ServerRevision; state["premiumWalletCache"] = receipt.WalletAfter.DeepClone(); state["pityCounters"] = receipt.PityAfter.DeepClone(); state["featuredGuarantees"] = receipt.FeaturedAfter.DeepClone();
-            RecruitmentCatalog.Pool pool = catalog.GetPool(command.PoolId); AppendHistory(state, command, pool.Id, "SPECIAL", command.PaymentType, pool.Cost, receipt.MercenarySnapshot, receipt.GuaranteeReasons, receipt.ReceiptId, now); AppendEvent(state, command, "SpecialRecruitmentCompleted", receipt.MercenarySnapshot.Value<string>("instanceId"), "P13_SPECIAL_COMPLETED", now); return Result(command, "P13_SPECIAL_COMPLETED", receipt.MercenarySnapshot.Value<string>("instanceId"));
-        });
+            EnsureReady(); if (command == null) throw new ArgumentNullException(nameof(command)); await gate.WaitAsync(cancellationToken);
+            try
+            {
+                if (!FixedTimeEquals(new RecruitmentRequestHasher().Compute(command), command.RequestHash)) throw new RecruitmentDomainException("P13_OPERATION_HASH_MISMATCH");
+                JObject current = game.Snapshot(); JObject replay = current["payload"]!["operationJournal"]!.Children<JObject>().SingleOrDefault(value => value.Value<string>("operationId") == command.OperationId.ToString("D"));
+                if (replay != null)
+                {
+                    if (!FixedTimeEquals(replay.Value<string>("requestHash"), command.RequestHash)) throw new RecruitmentDomainException("P13_OPERATION_HASH_MISMATCH"); JObject payload = (JObject)replay["resultPayload"]!;
+                    return new RecruitmentOperationResult(command.OperationId, game.Revision, payload.Value<string>("resultCode"), payload["instanceId"]!.Type == JTokenType.Null ? null : payload.Value<string>("instanceId"), true);
+                }
+                if (command.ExpectedRevision != game.Revision) throw new RecruitmentDomainException("P13_SAVE_REVISION_CONFLICT");
+                JObject draft = (JObject)current.DeepClone(); RequireCapacity(draft); JObject state = State(draft);
+                if (!gateway.IsOnline) throw new RecruitmentDomainException("P13_GATEWAY_OFFLINE");
+                DateTimeOffset now = clock.UtcNow;
+                SpecialRecruitmentReceipt receipt = await gateway.RecruitAsync(command, (JObject)state.DeepClone(), now, cancellationToken);
+                if (string.IsNullOrEmpty(receipt.ResultDigest)) throw new RecruitmentDomainException("P13_RECEIPT_INVALID");
+                JObject withMercenary = new CreateMercenaryFromSnapshot(new MercenaryInvariantValidator(), roster.Catalog).ExecuteInternal(draft, receipt.MercenarySnapshot); draft.RemoveAll(); foreach (JProperty property in withMercenary.Properties().ToArray()) { property.Remove(); draft.Add(property); }
+                state = State(draft); state["serverRevision"] = receipt.ServerRevision; state["authority"] = gateway.Authority; state["premiumWalletCache"] = receipt.WalletAfter.DeepClone(); state["pityCounters"] = receipt.PityAfter.DeepClone(); state["featuredGuarantees"] = receipt.FeaturedAfter.DeepClone();
+                RecruitmentCatalog.Pool pool = catalog.GetPool(command.PoolId); AppendHistory(state, command, pool.Id, "SPECIAL", command.PaymentType, pool.Cost, receipt.MercenarySnapshot, receipt.GuaranteeReasons, receipt.ReceiptId, now); AppendEvent(state, command, "SpecialRecruitmentCompleted", receipt.MercenarySnapshot.Value<string>("instanceId"), "P13_SPECIAL_COMPLETED", now);
+                JObject result = Result(command, "P13_SPECIAL_COMPLETED", receipt.MercenarySnapshot.Value<string>("instanceId")); string digest = Rfc8785Canonicalizer.ComputeSha256(result); ReconcileEconomyDigest(draft, command, digest); AppendJournal(draft, command, result, digest, clock.UtcNow);
+                SaveWriteResult written = save.Repository.Save(game.ActiveProfileId, draft, command.ExpectedRevision, clock.UtcNow);
+                if (!written.Success)
+                {
+                    string code = written.ErrorCode == "SAVE_REVISION_CONFLICT" ? "P13_SAVE_REVISION_CONFLICT" : "P13_SAVE_WRITE_FAILED";
+                    string detail = written.ErrorCode + (written.Report.Issues.Count == 0 ? string.Empty : " | " + string.Join(" | ", written.Report.Issues));
+                    throw new RecruitmentDomainException(code, detail);
+                }
+                game.SynchronizeCommittedDocument(written.Document); Changed?.Invoke(this, EventArgs.Empty);
+                return new RecruitmentOperationResult(command.OperationId, game.Revision, result.Value<string>("resultCode"), result.Value<string>("instanceId"), false);
+            }
+            finally { gate.Release(); }
+        }
 
         private RecruitmentOperationResult Execute(RecruitmentCommand command, Func<JObject, DateTimeOffset, JObject> mutation)
         {
