@@ -83,3 +83,4 @@
 - `reports/CORE_HUNT_GAME_FEEL_IMPLEMENTATION_EVIDENCE.md`: 타격·보상·성장·지역 차이·접근성 피드백 구현과 자동 검증 증적
 - `reports/CORE_HUNT_VISUAL_POLISH_IMPLEMENTATION_EVIDENCE.md`: 직업·몬스터·지역·왕국 내부 픽셀 자산 구현과 자동 검증 증적
 - `reports/CORE_MOBILE_LIVING_WORLD_IMPLEMENTATION_EVIDENCE.md`: 세로형 통합 생활 월드·2축 카메라·복수 배치·상단 메뉴·CC0 에셋 구현 증적
+- `reports/CORE_WORLD_GAMEPLAY_POLISH_IMPLEMENTATION_EVIDENCE.md`: 사선형 왕국 월드·연결 사냥터·건물 기능·캐릭터 상세·전체 회귀 구현 증적
