@@ -52,8 +52,8 @@ namespace KingdomTycoon.Infrastructure.Combat
     public sealed class WorldHuntRegionDto
     {
         public WorldHuntRegionDto(string id, string displayName, int order, int tier, int recommendedPower, int maxActive,
-            int worldX, string theme, bool unlocked, int assignedCount)
-        { Id = id; DisplayName = displayName; Order = order; Tier = tier; RecommendedPower = recommendedPower; MaxActive = maxActive; WorldX = worldX; Theme = theme; Unlocked = unlocked; AssignedCount = assignedCount; }
+            int worldX, string theme, bool unlocked, int assignedCount, string riskLabel, string dropPreview)
+        { Id = id; DisplayName = displayName; Order = order; Tier = tier; RecommendedPower = recommendedPower; MaxActive = maxActive; WorldX = worldX; Theme = theme; Unlocked = unlocked; AssignedCount = assignedCount; RiskLabel = riskLabel; DropPreview = dropPreview; }
         public string Id { get; }
         public string DisplayName { get; }
         public int Order { get; }
@@ -64,6 +64,29 @@ namespace KingdomTycoon.Infrastructure.Combat
         public string Theme { get; }
         public bool Unlocked { get; }
         public int AssignedCount { get; }
+        public string RiskLabel { get; }
+        public string DropPreview { get; }
+    }
+
+    public sealed class WorldHuntFeedbackConfigDto
+    {
+        public WorldHuntFeedbackConfigDto(float hitFlashSeconds, float skillPulseSeconds, float damageFloatSeconds, float rewardFeedSeconds,
+            int maximumRewardFeedEntries, int masterVolumeBps, int hitFrequencyHz, int skillFrequencyHz, int rewardFrequencyHz, int growthFrequencyHz)
+        {
+            HitFlashSeconds = hitFlashSeconds; SkillPulseSeconds = skillPulseSeconds; DamageFloatSeconds = damageFloatSeconds; RewardFeedSeconds = rewardFeedSeconds;
+            MaximumRewardFeedEntries = maximumRewardFeedEntries; MasterVolumeBps = masterVolumeBps; HitFrequencyHz = hitFrequencyHz;
+            SkillFrequencyHz = skillFrequencyHz; RewardFrequencyHz = rewardFrequencyHz; GrowthFrequencyHz = growthFrequencyHz;
+        }
+        public float HitFlashSeconds { get; }
+        public float SkillPulseSeconds { get; }
+        public float DamageFloatSeconds { get; }
+        public float RewardFeedSeconds { get; }
+        public int MaximumRewardFeedEntries { get; }
+        public int MasterVolumeBps { get; }
+        public int HitFrequencyHz { get; }
+        public int SkillFrequencyHz { get; }
+        public int RewardFrequencyHz { get; }
+        public int GrowthFrequencyHz { get; }
     }
 
     public sealed class WorldHuntMonsterDto
@@ -88,12 +111,13 @@ namespace KingdomTycoon.Infrastructure.Combat
     public sealed class ContinuousHuntOverviewDto
     {
         public ContinuousHuntOverviewDto(long revision, IReadOnlyList<ContinuousHuntMemberDto> members,
-            IReadOnlyList<WorldHuntRegionDto> regions, IReadOnlyList<WorldHuntMonsterDto> monsters)
-        { Revision = revision; Members = members; Regions = regions; Monsters = monsters; }
+            IReadOnlyList<WorldHuntRegionDto> regions, IReadOnlyList<WorldHuntMonsterDto> monsters, WorldHuntFeedbackConfigDto feedback)
+        { Revision = revision; Members = members; Regions = regions; Monsters = monsters; Feedback = feedback; }
         public long Revision { get; }
         public IReadOnlyList<ContinuousHuntMemberDto> Members { get; }
         public IReadOnlyList<WorldHuntRegionDto> Regions { get; }
         public IReadOnlyList<WorldHuntMonsterDto> Monsters { get; }
+        public WorldHuntFeedbackConfigDto Feedback { get; }
         public int AssignedCount => Members.Count(value => value.IsAssigned);
         public long EarnedGold => Members.Sum(value => value.EarnedGold);
     }
@@ -526,8 +550,12 @@ namespace KingdomTycoon.Infrastructure.Combat
                     monster.Value<int>("currentHp"), monster.Value<int>("maxHp"), monster.Value<string>("state"), monster.Value<int>("spawnSlot"), NullableString(monster["targetMercenaryInstanceId"])));
             }
             WorldHuntRegionDto[] regions = worldCatalog.Regions.Select(value => new WorldHuntRegionDto(value.Id, value.Name, value.Order, value.Tier, value.RecommendedPower, value.MaxActive,
-                value.Layout.WorldX, value.Layout.Theme, RegionUnlocked(document, value.Id), members.Count(member => member.AssignedRegionId == value.Id))).ToArray();
-            return new ContinuousHuntOverviewDto(document.Value<long>("revision"), members, regions, monsterDtos.OrderBy(value => worldCatalog.Region(value.RegionId).Order).ThenBy(value => value.SpawnSlot).ToArray());
+                value.Layout.WorldX, value.Layout.Theme, RegionUnlocked(document, value.Id), members.Count(member => member.AssignedRegionId == value.Id),
+                worldCatalog.RiskLabel(value.Id), worldCatalog.DropPreview(value.Id))).ToArray();
+            var feedback = new WorldHuntFeedbackConfigDto(worldRules.HitFlashSeconds, worldRules.SkillPulseSeconds, worldRules.DamageFloatSeconds, worldRules.RewardFeedSeconds,
+                worldRules.MaximumRewardFeedEntries, worldRules.MasterVolumeBps, worldRules.HitFrequencyHz, worldRules.SkillFrequencyHz, worldRules.RewardFrequencyHz, worldRules.GrowthFrequencyHz);
+            return new ContinuousHuntOverviewDto(document.Value<long>("revision"), members, regions,
+                monsterDtos.OrderBy(value => worldCatalog.Region(value.RegionId).Order).ThenBy(value => value.SpawnSlot).ToArray(), feedback);
         }
 
         private void Commit(JObject draft, long expectedRevision, DateTimeOffset now)

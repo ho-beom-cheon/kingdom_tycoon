@@ -23,12 +23,26 @@ namespace KingdomTycoon.Infrastructure.Combat
             SkillCastEveryCombatTicks = value.Value<int>("skillCastEveryCombatTicks");
             LevelAttackBpsPerLevel = value.Value<int>("levelAttackBpsPerLevel");
             LevelDefenseBpsPerLevel = value.Value<int>("levelDefenseBpsPerLevel");
+            JObject feedback = value["feedback"] as JObject ?? throw new InvalidOperationException("WORLD_HUNT_FEEDBACK_RULE_MISSING");
+            HitFlashSeconds = feedback.Value<float>("hitFlashSeconds");
+            SkillPulseSeconds = feedback.Value<float>("skillPulseSeconds");
+            DamageFloatSeconds = feedback.Value<float>("damageFloatSeconds");
+            RewardFeedSeconds = feedback.Value<float>("rewardFeedSeconds");
+            MaximumRewardFeedEntries = feedback.Value<int>("maximumRewardFeedEntries");
+            MasterVolumeBps = feedback.Value<int>("masterVolumeBps");
+            HitFrequencyHz = feedback.Value<int>("hitFrequencyHz");
+            SkillFrequencyHz = feedback.Value<int>("skillFrequencyHz");
+            RewardFrequencyHz = feedback.Value<int>("rewardFrequencyHz");
+            GrowthFrequencyHz = feedback.Value<int>("growthFrequencyHz");
             layouts = value["regions"]!.Children<JObject>().Select(item => new RegionLayout(
                 item.Value<string>("regionId"), item.Value<int>("worldX"), item.Value<string>("theme")))
                 .ToDictionary(item => item.RegionId, StringComparer.Ordinal);
             if (DecisionSeconds is < 1 or > 10 || MonsterSlotsPerRegion is < 2 or > 8 || MonsterRespawnSeconds is < 1 or > 120 ||
                 ReturnHpBps is < 500 or > 9000 || DefaultBagCapacity is < 4 or > 100 || MaximumCatchUpSteps is < 20 or > 1000 ||
-                SkillCastEveryCombatTicks is < 1 or > 20 || layouts.Count != 5)
+                SkillCastEveryCombatTicks is < 1 or > 20 || HitFlashSeconds is < .05f or > 1f || SkillPulseSeconds is < .1f or > 2f ||
+                DamageFloatSeconds is < .2f or > 3f || RewardFeedSeconds is < 1f or > 10f || MaximumRewardFeedEntries is < 1 or > 5 ||
+                MasterVolumeBps is < 0 or > 5000 || HitFrequencyHz is < 80 or > 2000 || SkillFrequencyHz is < 80 or > 2000 ||
+                RewardFrequencyHz is < 80 or > 2000 || GrowthFrequencyHz is < 80 or > 2000 || layouts.Count != 5)
                 throw new InvalidOperationException("WORLD_HUNT_RULE_INVALID");
         }
 
@@ -41,6 +55,16 @@ namespace KingdomTycoon.Infrastructure.Combat
         public int SkillCastEveryCombatTicks { get; }
         public int LevelAttackBpsPerLevel { get; }
         public int LevelDefenseBpsPerLevel { get; }
+        public float HitFlashSeconds { get; }
+        public float SkillPulseSeconds { get; }
+        public float DamageFloatSeconds { get; }
+        public float RewardFeedSeconds { get; }
+        public int MaximumRewardFeedEntries { get; }
+        public int MasterVolumeBps { get; }
+        public int HitFrequencyHz { get; }
+        public int SkillFrequencyHz { get; }
+        public int RewardFrequencyHz { get; }
+        public int GrowthFrequencyHz { get; }
         public RegionLayout Layout(string regionId) => layouts.TryGetValue(regionId, out RegionLayout value)
             ? value : throw new InvalidOperationException("WORLD_HUNT_REGION_LAYOUT_MISSING");
 
@@ -72,6 +96,7 @@ namespace KingdomTycoon.Infrastructure.Combat
         private readonly HashSet<string> equipmentEligibility;
         private readonly Dictionary<string, int> qualityBps;
         private readonly Dictionary<string, string> names;
+        private readonly Dictionary<string, string> itemNames;
         private readonly WorldHuntRules rules;
 
         public WorldHuntCatalog(ContentCatalog catalog, WorldHuntRules rules)
@@ -80,6 +105,8 @@ namespace KingdomTycoon.Infrastructure.Combat
             this.rules = rules ?? throw new ArgumentNullException(nameof(rules));
             names = catalog.GetTable("localizations.csv").Rows.Where(row => Enabled(row) && row["locale"] == "ko-KR")
                 .ToDictionary(row => row["text_key"], row => row["text_value"], StringComparer.Ordinal);
+            itemNames = catalog.GetTable("items.csv").Rows.Where(Enabled)
+                .ToDictionary(row => row["item_id"], row => Name(row["name_text_key"], "전리품"), StringComparer.Ordinal);
             regions = catalog.GetTable("regions.csv").Rows.Where(Enabled).Select(row => new RegionDefinition(
                     row["region_id"], Name(row["name_text_key"], row["region_id"]), Int(row, "order"), Int(row, "tier"),
                     Int(row, "recommended_power"), Int(row, "max_active"), rules.Layout(row["region_id"])))
@@ -126,6 +153,15 @@ namespace KingdomTycoon.Infrastructure.Combat
         public MonsterDefinition Monster(string id) => monsters.TryGetValue(id, out MonsterDefinition value) ? value : throw new InvalidOperationException("WORLD_HUNT_MONSTER_MISSING");
         public IReadOnlyList<LootDefinition> Loot(string id) => loot.TryGetValue(id, out LootDefinition[] value) ? value : Array.Empty<LootDefinition>();
         public CombatProfile Job(string id) => jobs.TryGetValue(id, out CombatProfile value) ? value : throw new InvalidOperationException("WORLD_HUNT_JOB_MISSING");
+        public string RiskLabel(string regionId) => Region(regionId).Tier switch { 1 => "안정", 2 => "주의", 3 => "위험", 4 => "고위험", _ => "극한" };
+        public string DropPreview(string regionId)
+        {
+            string[] values = encounters[regionId].Select(value => Monster(value.MonsterId).LootTableId)
+                .SelectMany(value => Loot(value)).OrderByDescending(value => value.ProbabilityBps).ThenBy(value => value.EntryNo)
+                .Select(value => value.RewardType == "RANDOM_EQUIPMENT_TIER" ? "장비" : itemNames.GetValueOrDefault(value.RewardId, "전리품"))
+                .Distinct(StringComparer.Ordinal).Take(2).ToArray();
+            return values.Length == 0 ? "전리품 정보 없음" : string.Join(" · ", values);
+        }
 
         public MonsterDefinition SelectMonster(string regionId, long sequence)
         {
