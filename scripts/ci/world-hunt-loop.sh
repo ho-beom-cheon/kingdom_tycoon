@@ -40,7 +40,7 @@ grep -q 'AssignedMercenariesReserveDifferentMonstersAndApplyRealHpDamage' "$edit
 printf '[world-hunt-loop 3/4] Validating integrated Korean world and drag coverage...\n'
 grep -q '통합 사냥 월드' "$screen"
 grep -q 'class WorldMapDragSurface' "$drag"
-grep -q 'WorldContainsKingdomFiveGroundsMonstersHpBarsAndClampedDrag' "$play_tests"
+grep -q 'WorldContainsCentralKingdomFourDirectionsMonstersZoomAndClampedTwoAxisDrag' "$play_tests"
 grep -q 'SupportedAspectsKeepAllTouchTargetsInsideSafeAreaWithoutOverlap' "$play_tests"
 
 printf '[world-hunt-loop 4/4] Unity execution policy...\n'

@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Linq;
 using KingdomTycoon.Bootstrap;
 using KingdomTycoon.Presentation.EquipmentGrowth;
 using KingdomTycoon.Presentation.Combat;
@@ -32,6 +33,8 @@ namespace KingdomTycoon.Presentation.Navigation
         [SerializeField] private OfflineTutorialHubPresenter report;
         private StoreScreenPresenter store;
         private ContinuousHuntScreenPresenter continuousHunt;
+
+        public bool IsPrimaryNavigationVisible => (primaryNavigation ?? System.Array.Empty<GameObject>()).Any(value => value != null && value.activeSelf);
 
         private GameObject[] Screens => new[]
         {
@@ -78,6 +81,16 @@ namespace KingdomTycoon.Presentation.Navigation
 
         private void OnDisable() => SceneManager.activeSceneChanged -= ActiveSceneChanged;
 
+        private void LateUpdate()
+        {
+            if (SceneManager.GetActiveScene().name != "Kingdom" || AppRoot.Instance == null || !AppRoot.Instance.IsInitialized) return;
+            if (menuPanel != null && menuPanel.activeSelf) return;
+            if (mercenaries != null && mercenaries.IsOpen) return;
+            if (Screens.Any(value => value != null && value.activeInHierarchy)) return;
+            continuousHunt ??= ContinuousHuntScreenPresenter.Install();
+            if (!continuousHunt.gameObject.activeSelf) continuousHunt.Open();
+        }
+
         public void ToggleMenu()
         {
             continuousHunt?.Close();
@@ -114,12 +127,21 @@ namespace KingdomTycoon.Presentation.Navigation
                 OpenExclusive(production.gameObject, production.Open);
         }
 
+        public void OpenMercenaries()
+        {
+            if (mercenaries == null) return;
+            CloseMenu();
+            continuousHunt?.Close();
+            CloseScreensExcept(null);
+            mercenaries.OpenRoster();
+        }
+
         public void OpenRegions()
         {
             CloseMenu();
             CloseMercenaries();
-            CloseScreensExcept(regions?.gameObject);
-            regions?.Open(); // Keep the P12 map lifecycle alive for backwards-compatible region policy access.
+            CloseScreensExcept(null);
+            if (regions != null) regions.gameObject.SetActive(false);
             continuousHunt = ContinuousHuntScreenPresenter.Install();
             continuousHunt.Open();
         }

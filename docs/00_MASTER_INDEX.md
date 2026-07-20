@@ -56,6 +56,8 @@
 - `reviews/CORE_HUNT_GAME_FEEL_COMPLETENESS_REVIEW_v1.0.md`: 게임 체감 설계 완결성 및 선행 계약 불변 검토
 - `design/TYCOON_CORE_HUNT_VISUAL_POLISH_COMPLETE_DESIGN_v1.0.md`: 상시 사냥 직업·몬스터·지역·왕국 내부 픽셀 자산 최종 계약
 - `reviews/CORE_HUNT_VISUAL_POLISH_COMPLETENESS_REVIEW_v1.0.md`: 내부 픽셀 자산 설계 완결성·비용·라이선스 검토
+- `design/TYCOON_CORE_MOBILE_LIVING_WORLD_COMPLETE_DESIGN_v1.0.md`: 세로형 중앙 왕국·사방 사냥터·생활 동선·통합 메뉴·무료 에셋 최종 계약
+- `reviews/CORE_MOBILE_LIVING_WORLD_COMPLETENESS_REVIEW_v1.0.md`: 모바일 통합 생활 월드의 충돌·Save·입력·에셋·테스트 완결성 검토
 
 ## 구현 데이터
 
@@ -78,3 +80,4 @@
 - `reports/CORE_WORLD_HUNT_ECONOMY_IMPLEMENTATION_EVIDENCE.md`: 통합 월드맵·필드 전투·전리품·상점·성장 순환 구현 증적
 - `reports/CORE_HUNT_GAME_FEEL_IMPLEMENTATION_EVIDENCE.md`: 타격·보상·성장·지역 차이·접근성 피드백 구현과 자동 검증 증적
 - `reports/CORE_HUNT_VISUAL_POLISH_IMPLEMENTATION_EVIDENCE.md`: 직업·몬스터·지역·왕국 내부 픽셀 자산 구현과 자동 검증 증적
+- `reports/CORE_MOBILE_LIVING_WORLD_IMPLEMENTATION_EVIDENCE.md`: 세로형 통합 생활 월드·2축 카메라·복수 배치·상단 메뉴·CC0 에셋 구현 증적

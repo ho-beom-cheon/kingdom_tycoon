@@ -46,7 +46,7 @@ namespace KingdomTycoon.Tests.PlayMode
         [UnityTest]
         public IEnumerator P05_P_001_NavigationOpensGoldenRosterWithExactCountsAndBoundedPool()
         {
-            Button nav = GameObject.Find("NAV_MERCENARIES").GetComponent<Button>();
+            Button nav = UnityEngine.Object.FindObjectsByType<Button>(FindObjectsInactive.Include, FindObjectsSortMode.None).Single(value => value.name == "NAV_MERCENARIES");
             Assert.That(nav.GetComponent<RectTransform>().rect.height, Is.GreaterThanOrEqualTo(64f));
             nav.onClick.Invoke();
             yield return new WaitUntil(() => presenter.IsBound);
@@ -231,7 +231,7 @@ namespace KingdomTycoon.Tests.PlayMode
                 yield return null;
                 foreach (string name in new[] { "NAV_MERCENARIES", "FILTER_BUTTON", "SORT_BUTTON" })
                 {
-                    Rect rect = GameObject.Find(name).GetComponent<RectTransform>().rect;
+                    Rect rect = UnityEngine.Object.FindObjectsByType<Button>(FindObjectsInactive.Include, FindObjectsSortMode.None).Single(value => value.name == name).GetComponent<RectTransform>().rect;
                     Assert.That(rect.width, Is.GreaterThanOrEqualTo(64f), name);
                     Assert.That(rect.height, Is.GreaterThanOrEqualTo(64f), name);
                 }
