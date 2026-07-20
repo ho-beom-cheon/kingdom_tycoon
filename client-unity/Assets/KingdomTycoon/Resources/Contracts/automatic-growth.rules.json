@@ -1,0 +1,15 @@
+{
+  "rulesVersion": 1,
+  "personalGoldReserve": 50,
+  "maxSkillLevel": 3,
+  "maxAutomaticEnhancementLevel": 5,
+  "allowRiskyEnhancement": false,
+  "skillCosts": [
+    { "targetLevel": 1, "personalGoldCost": 50 },
+    { "targetLevel": 2, "personalGoldCost": 150 },
+    { "targetLevel": 3, "personalGoldCost": 400 }
+  ],
+  "skillHuntDamageReductionBpsPerLevel": 120,
+  "skillHuntGoldBonusBpsPerLevel": 150,
+  "maximumSkillHuntBonusBps": 2500
+}

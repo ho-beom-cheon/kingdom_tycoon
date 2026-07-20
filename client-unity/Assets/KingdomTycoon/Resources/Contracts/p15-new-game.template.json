@@ -12,8 +12,8 @@
     "integrityVersion": 1,
     "algorithm": "SHA-256",
     "canonicalization": "RFC8785",
-    "payloadSha256": "adcf7cb8c3ceb701fd144ee8c71777739f8d65bd2c1a4f61bb55fe1e0312c22a",
-    "fileSha256": "f21241dc3106e4cc615cffba09b57d43be6e142c4509c9d076a60ef48e7e5aa7"
+    "payloadSha256": "3be731524461e853135219e110165a48705348966332eed657ddd6e61d9892ac",
+    "fileSha256": "1b7e8b7ce71dca07ab279e934ebebeb9ebc41d113f9c979ad6f27ed036e1194f"
   },
   "payload": {
     "profile": {
@@ -98,7 +98,14 @@
           "bagCapacity": 6,
           "pendingSaleGold": 0,
           "cyclesCompleted": 0,
-          "earnedGold": 0
+          "earnedGold": 0,
+          "autoGrowthEnabled": true,
+          "autoSkillTraining": true,
+          "autoEquipmentEnhancement": true,
+          "growthPersonalGoldReserve": 50,
+          "lastGrowthAction": "NONE",
+          "lastGrowthResultCode": "NONE",
+          "lastGrowthAtUtc": null
         },
         "potions": [
           {
@@ -128,6 +135,11 @@
           "region2BattleCount": 0,
           "eliteKillCount": 0,
           "bossContributionCount": 0
+        },
+        "skillGrowth": {
+          "growthVersion": 1,
+          "skills": [],
+          "totalSpentGold": 0
         }
       },
       {
@@ -163,7 +175,14 @@
           "bagCapacity": 6,
           "pendingSaleGold": 0,
           "cyclesCompleted": 0,
-          "earnedGold": 0
+          "earnedGold": 0,
+          "autoGrowthEnabled": true,
+          "autoSkillTraining": true,
+          "autoEquipmentEnhancement": true,
+          "growthPersonalGoldReserve": 50,
+          "lastGrowthAction": "NONE",
+          "lastGrowthResultCode": "NONE",
+          "lastGrowthAtUtc": null
         },
         "potions": [
           {
@@ -193,6 +212,11 @@
           "region2BattleCount": 0,
           "eliteKillCount": 0,
           "bossContributionCount": 0
+        },
+        "skillGrowth": {
+          "growthVersion": 1,
+          "skills": [],
+          "totalSpentGold": 0
         }
       },
       {
@@ -228,7 +252,14 @@
           "bagCapacity": 6,
           "pendingSaleGold": 0,
           "cyclesCompleted": 0,
-          "earnedGold": 0
+          "earnedGold": 0,
+          "autoGrowthEnabled": true,
+          "autoSkillTraining": true,
+          "autoEquipmentEnhancement": true,
+          "growthPersonalGoldReserve": 50,
+          "lastGrowthAction": "NONE",
+          "lastGrowthResultCode": "NONE",
+          "lastGrowthAtUtc": null
         },
         "potions": [
           {
@@ -258,6 +289,11 @@
           "region2BattleCount": 0,
           "eliteKillCount": 0,
           "bossContributionCount": 0
+        },
+        "skillGrowth": {
+          "growthVersion": 1,
+          "skills": [],
+          "totalSpentGold": 0
         }
       },
       {
@@ -293,7 +329,14 @@
           "bagCapacity": 6,
           "pendingSaleGold": 0,
           "cyclesCompleted": 0,
-          "earnedGold": 0
+          "earnedGold": 0,
+          "autoGrowthEnabled": true,
+          "autoSkillTraining": true,
+          "autoEquipmentEnhancement": true,
+          "growthPersonalGoldReserve": 50,
+          "lastGrowthAction": "NONE",
+          "lastGrowthResultCode": "NONE",
+          "lastGrowthAtUtc": null
         },
         "potions": [
           {
@@ -323,6 +366,11 @@
           "region2BattleCount": 0,
           "eliteKillCount": 0,
           "bossContributionCount": 0
+        },
+        "skillGrowth": {
+          "growthVersion": 1,
+          "skills": [],
+          "totalSpentGold": 0
         }
       }
     ],

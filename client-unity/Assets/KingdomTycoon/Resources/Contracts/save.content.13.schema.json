@@ -589,6 +589,44 @@
           "maximum": 9007199254740991,
           "minimum": 0,
           "type": "integer"
+        },
+        "autoGrowthEnabled": {
+          "type": "boolean"
+        },
+        "autoSkillTraining": {
+          "type": "boolean"
+        },
+        "autoEquipmentEnhancement": {
+          "type": "boolean"
+        },
+        "growthPersonalGoldReserve": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "lastGrowthAction": {
+          "enum": [
+            "NONE",
+            "SKILL_TRAINED",
+            "EQUIPMENT_ENHANCED"
+          ],
+          "type": "string"
+        },
+        "lastGrowthResultCode": {
+          "maxLength": 64,
+          "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+          "type": "string"
+        },
+        "lastGrowthAtUtc": {
+          "oneOf": [
+            {
+              "format": "utc-instant",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       }
     },
@@ -766,6 +804,9 @@
         },
         "records": {
           "$ref": "#/$defs/MercenaryRecords"
+        },
+        "skillGrowth": {
+          "$ref": "#/$defs/MercenarySkillGrowth"
         }
       }
     },
@@ -4379,6 +4420,64 @@
         "progressionFlagIds",
         "resultDigest",
         "settledAtUtc"
+      ],
+      "type": "object"
+    },
+    "MercenarySkillLevel": {
+      "additionalProperties": false,
+      "properties": {
+        "skillId": {
+          "maxLength": 64,
+          "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+          "type": "string"
+        },
+        "level": {
+          "maximum": 3,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "totalSpentGold": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "trainedAtUtc": {
+          "format": "utc-instant",
+          "type": "string"
+        }
+      },
+      "required": [
+        "skillId",
+        "level",
+        "totalSpentGold",
+        "trainedAtUtc"
+      ],
+      "type": "object"
+    },
+    "MercenarySkillGrowth": {
+      "additionalProperties": false,
+      "properties": {
+        "growthVersion": {
+          "const": 1,
+          "type": "integer"
+        },
+        "skills": {
+          "items": {
+            "$ref": "#/$defs/MercenarySkillLevel"
+          },
+          "maxItems": 15,
+          "type": "array"
+        },
+        "totalSpentGold": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "growthVersion",
+        "skills",
+        "totalSpentGold"
       ],
       "type": "object"
     },

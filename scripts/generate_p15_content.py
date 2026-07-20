@@ -171,7 +171,27 @@ def build_schema() -> bytes:
         "pendingSaleGold": safe,
         "cyclesCompleted": safe,
         "earnedGold": safe,
+        "autoGrowthEnabled": {"type": "boolean"},
+        "autoSkillTraining": {"type": "boolean"},
+        "autoEquipmentEnhancement": {"type": "boolean"},
+        "growthPersonalGoldReserve": safe,
+        "lastGrowthAction": {"enum": ["NONE", "SKILL_TRAINED", "EQUIPMENT_ENHANCED"], "type": "string"},
+        "lastGrowthResultCode": stable_id,
+        "lastGrowthAtUtc": nullable_utc,
     })
+
+    defs["MercenarySkillLevel"] = object_schema(
+        ["skillId", "level", "totalSpentGold", "trainedAtUtc"],
+        {"skillId": stable_id, "level": {"maximum": 3, "minimum": 1, "type": "integer"},
+         "totalSpentGold": safe, "trainedAtUtc": utc},
+    )
+    defs["MercenarySkillGrowth"] = object_schema(
+        ["growthVersion", "skills", "totalSpentGold"],
+        {"growthVersion": {"const": 1, "type": "integer"},
+         "skills": {"items": {"$ref": "#/$defs/MercenarySkillLevel"}, "maxItems": 15, "type": "array"},
+         "totalSpentGold": safe},
+    )
+    defs["Mercenary"]["properties"]["skillGrowth"] = {"$ref": "#/$defs/MercenarySkillGrowth"}
 
     defs["TutorialActionReceipt"] = object_schema(
         ["operationId", "stepId", "actionType", "targetId", "requestHash", "appliedAtUtc", "result"],
@@ -266,7 +286,15 @@ def migrate(source: dict[str, Any]) -> dict[str, Any]:
             "pendingSaleGold": 0,
             "cyclesCompleted": 0,
             "earnedGold": 0,
+            "autoGrowthEnabled": True,
+            "autoSkillTraining": True,
+            "autoEquipmentEnhancement": True,
+            "growthPersonalGoldReserve": 50,
+            "lastGrowthAction": "NONE",
+            "lastGrowthResultCode": "NONE",
+            "lastGrowthAtUtc": None,
         })
+        mercenary["skillGrowth"] = {"growthVersion": 1, "skills": [], "totalSpentGold": 0}
     result["gameVersion"] = "1.0.0-p15"
     result["contentVersion"] = "1.0.0-content.13"
     P12.P11.seal(result)
