@@ -71,6 +71,7 @@ namespace KingdomTycoon.Bootstrap
             TextAsset p14SaveSchema = Resources.Load<TextAsset>("Contracts/save.content.12.schema");
             TextAsset p15SaveSchema = Resources.Load<TextAsset>("Contracts/save.content.13.schema");
             TextAsset automaticGrowthRules = Resources.Load<TextAsset>("Contracts/automatic-growth.rules");
+            TextAsset worldHuntRules = Resources.Load<TextAsset>("Contracts/world-hunt.rules");
             if (saveSchema == null)
             {
                 throw new System.InvalidOperationException("P03 save schema resource is missing.");
@@ -96,6 +97,7 @@ namespace KingdomTycoon.Bootstrap
             if (p14SaveSchema == null) throw new InvalidOperationException("P14 save schema resource is missing.");
             if (p15SaveSchema == null) throw new InvalidOperationException("P15 save schema resource is missing.");
             if (automaticGrowthRules == null) throw new InvalidOperationException("Automatic growth rules resource is missing.");
+            if (worldHuntRules == null) throw new InvalidOperationException("World hunt rules resource is missing.");
             string persistentDataPath = UnityEngine.Application.persistentDataPath;
             if (!string.IsNullOrWhiteSpace(TestPersistentDataPath)) persistentDataPath = TestPersistentDataPath;
             Services.Register(new SaveService(persistentDataPath, saveSchema.text, p07SaveSchema.text, p08SaveSchema.text, p09SaveSchema.text, p10SaveSchema.text, p11SaveSchema.text, p12SaveSchema.text, p13SaveSchema.text, p14SaveSchema.text, p15SaveSchema.text));
@@ -108,7 +110,7 @@ namespace KingdomTycoon.Bootstrap
             Services.Register(new InventoryGameService(new SystemTrustedUtcClock()));
             Services.Register(new EconomyGameService(new SystemTrustedUtcClock()));
             Services.Register(new CombatGameService(new SystemTrustedUtcClock()));
-            Services.Register(new ContinuousHuntGameService(new SystemTrustedUtcClock(), automaticGrowthRules.text));
+            Services.Register(new ContinuousHuntGameService(new SystemTrustedUtcClock(), automaticGrowthRules.text, worldHuntRules.text));
             Services.Register(new ProductionGameService(new SystemTrustedUtcClock()));
             Services.Register(new EquipmentGrowthGameService(new SystemTrustedUtcClock()));
             Services.Register(new ProgressionGameService(new SystemTrustedUtcClock()));

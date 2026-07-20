@@ -12,8 +12,8 @@
     "integrityVersion": 1,
     "algorithm": "SHA-256",
     "canonicalization": "RFC8785",
-    "payloadSha256": "3be731524461e853135219e110165a48705348966332eed657ddd6e61d9892ac",
-    "fileSha256": "1b7e8b7ce71dca07ab279e934ebebeb9ebc41d113f9c979ad6f27ed036e1194f"
+    "payloadSha256": "5e2bb368719ffc92175db2c1e7a2ddf1e19df2bd1d19f20b5537638e9521e1df",
+    "fileSha256": "b881e7ce55e89735fa81defe6164ba7a70ae4dd97c7df52f68d5c71e85be7089"
   },
   "payload": {
     "profile": {
@@ -95,7 +95,7 @@
           "autoResume": true,
           "currentHpBps": 10000,
           "bagFill": 0,
-          "bagCapacity": 6,
+          "bagCapacity": 12,
           "pendingSaleGold": 0,
           "cyclesCompleted": 0,
           "earnedGold": 0,
@@ -105,7 +105,18 @@
           "growthPersonalGoldReserve": 50,
           "lastGrowthAction": "NONE",
           "lastGrowthResultCode": "NONE",
-          "lastGrowthAtUtc": null
+          "lastGrowthAtUtc": null,
+          "huntBag": {
+            "itemStacks": [],
+            "equipment": []
+          },
+          "pendingBountyGold": 0,
+          "pendingLootTableId": null,
+          "pendingMonsterId": null,
+          "pendingKillSequence": 0,
+          "lastCombatDamage": 0,
+          "lastSkillId": null,
+          "combatTickCount": 0
         },
         "potions": [
           {
@@ -172,7 +183,7 @@
           "autoResume": true,
           "currentHpBps": 10000,
           "bagFill": 0,
-          "bagCapacity": 6,
+          "bagCapacity": 12,
           "pendingSaleGold": 0,
           "cyclesCompleted": 0,
           "earnedGold": 0,
@@ -182,7 +193,18 @@
           "growthPersonalGoldReserve": 50,
           "lastGrowthAction": "NONE",
           "lastGrowthResultCode": "NONE",
-          "lastGrowthAtUtc": null
+          "lastGrowthAtUtc": null,
+          "huntBag": {
+            "itemStacks": [],
+            "equipment": []
+          },
+          "pendingBountyGold": 0,
+          "pendingLootTableId": null,
+          "pendingMonsterId": null,
+          "pendingKillSequence": 0,
+          "lastCombatDamage": 0,
+          "lastSkillId": null,
+          "combatTickCount": 0
         },
         "potions": [
           {
@@ -249,7 +271,7 @@
           "autoResume": true,
           "currentHpBps": 10000,
           "bagFill": 0,
-          "bagCapacity": 6,
+          "bagCapacity": 12,
           "pendingSaleGold": 0,
           "cyclesCompleted": 0,
           "earnedGold": 0,
@@ -259,7 +281,18 @@
           "growthPersonalGoldReserve": 50,
           "lastGrowthAction": "NONE",
           "lastGrowthResultCode": "NONE",
-          "lastGrowthAtUtc": null
+          "lastGrowthAtUtc": null,
+          "huntBag": {
+            "itemStacks": [],
+            "equipment": []
+          },
+          "pendingBountyGold": 0,
+          "pendingLootTableId": null,
+          "pendingMonsterId": null,
+          "pendingKillSequence": 0,
+          "lastCombatDamage": 0,
+          "lastSkillId": null,
+          "combatTickCount": 0
         },
         "potions": [
           {
@@ -326,7 +359,7 @@
           "autoResume": true,
           "currentHpBps": 10000,
           "bagFill": 0,
-          "bagCapacity": 6,
+          "bagCapacity": 12,
           "pendingSaleGold": 0,
           "cyclesCompleted": 0,
           "earnedGold": 0,
@@ -336,7 +369,18 @@
           "growthPersonalGoldReserve": 50,
           "lastGrowthAction": "NONE",
           "lastGrowthResultCode": "NONE",
-          "lastGrowthAtUtc": null
+          "lastGrowthAtUtc": null,
+          "huntBag": {
+            "itemStacks": [],
+            "equipment": []
+          },
+          "pendingBountyGold": 0,
+          "pendingLootTableId": null,
+          "pendingMonsterId": null,
+          "pendingKillSequence": 0,
+          "lastCombatDamage": 0,
+          "lastSkillId": null,
+          "combatTickCount": 0
         },
         "potions": [
           {
@@ -964,6 +1008,11 @@
       "nextEventSequence": 1,
       "issuedSupplyKeys": [],
       "events": []
+    },
+    "worldHunt": {
+      "worldVersion": 1,
+      "nextSpawnSequence": 1,
+      "regions": []
     }
   }
 }

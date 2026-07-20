@@ -103,13 +103,15 @@ namespace KingdomTycoon.Domain.Mercenaries
         {
             "IDLE_TOWN", "PREPARE", "TRAVEL_TO_REGION", "FIND_TARGET", "COMBAT", "LOOT", "CONTINUE_DECISION",
             "RETURN_TOWN", "SELL_LOOT", "HEAL", "BUY_CONSUMABLES", "EVALUATE_EQUIPMENT", "BUY_EQUIPMENT",
-            "PROMOTION_READY", "PROMOTION_PROCESS", "INJURED", "RAID_READY"
+            "TRAIN_SKILLS", "ENHANCE_EQUIPMENT", "PROMOTION_READY", "PROMOTION_PROCESS", "INJURED", "RAID_READY"
         };
 
         private static readonly HashSet<string> Reasons = new(StringComparer.Ordinal)
         {
             "NONE", "HP_LOW", "POTION_LOW", "INVENTORY_FULL", "SURVIVAL_LOW", "PLAYER_RECALL", "POLICY",
-            "TARGET_FOUND", "LOOT_COMPLETE", "PROMOTION_AVAILABLE"
+            "TARGET_FOUND", "TARGET_LOST", "ARRIVED_REGION", "WAITING_RESPAWN", "BASIC_ATTACK", "SKILL_CAST",
+            "MONSTER_DEFEATED", "LOOT_COMPLETE", "RETURNED_TO_STORE", "AUTO_SELL_ELIGIBLE", "POTION_TARGET_LOW",
+            "EQUIPMENT_UPGRADE", "GROWTH_POLICY", "PROMOTION_AVAILABLE"
         };
 
         private static readonly string[] Slots = { "WEAPON", "ARMOR", "HELMET", "ACCESSORY" };

@@ -627,6 +627,65 @@
               "type": "null"
             }
           ]
+        },
+        "huntBag": {
+          "$ref": "#/$defs/HuntBag"
+        },
+        "pendingBountyGold": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "pendingLootTableId": {
+          "oneOf": [
+            {
+              "maxLength": 64,
+              "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "pendingMonsterId": {
+          "oneOf": [
+            {
+              "maxLength": 64,
+              "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "pendingKillSequence": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "lastCombatDamage": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "lastSkillId": {
+          "oneOf": [
+            {
+              "maxLength": 64,
+              "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "combatTickCount": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer"
         }
       }
     },
@@ -2624,6 +2683,9 @@
         },
         "progression": {
           "$ref": "#/$defs/Progression"
+        },
+        "worldHunt": {
+          "$ref": "#/$defs/WorldHunt"
         }
       }
     },
@@ -4420,6 +4482,166 @@
         "progressionFlagIds",
         "resultDigest",
         "settledAtUtc"
+      ],
+      "type": "object"
+    },
+    "HuntBag": {
+      "additionalProperties": false,
+      "properties": {
+        "itemStacks": {
+          "items": {
+            "$ref": "#/$defs/ItemStack"
+          },
+          "maxItems": 32,
+          "type": "array"
+        },
+        "equipment": {
+          "items": {
+            "$ref": "#/$defs/EquipmentInstance"
+          },
+          "maxItems": 32,
+          "type": "array"
+        }
+      },
+      "required": [
+        "itemStacks",
+        "equipment"
+      ],
+      "type": "object"
+    },
+    "WorldMonster": {
+      "additionalProperties": false,
+      "properties": {
+        "instanceId": {
+          "format": "uuid-v7",
+          "type": "string"
+        },
+        "monsterId": {
+          "maxLength": 64,
+          "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+          "type": "string"
+        },
+        "currentHp": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "maxHp": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "state": {
+          "enum": [
+            "ACTIVE",
+            "RESPAWNING"
+          ],
+          "type": "string"
+        },
+        "spawnSlot": {
+          "maximum": 7,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "targetMercenaryInstanceId": {
+          "oneOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "defeatedAtUtc": {
+          "oneOf": [
+            {
+              "format": "utc-instant",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "respawnAtUtc": {
+          "oneOf": [
+            {
+              "format": "utc-instant",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "killSequence": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "instanceId",
+        "monsterId",
+        "currentHp",
+        "maxHp",
+        "state",
+        "spawnSlot",
+        "targetMercenaryInstanceId",
+        "defeatedAtUtc",
+        "respawnAtUtc",
+        "killSequence"
+      ],
+      "type": "object"
+    },
+    "WorldHuntRegion": {
+      "additionalProperties": false,
+      "properties": {
+        "regionId": {
+          "maxLength": 64,
+          "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+          "type": "string"
+        },
+        "monsters": {
+          "items": {
+            "$ref": "#/$defs/WorldMonster"
+          },
+          "maxItems": 8,
+          "type": "array"
+        }
+      },
+      "required": [
+        "regionId",
+        "monsters"
+      ],
+      "type": "object"
+    },
+    "WorldHunt": {
+      "additionalProperties": false,
+      "properties": {
+        "worldVersion": {
+          "const": 1,
+          "type": "integer"
+        },
+        "nextSpawnSequence": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "regions": {
+          "items": {
+            "$ref": "#/$defs/WorldHuntRegion"
+          },
+          "maxItems": 5,
+          "type": "array"
+        }
+      },
+      "required": [
+        "worldVersion",
+        "nextSpawnSequence",
+        "regions"
       ],
       "type": "object"
     },
