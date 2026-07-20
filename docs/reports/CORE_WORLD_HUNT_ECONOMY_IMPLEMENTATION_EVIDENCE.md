@@ -31,10 +31,11 @@
 | 신규 월드 사냥 CI 게이트 | `scripts/ci/world-hunt-loop.sh` | 통과 |
 | 기존 상시 사냥·자동 성장 게이트 | `continuous-hunt.sh`, `automatic-growth.sh` | 통과 |
 | 저장소 CI 게임 구간 | Git Hook, P07~P17, 콘텐츠, 상시 사냥, 자동 성장, 월드 사냥 | 모두 통과 |
-| 저장소 CI 서버 구간 | Gradle `server-api:test` | 로컬 JDK 25 부재로 실행 전 중단 |
+| 저장소 CI 서버 구간 | Microsoft OpenJDK 25.0.3, Gradle `clean test` | PostgreSQL 통합 테스트 13건 통과 |
+| 저장소 전체 CI | `scripts/ci/run-ci.sh` | 4/4 구간 통과 |
 | 공백·생성 부작용 | `git diff --check`, Unity 임시 파일 확인 | 통과 |
 
-저장소가 요구하는 Unity 버전은 6000.3.20f1로 유지했다. 로컬 설치 환경에는 6000.4.11f1만 있어 집중 테스트는 이 버전으로 수행했으며, 테스트가 자동 변경한 프로젝트 설정과 임시 씬은 결과물에서 제거했다. 서버 소스는 이번 범위에서 변경하지 않았고 Gradle은 Java toolchain 25를 요구하지만 로컬에는 17과 21만 있어 서버 테스트를 시작할 수 없었다.
+저장소가 요구하는 Unity 버전은 6000.3.20f1로 유지했다. 로컬 설치 환경에는 6000.4.11f1만 있어 집중 테스트는 이 버전으로 수행했으며, 테스트가 자동 변경한 프로젝트 설정과 임시 씬은 결과물에서 제거했다. 서버 소스는 이번 범위에서 변경하지 않았다. Gradle이 요구하는 Java toolchain 25는 공식 Microsoft OpenJDK 25.0.3 ZIP을 사용자 캐시에 내려받아 SHA-256 일치 여부를 확인한 뒤 현재 검증 프로세스에만 적용했다.
 
 ## 핵심 회귀 시나리오
 
