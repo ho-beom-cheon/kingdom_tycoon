@@ -161,6 +161,11 @@ def build_schema() -> bytes:
 
     # Issue #49 keeps content.13/saveVersion 1 wire-compatible. These fields are
     # optional at schema load and are filled atomically by the runtime migration.
+    defs["HuntBag"] = object_schema(
+        ["itemStacks", "equipment"],
+        {"itemStacks": {"items": {"$ref": "#/$defs/ItemStack"}, "maxItems": 32, "type": "array"},
+         "equipment": {"items": {"$ref": "#/$defs/EquipmentInstance"}, "maxItems": 32, "type": "array"}},
+    )
     autonomy = defs["MercenaryAutonomy"]["properties"]
     autonomy.update({
         "assignedRegionId": nullable_stable,
@@ -178,7 +183,36 @@ def build_schema() -> bytes:
         "lastGrowthAction": {"enum": ["NONE", "SKILL_TRAINED", "EQUIPMENT_ENHANCED"], "type": "string"},
         "lastGrowthResultCode": stable_id,
         "lastGrowthAtUtc": nullable_utc,
+        "huntBag": {"$ref": "#/$defs/HuntBag"},
+        "pendingBountyGold": safe,
+        "pendingLootTableId": nullable_stable,
+        "pendingMonsterId": nullable_stable,
+        "pendingKillSequence": safe,
+        "lastCombatDamage": safe,
+        "lastSkillId": nullable_stable,
+        "combatTickCount": safe,
     })
+
+    defs["WorldMonster"] = object_schema(
+        ["instanceId", "monsterId", "currentHp", "maxHp", "state", "spawnSlot", "targetMercenaryInstanceId",
+         "defeatedAtUtc", "respawnAtUtc", "killSequence"],
+        {"instanceId": uuid_v7, "monsterId": stable_id, "currentHp": safe, "maxHp": safe,
+         "state": {"enum": ["ACTIVE", "RESPAWNING"], "type": "string"},
+         "spawnSlot": {"maximum": 7, "minimum": 0, "type": "integer"},
+         "targetMercenaryInstanceId": nullable_uuid, "defeatedAtUtc": nullable_utc,
+         "respawnAtUtc": nullable_utc, "killSequence": safe},
+    )
+    defs["WorldHuntRegion"] = object_schema(
+        ["regionId", "monsters"],
+        {"regionId": stable_id,
+         "monsters": {"items": {"$ref": "#/$defs/WorldMonster"}, "maxItems": 8, "type": "array"}},
+    )
+    defs["WorldHunt"] = object_schema(
+        ["worldVersion", "nextSpawnSequence", "regions"],
+        {"worldVersion": {"const": 1, "type": "integer"}, "nextSpawnSequence": safe,
+         "regions": {"items": {"$ref": "#/$defs/WorldHuntRegion"}, "maxItems": 5, "type": "array"}},
+    )
+    defs["Payload"]["properties"]["worldHunt"] = {"$ref": "#/$defs/WorldHunt"}
 
     defs["MercenarySkillLevel"] = object_schema(
         ["skillId", "level", "totalSpentGold", "trainedAtUtc"],
@@ -282,7 +316,7 @@ def migrate(source: dict[str, Any]) -> dict[str, Any]:
             "autoResume": True,
             "currentHpBps": 10000,
             "bagFill": 0,
-            "bagCapacity": 6,
+            "bagCapacity": 12,
             "pendingSaleGold": 0,
             "cyclesCompleted": 0,
             "earnedGold": 0,
@@ -293,8 +327,17 @@ def migrate(source: dict[str, Any]) -> dict[str, Any]:
             "lastGrowthAction": "NONE",
             "lastGrowthResultCode": "NONE",
             "lastGrowthAtUtc": None,
+            "huntBag": {"itemStacks": [], "equipment": []},
+            "pendingBountyGold": 0,
+            "pendingLootTableId": None,
+            "pendingMonsterId": None,
+            "pendingKillSequence": 0,
+            "lastCombatDamage": 0,
+            "lastSkillId": None,
+            "combatTickCount": 0,
         })
         mercenary["skillGrowth"] = {"growthVersion": 1, "skills": [], "totalSpentGold": 0}
+    payload["worldHunt"] = {"worldVersion": 1, "nextSpawnSequence": 1, "regions": []}
     result["gameVersion"] = "1.0.0-p15"
     result["contentVersion"] = "1.0.0-content.13"
     P12.P11.seal(result)

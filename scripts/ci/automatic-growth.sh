@@ -11,8 +11,9 @@ service="client-unity/Assets/KingdomTycoon/Runtime/Infrastructure/Combat/Continu
 schema="client-unity/Assets/KingdomTycoon/Resources/Contracts/save.content.13.schema.json"
 edit_tests="client-unity/Assets/KingdomTycoon/Tests/EditMode/ContinuousHuntTests.cs"
 play_tests="client-unity/Assets/KingdomTycoon/Tests/PlayMode/ContinuousHuntScreenTests.cs"
+screen="client-unity/Assets/KingdomTycoon/Runtime/Presentation/Combat/ContinuousHuntScreenPresenter.cs"
 
-for required in "$design" "$review" "$rules" "$service" "$schema" "$edit_tests" "$play_tests"; do
+for required in "$design" "$review" "$rules" "$service" "$schema" "$edit_tests" "$play_tests" "$screen"; do
   [ -f "$required" ] || { printf '[automatic-growth] Missing required file: %s\n' "$required" >&2; exit 1; }
 done
 
@@ -27,8 +28,8 @@ printf '[automatic-growth 2/3] Validating policy and behavior coverage...\n'
 python -m json.tool "$rules" >/dev/null
 grep -q 'TownReturnTrainsUnlockedSkillAndPersistsItsHuntBonus' "$edit_tests"
 grep -q 'TownReturnEnhancesOwnedEquippedItemWithoutBreakingResume' "$edit_tests"
-grep -q '스킬 Lv' "$play_tests"
-grep -q '최고 장비' "$play_tests"
+grep -q '스킬 훈련' "$screen"
+grep -q '장비 강화' "$screen"
 
 printf '[automatic-growth 3/3] Unity execution policy...\n'
 if [ "${AUTOMATIC_GROWTH_RUN_UNITY:-0}" = "1" ]; then

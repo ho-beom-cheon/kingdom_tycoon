@@ -350,16 +350,21 @@ namespace KingdomTycoon.Infrastructure.Economy
             return RefreshSystemStoreSupply(new RefreshSystemStoreSupplyCommand(operationId, game.Revision, new EconomyRequestHasher().Compute(draft), epoch));
         }
 
-        public int RunStoreAutonomyCycle(Guid cycleOperationId)
+        public int RunStoreAutonomyCycle(Guid cycleOperationId) => RunStoreAutonomyCycle(cycleOperationId, null);
+
+        public int RunStoreAutonomyCycle(Guid cycleOperationId, IEnumerable<string> preferredMercenaryIds)
         {
             EnsureReady(); JObject cycleStart = game.Snapshot(); int replayed = ExistingCycleCommandCount(cycleStart, cycleOperationId);
             if (replayed > 0) return replayed;
             EnsureSystemSupply();
             cycleStart = game.Snapshot();
             int commands = 0;
+            Dictionary<string, int> preference = (preferredMercenaryIds ?? Array.Empty<string>()).Distinct(StringComparer.Ordinal)
+                .Select((value, index) => (value, index)).ToDictionary(value => value.value, value => value.index, StringComparer.Ordinal);
             string[] mercenaryIds = cycleStart["payload"]!["mercenaries"]!.Children<JObject>()
                 .Where(value => value["autonomy"]!.Value<string>("state") is "IDLE_TOWN" or "RETURN_TOWN" or "SELL_LOOT" or "BUY_CONSUMABLES" or "EVALUATE_EQUIPMENT" or "BUY_EQUIPMENT")
-                .OrderBy(value => value.Value<string>("instanceId"), StringComparer.Ordinal)
+                .OrderBy(value => preference.TryGetValue(value.Value<string>("instanceId"), out int order) ? order : int.MaxValue)
+                .ThenBy(value => value.Value<string>("instanceId"), StringComparer.Ordinal)
                 .Select(value => value.Value<string>("instanceId")).ToArray();
             foreach (string mercenaryId in mercenaryIds)
             {

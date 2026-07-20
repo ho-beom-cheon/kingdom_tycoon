@@ -35,7 +35,7 @@ namespace KingdomTycoon.Tests.EditMode
             services.Register(new ContentCatalogService(new LocalStreamingAssetReader(Path.Combine(UnityEngine.Application.dataPath, "StreamingAssets")), new CompileTimeActiveContentVersionProvider()));
             game = new FacilityGameService(clock, Read("p15-new-game.template.json"), Read("p04-new-game.template.json")); services.Register(game);
             var economy = new EconomyGameService(clock); services.Register(economy);
-            hunt = new ContinuousHuntGameService(clock, Read("automatic-growth.rules.json")); services.Register(hunt);
+            hunt = new ContinuousHuntGameService(clock, Read("automatic-growth.rules.json"), Read("world-hunt.rules.json")); services.Register(hunt);
             services.InitializeAll();
             services.Get<ContentCatalogService>().LoadActiveAsync(CancellationToken.None).GetAwaiter().GetResult();
             game.BootstrapAsync(CancellationToken.None).GetAwaiter().GetResult(); economy.Bootstrap(); hunt.Bootstrap();
@@ -48,13 +48,16 @@ namespace KingdomTycoon.Tests.EditMode
         public void LegacyAutonomyIsNormalizedWithoutChangingContentOrSaveVersion()
         {
             JObject legacy = game.Snapshot();
+            ((JObject)legacy["payload"]!).Remove("worldHunt");
             foreach (JObject autonomy in legacy["payload"]!["mercenaries"]!.Children<JObject>().Select(value => (JObject)value["autonomy"]!))
-                foreach (string field in new[] { "assignedRegionId", "autoResume", "currentHpBps", "bagFill", "bagCapacity", "pendingSaleGold", "cyclesCompleted", "earnedGold", "autoGrowthEnabled", "autoSkillTraining", "autoEquipmentEnhancement", "growthPersonalGoldReserve", "lastGrowthAction", "lastGrowthResultCode", "lastGrowthAtUtc" }) autonomy.Remove(field);
+                foreach (string field in new[] { "assignedRegionId", "autoResume", "currentHpBps", "bagFill", "bagCapacity", "pendingSaleGold", "cyclesCompleted", "earnedGold", "autoGrowthEnabled", "autoSkillTraining", "autoEquipmentEnhancement", "growthPersonalGoldReserve", "lastGrowthAction", "lastGrowthResultCode", "lastGrowthAtUtc", "huntBag", "pendingBountyGold", "pendingLootTableId", "pendingMonsterId", "pendingKillSequence", "lastCombatDamage", "lastSkillId", "combatTickCount" }) autonomy.Remove(field);
             foreach (JObject mercenary in legacy["payload"]!["mercenaries"]!.Children<JObject>()) mercenary.Remove("skillGrowth");
             Assert.That(ContinuousHuntGameService.NormalizeDocument(legacy, clock.UtcNow), Is.True);
             Assert.That(legacy.Value<int>("saveVersion"), Is.EqualTo(1));
             Assert.That(legacy.Value<string>("contentVersion"), Is.EqualTo("1.0.0-content.13"));
             Assert.That(legacy["payload"]!["mercenaries"]!.Children<JObject>().All(value => value["autonomy"]!.Value<int>("currentHpBps") == 10000), Is.True);
+            Assert.That(legacy["payload"]!["mercenaries"]!.Children<JObject>().All(value => value["autonomy"]!["huntBag"] != null), Is.True);
+            Assert.That(legacy["payload"]!["worldHunt"]!.Value<int>("worldVersion"), Is.EqualTo(1));
             SaveWriteResult write = services.Get<SaveService>().Repository.Save(game.ActiveProfileId, legacy, game.Revision, clock.UtcNow);
             Assert.That(write.Success, Is.True, write.ErrorCode + "\n" + string.Join("\n", write.Report.Issues));
         }
@@ -71,7 +74,8 @@ namespace KingdomTycoon.Tests.EditMode
             ContinuousHuntMemberDto[] members = hunt.GetOverview().Members.Where(value => ids.Contains(value.InstanceId)).ToArray();
             Assert.That(members.All(value => value.AssignedRegionId == "REGION_R01"), Is.True);
             Assert.That(members.All(value => value.CyclesCompleted > 0), Is.True);
-            Assert.That(members[0].State, Is.Not.EqualTo(members[1].State), "staggered assignment must not collapse to a party state");
+            Assert.That(members.Where(value => value.TargetMonsterInstanceId != null).Select(value => value.TargetMonsterInstanceId).Distinct().Count(), Is.EqualTo(members.Count(value => value.TargetMonsterInstanceId != null)), "each mercenary must keep an independent target reservation");
+            Assert.That(hunt.GetOverview().Monsters.Where(value => value.RegionId == "REGION_R01").Any(value => value.CurrentHp < value.MaxHp || value.State == "RESPAWNING"), Is.True);
         }
 
         [Test]
@@ -79,7 +83,7 @@ namespace KingdomTycoon.Tests.EditMode
         {
             string[] ids = hunt.GetOverview().Members.Take(2).Select(value => value.InstanceId).ToArray();
             hunt.Assign(ids[0], "REGION_R01"); hunt.Assign(ids[1], "REGION_R01");
-            clock.Advance(TimeSpan.FromSeconds(90)); hunt.AdvanceTo(clock.UtcNow);
+            clock.Advance(TimeSpan.FromSeconds(220)); hunt.AdvanceTo(clock.UtcNow);
             hunt.Unassign(ids[0]); clock.Advance(TimeSpan.FromSeconds(40)); hunt.AdvanceTo(clock.UtcNow);
             ContinuousHuntOverviewDto overview = hunt.GetOverview();
             ContinuousHuntMemberDto recalled = overview.Members.Single(value => value.InstanceId == ids[0]);
@@ -94,7 +98,7 @@ namespace KingdomTycoon.Tests.EditMode
         public void TownReturnTrainsUnlockedSkillAndPersistsItsHuntBonus()
         {
             string id = hunt.GetOverview().Members.First().InstanceId;
-            hunt.Assign(id, "REGION_R01"); clock.Advance(TimeSpan.FromSeconds(100)); hunt.AdvanceTo(clock.UtcNow);
+            hunt.Assign(id, "REGION_R01"); clock.Advance(TimeSpan.FromSeconds(360)); hunt.AdvanceTo(clock.UtcNow); hunt.AdvanceTo(clock.UtcNow);
             ContinuousHuntMemberDto member = hunt.GetOverview().Members.Single(value => value.InstanceId == id);
             JObject saved = game.Snapshot(); JObject actor = saved["payload"]!["mercenaries"]!.Children<JObject>().Single(value => value.Value<string>("instanceId") == id);
             Assert.That(member.TotalSkillLevels, Is.GreaterThanOrEqualTo(1));
@@ -120,10 +124,86 @@ namespace KingdomTycoon.Tests.EditMode
                 ["enhancementPityBps"] = 0, ["enhancementAttemptCount"] = 0, ["enhancementMaterialInvested"] = new JArray(), ["pendingRefineOption"] = null, ["refineRollCount"] = 0
             });
             actor["equipmentSlots"]!["WEAPON"] = "019f9000-0000-7000-8000-000000000101";
-            Commit(seed); hunt.Assign(actorId, "REGION_R01"); clock.Advance(TimeSpan.FromSeconds(100)); hunt.AdvanceTo(clock.UtcNow);
+            Commit(seed); hunt.Assign(actorId, "REGION_R01"); clock.Advance(TimeSpan.FromSeconds(360)); hunt.AdvanceTo(clock.UtcNow); hunt.AdvanceTo(clock.UtcNow);
             ContinuousHuntMemberDto member = hunt.GetOverview().Members.Single(value => value.InstanceId == actorId);
             Assert.That(member.BestEnhancementLevel, Is.GreaterThanOrEqualTo(1));
             Assert.That(member.AssignedRegionId, Is.EqualTo("REGION_R01"));
+        }
+
+        [Test]
+        public void AssignedMercenariesReserveDifferentMonstersAndApplyRealHpDamage()
+        {
+            string[] ids = hunt.GetOverview().Members.Take(2).Select(value => value.InstanceId).ToArray();
+            hunt.Assign(ids[0], "REGION_R01"); hunt.Assign(ids[1], "REGION_R01");
+            clock.Advance(TimeSpan.FromSeconds(8)); hunt.AdvanceTo(clock.UtcNow);
+            ContinuousHuntOverviewDto overview = hunt.GetOverview();
+            ContinuousHuntMemberDto[] actors = overview.Members.Where(value => ids.Contains(value.InstanceId)).ToArray();
+            Assert.That(actors.All(value => value.TargetMonsterInstanceId != null), Is.True);
+            Assert.That(actors.Select(value => value.TargetMonsterInstanceId).Distinct().Count(), Is.EqualTo(2));
+            Assert.That(overview.Monsters.Count(value => value.RegionId == "REGION_R01" && value.CurrentHp < value.MaxHp), Is.GreaterThanOrEqualTo(2));
+            Assert.That(actors.All(value => value.LastCombatDamage > 0), Is.True);
+        }
+
+        [Test]
+        public void CanonicalLootEntersPersonalBagBeforeTownSettlement()
+        {
+            string id = hunt.GetOverview().Members.First().InstanceId; hunt.Assign(id, "REGION_R01");
+            clock.Advance(TimeSpan.FromSeconds(120)); hunt.AdvanceTo(clock.UtcNow);
+            JObject actor = game.Snapshot()["payload"]!["mercenaries"]!.Children<JObject>().Single(value => value.Value<string>("instanceId") == id);
+            JObject autonomy = (JObject)actor["autonomy"]!;
+            Assert.That(autonomy.Value<long>("cyclesCompleted"), Is.GreaterThan(0));
+            Assert.That(autonomy.Value<long>("pendingBountyGold") + autonomy.Value<long>("earnedGold"), Is.GreaterThan(0));
+            Assert.That(autonomy["huntBag"]!["itemStacks"]!.Count() + autonomy["huntBag"]!["equipment"]!.Count() + game.Snapshot()["payload"]!["inventory"]!["itemStacks"]!.Count(), Is.GreaterThan(0));
+        }
+
+        [Test]
+        public void TownSettlementMovesBagThroughRealStoreLedgerAndPurchaseAi()
+        {
+            OpenStore(); JObject seed = game.Snapshot(); JObject actor = seed["payload"]!["mercenaries"]!.Children<JObject>().First(); string actorId = actor.Value<string>("instanceId");
+            JObject autonomy = (JObject)actor["autonomy"]!; autonomy["assignedRegionId"] = "REGION_R01"; autonomy["autoResume"] = true; autonomy["currentRegionId"] = "REGION_R01";
+            autonomy["state"] = "RETURN_TOWN"; autonomy["reasonCode"] = "INVENTORY_FULL"; autonomy["nextDecisionAtUtc"] = clock.UtcNow.ToString("yyyy-MM-dd'T'HH:mm:ss.fff'Z'");
+            autonomy["huntBag"] = new JObject { ["itemStacks"] = new JArray(new JObject { ["itemId"] = "MAT_R01_WILD_HERB", ["quantity"] = 3 }), ["equipment"] = new JArray() };
+            autonomy["bagFill"] = 3; autonomy["pendingBountyGold"] = 14L; actor["personalGold"] = 1000L;
+            foreach (JProperty slot in actor["equipmentSlots"]!.Children<JProperty>()) slot.Value = JValue.CreateNull();
+            foreach (JObject equipped in seed["payload"]!["inventory"]!["equipment"]!.Children<JObject>().Where(value => value["equippedByMercenaryInstanceId"]!.Type != JTokenType.Null && value.Value<string>("equippedByMercenaryInstanceId") == actorId)) equipped["equippedByMercenaryInstanceId"] = null;
+            SeedProductionStoreStock(seed, actor.Value<string>("jobId"));
+            Commit(seed);
+            clock.Advance(TimeSpan.FromSeconds(4)); hunt.AdvanceTo(clock.UtcNow);
+            JObject saved = game.Snapshot(); JArray ledger = (JArray)saved["payload"]!["economy"]!["store"]!["ledger"]!["entries"]!;
+            Assert.That(ledger.Children<JObject>().Any(value => value.Value<string>("transactionType") == "SELL_TO_STORE"), Is.True);
+            Assert.That(saved["payload"]!["economy"]!["store"]!["stackLines"]!.Children<JObject>().Any(value => value.Value<string>("productId") == "MAT_R01_WILD_HERB" && value.Value<string>("sourceType") == "MERCENARY_SALE"), Is.True);
+            JObject committedActor = saved["payload"]!["mercenaries"]!.Children<JObject>().Single(value => value.Value<string>("instanceId") == actorId);
+            Assert.That(committedActor["potions"]!.Children<JObject>().Any(value => value.Value<string>("potionId") == "POT_HEAL_SMALL"), Is.True);
+            Assert.That(saved["payload"]!["mercenaries"]!.Children<JObject>().Any(value => value["equipmentSlots"]!.Children<JProperty>().Any(slot => slot.Value.Type == JTokenType.String)), Is.True);
+        }
+
+        private static void SeedProductionStoreStock(JObject document, string jobId)
+        {
+            JObject store = (JObject)document["payload"]!["economy"]!["store"]!; const string operationId = "019f9000-0000-7000-8000-000000000801";
+            ((JArray)store["stackLines"]!).Add(new JObject
+            {
+                ["stockLineId"] = "STACK:POTION:POT_HEAL_SMALL:PRODUCTION", ["productKind"] = "POTION", ["productId"] = "POT_HEAL_SMALL",
+                ["quantity"] = 8L, ["sourceType"] = "PRODUCTION", ["firstAcquiredOperationId"] = operationId, ["lastAcquiredOperationId"] = operationId
+            });
+            string templateId = jobId switch { "JOB_WARRIOR" => "EQ_T1_WARRIOR_WEAPON", "JOB_GUARDIAN" => "EQ_T1_GUARDIAN_WEAPON", "JOB_ARCHER" => "EQ_T1_ARCHER_WEAPON", "JOB_MAGE" => "EQ_T1_MAGE_WEAPON", _ => "EQ_T1_CLERIC_WEAPON" };
+            ((JArray)store["equipment"]!).Add(new JObject
+            {
+                ["instanceId"] = "019f9000-0000-7000-8000-000000000802", ["equipmentTemplateId"] = templateId, ["tier"] = 1,
+                ["qualityId"] = "QUALITY_COMMON", ["enhancementLevel"] = 0, ["refineOption"] = null, ["locked"] = false,
+                ["equippedByMercenaryInstanceId"] = null, ["sourceContentVersion"] = document.Value<string>("contentVersion"),
+                ["generationOperationId"] = operationId, ["stockAcquiredAtUtc"] = document.Value<string>("savedAtUtc"),
+                ["stockAcquiredOperationId"] = operationId, ["sourceType"] = "PRODUCTION", ["enhancementPityBps"] = 0,
+                ["enhancementAttemptCount"] = 0L, ["enhancementMaterialInvested"] = new JArray(), ["pendingRefineOption"] = null, ["refineRollCount"] = 0L
+            });
+            store["stockVersion"] = checked(store.Value<long>("stockVersion") + 1);
+        }
+
+        private void OpenStore()
+        {
+            JObject draft = game.Snapshot(); JObject store = draft["payload"]!["facilities"]!.Children<JObject>().Single(value => value.Value<string>("facilityId") == "FAC_STORE");
+            JObject merchant = draft["payload"]!["managementNpcs"]!.Children<JObject>().Single(value => value.Value<string>("professionId") == "NPC_MERCHANT");
+            store["state"] = "ACTIVE"; store["level"] = 1; store["assignedNpcInstanceId"] = merchant.Value<string>("instanceId");
+            merchant["assignedFacilityId"] = "FAC_STORE"; merchant["working"] = true; Commit(draft);
         }
 
         private void Commit(JObject draft)

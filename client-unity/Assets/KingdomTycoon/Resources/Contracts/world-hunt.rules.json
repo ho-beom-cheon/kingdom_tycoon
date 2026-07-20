@@ -1,0 +1,19 @@
+{
+  "rulesVersion": 1,
+  "decisionSeconds": 2,
+  "monsterSlotsPerRegion": 5,
+  "monsterRespawnSeconds": 8,
+  "returnHpBps": 3000,
+  "defaultBagCapacity": 12,
+  "maximumCatchUpSteps": 240,
+  "skillCastEveryCombatTicks": 3,
+  "levelAttackBpsPerLevel": 150,
+  "levelDefenseBpsPerLevel": 100,
+  "regions": [
+    { "regionId": "REGION_R01", "worldX": 760, "theme": "MEADOW" },
+    { "regionId": "REGION_R02", "worldX": 1420, "theme": "FOREST" },
+    { "regionId": "REGION_R03", "worldX": 2080, "theme": "MINE" },
+    { "regionId": "REGION_R04", "worldX": 2740, "theme": "SWAMP" },
+    { "regionId": "REGION_R05", "worldX": 3400, "theme": "FROST_RUIN" }
+  ]
+}
