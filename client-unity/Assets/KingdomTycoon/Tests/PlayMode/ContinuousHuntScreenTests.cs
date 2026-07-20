@@ -101,6 +101,35 @@ namespace KingdomTycoon.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator PixelArtReplacesFlatActorsMonstersEnvironmentAndKingdomBlocks()
+        {
+            yield return Load(); ContinuousHuntScreenPresenter screen = ContinuousHuntScreenPresenter.Install(); screen.Open(); yield return null;
+            Assert.That(screen.PixelArtSpriteCount, Is.EqualTo(21));
+            Image[] images = screen.GetComponentsInChildren<Image>(true);
+            Image[] jobIcons = images.Where(value => value.name == "직업아이콘").ToArray();
+            Assert.That(jobIcons.Length, Is.EqualTo(8)); Assert.That(jobIcons.All(value => value.sprite != null && value.sprite.texture.filterMode == FilterMode.Point), Is.True);
+            ContinuousHuntGameService service = AppRoot.Instance.Services.Get<ContinuousHuntGameService>();
+            int expectedVisibleJobs = service.GetOverview().Members.Take(jobIcons.Length).Select(value => value.JobId).Distinct().Count();
+            Assert.That(jobIcons.Where(value => value.transform.parent.gameObject.activeSelf).Select(value => value.sprite.name).Distinct().Count(), Is.EqualTo(expectedVisibleJobs));
+
+            Image[] monsterBodies = images.Where(value => value.name == "몬스터몸").ToArray();
+            Assert.That(monsterBodies.Length, Is.EqualTo(25)); Assert.That(monsterBodies.All(value => value.sprite != null), Is.True);
+            Assert.That(monsterBodies.Select(value => value.sprite.name).Distinct().Count(), Is.GreaterThanOrEqualTo(5));
+
+            Image[] decorations = images.Where(value => value.name.StartsWith("환경장식_")).ToArray();
+            Assert.That(decorations.Length, Is.EqualTo(15)); Assert.That(decorations.All(value => value.sprite != null && !value.raycastTarget), Is.True);
+            Assert.That(decorations.Select(value => value.sprite.name).Distinct().Count(), Is.EqualTo(5));
+            Assert.That(images.Single(value => value.name == "왕국픽셀랜드마크").sprite, Is.Not.Null);
+            Assert.That(screen.GetComponentsInChildren<Transform>(true).Any(value => value.name is "성채" or "상점" or "대장간"), Is.False);
+
+            ContinuousHuntMemberDto member = service.GetOverview().Members.First();
+            service.Assign(member.InstanceId, "REGION_R01"); yield return null;
+            Image activeActor = screen.GetComponentsInChildren<Image>(true).First(value => value.name == "용병몸" && value.gameObject.activeInHierarchy);
+            Assert.That(activeActor.sprite, Is.SameAs(jobIcons.First(value => value.transform.parent.gameObject.activeSelf).sprite));
+            service.Unassign(member.InstanceId); service.AdvanceTo(System.DateTimeOffset.UtcNow.AddMinutes(2));
+        }
+
+        [UnityTest]
         public IEnumerator SupportedAspectsKeepAllTouchTargetsInsideSafeAreaWithoutOverlap()
         {
             yield return Load(); ContinuousHuntScreenPresenter screen = ContinuousHuntScreenPresenter.Install(); screen.Open();

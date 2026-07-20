@@ -102,6 +102,7 @@ continuous_hunt_gate="scripts/ci/continuous-hunt.sh"
 automatic_growth_gate="scripts/ci/automatic-growth.sh"
 world_hunt_loop_gate="scripts/ci/world-hunt-loop.sh"
 hunt_game_feel_gate="scripts/ci/hunt-game-feel.sh"
+hunt_visual_polish_gate="scripts/ci/hunt-visual-polish.sh"
 
 if [ -f "$validator" ]; then
   command -v python >/dev/null 2>&1 || fail "Python is required for ${validator}"
@@ -124,6 +125,7 @@ if [ -f "$validator" ]; then
   [ -f "$automatic_growth_gate" ] || fail "automatic growth CI gate is missing: ${automatic_growth_gate}"
   [ -f "$world_hunt_loop_gate" ] || fail "world hunt loop CI gate is missing: ${world_hunt_loop_gate}"
   [ -f "$hunt_game_feel_gate" ] || fail "hunt game feel CI gate is missing: ${hunt_game_feel_gate}"
+  [ -f "$hunt_visual_polish_gate" ] || fail "hunt visual polish CI gate is missing: ${hunt_visual_polish_gate}"
   printf '[%s] Canonical package: %s --check\n' "$pipeline_name" "$canonical_generator"
   PYTHONUNBUFFERED=1 python -u "$canonical_generator" --check
   printf '[%s] P04 package: %s --check\n' "$pipeline_name" "$p04_generator"
@@ -162,6 +164,8 @@ if [ -f "$validator" ]; then
   bash "$world_hunt_loop_gate"
   printf '[%s] Hunt game feel gate: %s\n' "$pipeline_name" "$hunt_game_feel_gate"
   bash "$hunt_game_feel_gate"
+  printf '[%s] Hunt visual polish gate: %s\n' "$pipeline_name" "$hunt_visual_polish_gate"
+  bash "$hunt_visual_polish_gate"
   printf '[%s] Validator: %s\n' "$pipeline_name" "$validator"
   PYTHONUNBUFFERED=1 python -u "$validator"
   finish_step "${validator} completed"
