@@ -80,3 +80,4 @@
 - `reports/CORE_WORLD_HUNT_ECONOMY_IMPLEMENTATION_EVIDENCE.md`: 통합 월드맵·필드 전투·전리품·상점·성장 순환 구현 증적
 - `reports/CORE_HUNT_GAME_FEEL_IMPLEMENTATION_EVIDENCE.md`: 타격·보상·성장·지역 차이·접근성 피드백 구현과 자동 검증 증적
 - `reports/CORE_HUNT_VISUAL_POLISH_IMPLEMENTATION_EVIDENCE.md`: 직업·몬스터·지역·왕국 내부 픽셀 자산 구현과 자동 검증 증적
+- `reports/CORE_MOBILE_LIVING_WORLD_IMPLEMENTATION_EVIDENCE.md`: 세로형 통합 생활 월드·2축 카메라·복수 배치·상단 메뉴·CC0 에셋 구현 증적
