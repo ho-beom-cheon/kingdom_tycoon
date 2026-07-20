@@ -544,6 +544,51 @@
         "nextDecisionAtUtc": {
           "type": "string",
           "format": "utc-instant"
+        },
+        "assignedRegionId": {
+          "oneOf": [
+            {
+              "maxLength": 64,
+              "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "autoResume": {
+          "type": "boolean"
+        },
+        "currentHpBps": {
+          "maximum": 10000,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "bagFill": {
+          "maximum": 100,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "bagCapacity": {
+          "maximum": 100,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "pendingSaleGold": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "cyclesCompleted": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "earnedGold": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer"
         }
       }
     },

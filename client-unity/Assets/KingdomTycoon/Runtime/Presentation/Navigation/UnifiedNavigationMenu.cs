@@ -1,6 +1,7 @@
 using System.Collections;
 using KingdomTycoon.Bootstrap;
 using KingdomTycoon.Presentation.EquipmentGrowth;
+using KingdomTycoon.Presentation.Combat;
 using KingdomTycoon.Presentation.Mercenaries;
 using KingdomTycoon.Presentation.OfflineTutorial;
 using KingdomTycoon.Presentation.Production;
@@ -10,6 +11,7 @@ using KingdomTycoon.Presentation.Recruitment;
 using KingdomTycoon.Presentation.Regions;
 using KingdomTycoon.Presentation.Store;
 using KingdomTycoon.Services;
+using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -29,6 +31,7 @@ namespace KingdomTycoon.Presentation.Navigation
         [SerializeField] private RaidScreenPresenter raids;
         [SerializeField] private OfflineTutorialHubPresenter report;
         private StoreScreenPresenter store;
+        private ContinuousHuntScreenPresenter continuousHunt;
 
         private GameObject[] Screens => new[]
         {
@@ -77,6 +80,7 @@ namespace KingdomTycoon.Presentation.Navigation
 
         public void ToggleMenu()
         {
+            continuousHunt?.Close();
             CloseScreensExcept(null);
             if (menuPanel != null) menuPanel.SetActive(!menuPanel.activeSelf);
         }
@@ -89,6 +93,7 @@ namespace KingdomTycoon.Presentation.Navigation
         public void CloseAll()
         {
             CloseMenu();
+            continuousHunt?.Close();
             CloseMercenaries();
             CloseScreensExcept(null);
         }
@@ -111,8 +116,12 @@ namespace KingdomTycoon.Presentation.Navigation
 
         public void OpenRegions()
         {
-            if (regions != null)
-                OpenExclusive(regions.gameObject, regions.Open);
+            CloseMenu();
+            CloseMercenaries();
+            CloseScreensExcept(regions?.gameObject);
+            regions?.Open(); // Keep the P12 map lifecycle alive for backwards-compatible region policy access.
+            continuousHunt = ContinuousHuntScreenPresenter.Install();
+            continuousHunt.Open();
         }
 
         public void OpenRecruitment()
@@ -166,7 +175,12 @@ namespace KingdomTycoon.Presentation.Navigation
         public void SetNavigationVisible(bool visible)
         {
             foreach (GameObject item in primaryNavigation ?? System.Array.Empty<GameObject>())
-                if (item != null) item.SetActive(visible);
+                if (item != null)
+                {
+                    item.SetActive(visible);
+                    TMP_Text label = item.GetComponentInChildren<TMP_Text>(true);
+                    if (label != null && label.text == "지역") label.text = "사냥터";
+                }
             if (!visible) CloseMenu();
         }
 
@@ -180,6 +194,7 @@ namespace KingdomTycoon.Presentation.Navigation
         {
             if (target == null || open == null) return;
             CloseMenu();
+            continuousHunt?.Close();
             CloseMercenaries();
             CloseScreensExcept(target);
             open();

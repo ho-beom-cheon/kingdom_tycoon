@@ -159,6 +159,20 @@ def build_schema() -> bytes:
     safe = {"maximum": 9007199254740991, "minimum": 0, "type": "integer"}
     digest = {"pattern": "^[0-9a-f]{64}$", "type": "string"}
 
+    # Issue #49 keeps content.13/saveVersion 1 wire-compatible. These fields are
+    # optional at schema load and are filled atomically by the runtime migration.
+    autonomy = defs["MercenaryAutonomy"]["properties"]
+    autonomy.update({
+        "assignedRegionId": nullable_stable,
+        "autoResume": {"type": "boolean"},
+        "currentHpBps": {"maximum": 10000, "minimum": 0, "type": "integer"},
+        "bagFill": {"maximum": 100, "minimum": 0, "type": "integer"},
+        "bagCapacity": {"maximum": 100, "minimum": 1, "type": "integer"},
+        "pendingSaleGold": safe,
+        "cyclesCompleted": safe,
+        "earnedGold": safe,
+    })
+
     defs["TutorialActionReceipt"] = object_schema(
         ["operationId", "stepId", "actionType", "targetId", "requestHash", "appliedAtUtc", "result"],
         {"operationId": uuid_v7, "stepId": stable_id, "actionType": stable_id, "targetId": stable_id,
@@ -241,6 +255,18 @@ def migrate(source: dict[str, Any]) -> dict[str, Any]:
     payload = result["payload"]
     payload["tutorial"] = normalize_tutorial(payload["tutorial"])
     payload["offline"] = normalize_offline(payload["offline"])
+    for mercenary in payload["mercenaries"]:
+        autonomy = mercenary["autonomy"]
+        autonomy.update({
+            "assignedRegionId": None,
+            "autoResume": True,
+            "currentHpBps": 10000,
+            "bagFill": 0,
+            "bagCapacity": 6,
+            "pendingSaleGold": 0,
+            "cyclesCompleted": 0,
+            "earnedGold": 0,
+        })
     result["gameVersion"] = "1.0.0-p15"
     result["contentVersion"] = "1.0.0-content.13"
     P12.P11.seal(result)

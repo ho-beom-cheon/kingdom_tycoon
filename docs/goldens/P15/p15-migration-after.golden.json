@@ -12,8 +12,8 @@
     "integrityVersion": 1,
     "algorithm": "SHA-256",
     "canonicalization": "RFC8785",
-    "payloadSha256": "0e92db70086558b4b71002e180f4f42dda8a547d5b3b55d8bb6cc59a9aadfa9c",
-    "fileSha256": "5e72adba90036c0e60418382d13acc507e90e6bc4e3121d410924713f30786a8"
+    "payloadSha256": "adcf7cb8c3ceb701fd144ee8c71777739f8d65bd2c1a4f61bb55fe1e0312c22a",
+    "fileSha256": "857940aefc7f1e4a67e1d56d9fff264fc3d0cc4da9b7f20c72cacc6143f392ed"
   },
   "payload": {
     "profile": {
@@ -90,7 +90,15 @@
           "targetInstanceId": null,
           "reasonCode": "NONE",
           "stateStartedAtUtc": "2026-07-22T00:00:00.000Z",
-          "nextDecisionAtUtc": "2026-07-22T00:00:00.000Z"
+          "nextDecisionAtUtc": "2026-07-22T00:00:00.000Z",
+          "assignedRegionId": null,
+          "autoResume": true,
+          "currentHpBps": 10000,
+          "bagFill": 0,
+          "bagCapacity": 6,
+          "pendingSaleGold": 0,
+          "cyclesCompleted": 0,
+          "earnedGold": 0
         },
         "potions": [
           {
@@ -147,7 +155,15 @@
           "targetInstanceId": null,
           "reasonCode": "NONE",
           "stateStartedAtUtc": "2026-07-22T00:00:00.000Z",
-          "nextDecisionAtUtc": "2026-07-22T00:00:00.000Z"
+          "nextDecisionAtUtc": "2026-07-22T00:00:00.000Z",
+          "assignedRegionId": null,
+          "autoResume": true,
+          "currentHpBps": 10000,
+          "bagFill": 0,
+          "bagCapacity": 6,
+          "pendingSaleGold": 0,
+          "cyclesCompleted": 0,
+          "earnedGold": 0
         },
         "potions": [
           {
@@ -204,7 +220,15 @@
           "targetInstanceId": null,
           "reasonCode": "NONE",
           "stateStartedAtUtc": "2026-07-22T00:00:00.000Z",
-          "nextDecisionAtUtc": "2026-07-22T00:00:00.000Z"
+          "nextDecisionAtUtc": "2026-07-22T00:00:00.000Z",
+          "assignedRegionId": null,
+          "autoResume": true,
+          "currentHpBps": 10000,
+          "bagFill": 0,
+          "bagCapacity": 6,
+          "pendingSaleGold": 0,
+          "cyclesCompleted": 0,
+          "earnedGold": 0
         },
         "potions": [
           {
@@ -261,7 +285,15 @@
           "targetInstanceId": null,
           "reasonCode": "NONE",
           "stateStartedAtUtc": "2026-07-22T00:00:00.000Z",
-          "nextDecisionAtUtc": "2026-07-22T00:00:00.000Z"
+          "nextDecisionAtUtc": "2026-07-22T00:00:00.000Z",
+          "assignedRegionId": null,
+          "autoResume": true,
+          "currentHpBps": 10000,
+          "bagFill": 0,
+          "bagCapacity": 6,
+          "pendingSaleGold": 0,
+          "cyclesCompleted": 0,
+          "earnedGold": 0
         },
         "potions": [
           {
