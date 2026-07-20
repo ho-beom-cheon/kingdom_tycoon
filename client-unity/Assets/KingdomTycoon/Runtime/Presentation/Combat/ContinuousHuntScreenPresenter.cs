@@ -38,7 +38,10 @@ namespace KingdomTycoon.Presentation.Combat
 
         private void Awake()
         {
-            Canvas canvas = GetComponent<Canvas>(); canvas.renderMode = RenderMode.ScreenSpaceOverlay; canvas.sortingOrder = 110;
+            Canvas canvas = GetComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.overrideSorting = true;
+            canvas.sortingOrder = 850;
             CanvasScaler scaler = GetComponent<CanvasScaler>(); scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize; scaler.referenceResolution = new Vector2(1920, 1080); scaler.matchWidthOrHeight = .5f;
             RectTransform root = (RectTransform)transform; root.anchorMin = Vector2.zero; root.anchorMax = Vector2.one; root.offsetMin = root.offsetMax = Vector2.zero;
             BuildUi(); gameObject.SetActive(false);
@@ -47,6 +50,7 @@ namespace KingdomTycoon.Presentation.Combat
         public void Open()
         {
             gameObject.SetActive(true);
+            transform.SetAsLastSibling();
             if (service == null)
             {
                 if (AppRoot.Instance == null || !AppRoot.Instance.IsInitialized) { ShowToast("게임 정보를 준비하고 있습니다."); return; }

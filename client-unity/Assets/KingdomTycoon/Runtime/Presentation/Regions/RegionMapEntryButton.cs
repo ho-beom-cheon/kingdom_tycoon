@@ -1,3 +1,4 @@
+using KingdomTycoon.Presentation.Combat;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -8,6 +9,10 @@ namespace KingdomTycoon.Presentation.Regions
         [SerializeField] private RegionMapScreenPresenter presenter;
         [SerializeField] private Button button;
         public void Configure(RegionMapScreenPresenter value, Button trigger) { presenter = value; button = trigger; }
-        public void OpenRegionMap() { if (presenter != null) presenter.Open(); }
+        public void OpenRegionMap()
+        {
+            if (presenter != null) presenter.Close();
+            ContinuousHuntScreenPresenter.Install().Open();
+        }
     }
 }

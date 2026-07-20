@@ -3,6 +3,7 @@ using System.Linq;
 using KingdomTycoon.Bootstrap;
 using KingdomTycoon.Infrastructure.Combat;
 using KingdomTycoon.Presentation.Combat;
+using KingdomTycoon.Presentation.Regions;
 using NUnit.Framework;
 using TMPro;
 using UnityEngine;
@@ -53,18 +54,22 @@ namespace KingdomTycoon.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator HuntingNavigationButtonOpensContinuousHuntScreen()
+        public IEnumerator VisibleHuntingEntryPointOpensContinuousHuntScreen()
         {
             yield return Load();
-            Button hunting = GameObject.Find("P12_REGION_MAP_NAV_BUTTON").GetComponent<Button>();
+            RegionMapEntryButton hunting = GameObject.Find("P12_REGION_MAP_NAV_BUTTON").GetComponent<RegionMapEntryButton>();
 
-            hunting.onClick.Invoke();
+            hunting.OpenRegionMap();
             yield return null;
 
             ContinuousHuntScreenPresenter screen = Object.FindFirstObjectByType<ContinuousHuntScreenPresenter>(FindObjectsInactive.Include);
             Assert.That(screen, Is.Not.Null);
             Assert.That(screen.gameObject.activeInHierarchy, Is.True);
-            Assert.That(screen.GetComponent<Canvas>().sortingOrder, Is.EqualTo(110));
+            Canvas canvas = screen.GetComponent<Canvas>();
+            Assert.That(canvas.isRootCanvas, Is.True);
+            Assert.That(canvas.sortingOrder, Is.EqualTo(850));
+            RegionMapScreenPresenter legacyMap = Object.FindFirstObjectByType<RegionMapScreenPresenter>(FindObjectsInactive.Include);
+            Assert.That(legacyMap.gameObject.activeSelf, Is.False);
         }
 
         private static Rect WorldRect(RectTransform rect)
