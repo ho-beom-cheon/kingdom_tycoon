@@ -7,6 +7,7 @@ namespace KingdomTycoon.Presentation.Combat
     {
         public const float MinimumZoom = .65f;
         public const float MaximumZoom = 1.35f;
+        public const float StartingZoom = .92f;
         public const float TapThreshold = 18f;
 
         [SerializeField] private RectTransform viewport;
@@ -83,7 +84,12 @@ namespace KingdomTycoon.Presentation.Combat
 
         public void ResetView()
         {
-            zoom = 1f;
+            ResetView(StartingZoom);
+        }
+
+        public void ResetView(float targetZoom)
+        {
+            zoom = Mathf.Clamp(targetZoom, MinimumZoom, MaximumZoom);
             velocity = Vector2.zero;
             ApplyZoom();
             PanToWorld(MobileLivingWorldLayout.KingdomCenter);
