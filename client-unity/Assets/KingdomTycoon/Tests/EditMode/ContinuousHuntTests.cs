@@ -63,6 +63,19 @@ namespace KingdomTycoon.Tests.EditMode
         }
 
         [Test]
+        public void OverviewDerivesKoreanRiskDropPreviewAndValidatedFeedbackPolicy()
+        {
+            ContinuousHuntOverviewDto overview = hunt.GetOverview();
+            Assert.That(overview.Regions.Select(value => value.RiskLabel), Is.EqualTo(new[] { "안정", "주의", "위험", "고위험", "극한" }));
+            Assert.That(overview.Regions.All(value => !string.IsNullOrWhiteSpace(value.DropPreview) && !value.DropPreview.Contains("MAT_")), Is.True);
+            Assert.That(overview.Regions.First().DropPreview, Does.Contain("멧돼지 가죽"));
+            Assert.That(overview.Feedback.MaximumRewardFeedEntries, Is.EqualTo(3)); Assert.That(overview.Feedback.MasterVolumeBps, Is.EqualTo(2200));
+
+            JObject invalid = JObject.Parse(Read("world-hunt.rules.json")); invalid["feedback"]!["maximumRewardFeedEntries"] = 0;
+            Assert.Throws<InvalidOperationException>(() => new ContinuousHuntGameService(clock, Read("automatic-growth.rules.json"), invalid.ToString()));
+        }
+
+        [Test]
         public void SeveralMercenariesCanPersistInOneGroundAndAdvanceIndependently()
         {
             string[] ids = hunt.GetOverview().Members.Take(2).Select(value => value.InstanceId).ToArray();

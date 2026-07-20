@@ -15,8 +15,21 @@ namespace KingdomTycoon.Tests.PlayMode
 {
     public sealed class ContinuousHuntScreenTests
     {
-        [UnitySetUp] public IEnumerator ResetRoot() { if (AppRoot.Instance != null) Object.Destroy(AppRoot.Instance.gameObject); yield return null; }
-        [UnityTearDown] public IEnumerator CleanupRoot() { if (AppRoot.Instance != null) Object.Destroy(AppRoot.Instance.gameObject); yield return null; }
+        [UnitySetUp]
+        public IEnumerator ResetRoot()
+        {
+            WorldHuntFeedbackPreferences.ResetForTests();
+            if (AppRoot.Instance != null) Object.Destroy(AppRoot.Instance.gameObject);
+            yield return null;
+        }
+
+        [UnityTearDown]
+        public IEnumerator CleanupRoot()
+        {
+            WorldHuntFeedbackPreferences.ResetForTests();
+            if (AppRoot.Instance != null) Object.Destroy(AppRoot.Instance.gameObject);
+            yield return null;
+        }
 
         [UnityTest]
         public IEnumerator IntegratedWorldAllowsTwoAssignmentsAndShowsRealActorsInKorean()
@@ -49,6 +62,42 @@ namespace KingdomTycoon.Tests.PlayMode
             screen.DragSurface.PanBy(-10000f); float minimum = screen.WorldViewport.rect.width - screen.WorldContent.rect.width;
             Assert.That(screen.WorldContent.anchoredPosition.x, Is.EqualTo(minimum).Within(1f));
             screen.DragSurface.PanBy(10000f); Assert.That(screen.WorldContent.anchoredPosition.x, Is.EqualTo(0f).Within(1f));
+        }
+
+        [UnityTest]
+        public IEnumerator GameFeelShowsRegionalDifferenceGrowthAndAccessiblePreferences()
+        {
+            yield return Load(); ContinuousHuntScreenPresenter screen = ContinuousHuntScreenPresenter.Install(); screen.Open(); yield return null;
+            string text = string.Join(" ", screen.GetComponentsInChildren<TMP_Text>(true).Select(value => value.text));
+            Assert.That(text, Does.Contain("안정")); Assert.That(text, Does.Contain("주요")); Assert.That(text, Does.Contain("장비"));
+            Assert.That(text, Does.Contain("스킬")); Assert.That(text, Does.Contain("강화")); Assert.That(text, Does.Contain("전투 · 보상 소식"));
+
+            Button sound = screen.GetComponentsInChildren<Button>(true).Single(value => value.name == "효과음설정");
+            Button motion = screen.GetComponentsInChildren<Button>(true).Single(value => value.name == "모션설정");
+            Assert.That(screen.SoundEnabled, Is.True); Assert.That(screen.ReducedMotion, Is.False);
+            sound.onClick.Invoke(); motion.onClick.Invoke(); yield return null;
+            Assert.That(screen.SoundEnabled, Is.False); Assert.That(screen.ReducedMotion, Is.True);
+            Assert.That(sound.GetComponentInChildren<TMP_Text>().text, Is.EqualTo("효과음 끔"));
+            Assert.That(motion.GetComponentInChildren<TMP_Text>().text, Is.EqualTo("모션 감소"));
+        }
+
+        [UnityTest]
+        public IEnumerator CombatAdvanceCreatesDamageFeedbackAndKeepsFeedBounded()
+        {
+            yield return Load(); ContinuousHuntScreenPresenter screen = ContinuousHuntScreenPresenter.Install(); screen.Open(); yield return null;
+            ContinuousHuntGameService service = AppRoot.Instance.Services.Get<ContinuousHuntGameService>();
+            ContinuousHuntMemberDto member = service.GetOverview().Members.First(); service.Assign(member.InstanceId, "REGION_R01"); yield return null;
+            for (int step = 1; step <= 8; step++)
+            {
+                service.AdvanceTo(System.DateTimeOffset.UtcNow.AddSeconds(step * 12));
+                yield return null;
+            }
+
+            TMP_Text[] damage = screen.GetComponentsInChildren<TMP_Text>(true).Where(value => value.name == "피해표시").ToArray();
+            Assert.That(damage.Any(value => !string.IsNullOrWhiteSpace(value.text)), Is.True, "combat must produce visible damage or defeat feedback");
+            Assert.That(screen.FeedbackTexts.Count(value => value.gameObject.activeSelf), Is.LessThanOrEqualTo(3));
+            Assert.That(screen.FeedbackTexts.Any(value => !string.IsNullOrWhiteSpace(value.text)), Is.True, "reward and combat news must reach the bounded feed");
+            service.Unassign(member.InstanceId); service.AdvanceTo(System.DateTimeOffset.UtcNow.AddMinutes(3));
         }
 
         [UnityTest]
