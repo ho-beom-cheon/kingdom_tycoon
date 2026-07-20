@@ -19,7 +19,7 @@ namespace KingdomTycoon.Tests.PlayMode
         [UnityTearDown] public IEnumerator CleanupRoot() { if (AppRoot.Instance != null) Object.Destroy(AppRoot.Instance.gameObject); yield return null; }
 
         [UnityTest]
-        public IEnumerator ScreenAllowsTwoAssignmentsAndShowsMovingActorsInKorean()
+        public IEnumerator IntegratedWorldAllowsTwoAssignmentsAndShowsRealActorsInKorean()
         {
             yield return Load(); ContinuousHuntScreenPresenter screen = ContinuousHuntScreenPresenter.Install(); screen.Open(); yield return null;
             Transform[] nodes = screen.GetComponentsInChildren<Transform>(true);
@@ -29,10 +29,26 @@ namespace KingdomTycoon.Tests.PlayMode
             Assert.That(overview.Members.Count(value => value.AssignedRegionId == "REGION_R01"), Is.GreaterThanOrEqualTo(2));
             Assert.That(nodes.Count(value => value.name.StartsWith("용병동작_") && value.gameObject.activeSelf), Is.GreaterThanOrEqualTo(2));
             string text = string.Join(" ", screen.GetComponentsInChildren<TMP_Text>(true).Select(value => value.text));
-            Assert.That(text, Does.Contain("상시 자동 사냥")); Assert.That(text, Does.Contain("용병 배치")); Assert.That(text, Does.Contain("스킬 Lv")); Assert.That(text, Does.Contain("최고 장비"));
+            Assert.That(text, Does.Contain("상시 자동 사냥")); Assert.That(text, Does.Contain("통합 사냥 월드")); Assert.That(text, Does.Contain("왕국 외곽 초원")); Assert.That(text, Does.Contain("가방"));
+            Assert.That(text.IndexOf('\uFFFD'), Is.EqualTo(-1), "replacement glyph must never be visible");
             ContinuousHuntGameService service = AppRoot.Instance.Services.Get<ContinuousHuntGameService>();
             foreach (ContinuousHuntMemberDto member in service.GetOverview().Members.Where(value => value.AssignedRegionId != null).ToArray()) service.Unassign(member.InstanceId);
             service.AdvanceTo(System.DateTimeOffset.UtcNow.AddMinutes(2));
+        }
+
+        [UnityTest]
+        public IEnumerator WorldContainsKingdomFiveGroundsMonstersHpBarsAndClampedDrag()
+        {
+            yield return Load(); ContinuousHuntScreenPresenter screen = ContinuousHuntScreenPresenter.Install(); screen.Open(); yield return null; Canvas.ForceUpdateCanvases();
+            Assert.That(screen.WorldContent.Find("왕국거점"), Is.Not.Null);
+            Assert.That(screen.WorldContent.Cast<Transform>().Count(value => value.name.StartsWith("월드지역_")), Is.EqualTo(5));
+            Assert.That(screen.GetComponentsInChildren<Transform>(true).Count(value => value.name.StartsWith("몬스터동작_")), Is.EqualTo(25));
+            Assert.That(screen.GetComponentsInChildren<Image>(true).Count(value => value.name == "몬스터현재체력"), Is.EqualTo(25));
+            float before = screen.WorldContent.anchoredPosition.x; screen.DragSurface.PanBy(-500f); yield return null;
+            Assert.That(screen.WorldContent.anchoredPosition.x, Is.LessThan(before));
+            screen.DragSurface.PanBy(-10000f); float minimum = screen.WorldViewport.rect.width - screen.WorldContent.rect.width;
+            Assert.That(screen.WorldContent.anchoredPosition.x, Is.EqualTo(minimum).Within(1f));
+            screen.DragSurface.PanBy(10000f); Assert.That(screen.WorldContent.anchoredPosition.x, Is.EqualTo(0f).Within(1f));
         }
 
         [UnityTest]
