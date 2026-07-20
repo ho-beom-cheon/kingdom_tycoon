@@ -52,6 +52,21 @@ namespace KingdomTycoon.Tests.PlayMode
             }
         }
 
+        [UnityTest]
+        public IEnumerator HuntingNavigationButtonOpensContinuousHuntScreen()
+        {
+            yield return Load();
+            Button hunting = GameObject.Find("P12_REGION_MAP_NAV_BUTTON").GetComponent<Button>();
+
+            hunting.onClick.Invoke();
+            yield return null;
+
+            ContinuousHuntScreenPresenter screen = Object.FindFirstObjectByType<ContinuousHuntScreenPresenter>(FindObjectsInactive.Include);
+            Assert.That(screen, Is.Not.Null);
+            Assert.That(screen.gameObject.activeInHierarchy, Is.True);
+            Assert.That(screen.GetComponent<Canvas>().sortingOrder, Is.EqualTo(110));
+        }
+
         private static Rect WorldRect(RectTransform rect)
         {
             Vector3[] corners = new Vector3[4]; rect.GetWorldCorners(corners); return Rect.MinMaxRect(corners[0].x, corners[0].y, corners[2].x, corners[2].y);

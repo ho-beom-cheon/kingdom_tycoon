@@ -5516,7 +5516,7 @@ MonoBehaviour:
       - m_Target: {fileID: 42149682}
         m_TargetAssemblyTypeName: KingdomTycoon.Presentation.Navigation.UnifiedNavigationMenu,
           KingdomTycoon.Runtime
-        m_MethodName: PrepareRegions
+        m_MethodName: OpenRegions
         m_Mode: 0
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
