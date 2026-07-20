@@ -54,6 +54,8 @@
 - `reviews/CORE_WORLD_HUNT_ECONOMY_COMPLETENESS_REVIEW_v1.0.md`: 월드 사냥 경제 설계 완결성 및 구현 준비도 검토
 - `design/TYCOON_CORE_HUNT_GAME_FEEL_COMPLETE_DESIGN_v1.0.md`: 전투·보상·성장 피드백과 지역 차이를 강화하는 게임 체감 최종 계약
 - `reviews/CORE_HUNT_GAME_FEEL_COMPLETENESS_REVIEW_v1.0.md`: 게임 체감 설계 완결성 및 선행 계약 불변 검토
+- `design/TYCOON_CORE_HUNT_VISUAL_POLISH_COMPLETE_DESIGN_v1.0.md`: 상시 사냥 직업·몬스터·지역·왕국 내부 픽셀 자산 최종 계약
+- `reviews/CORE_HUNT_VISUAL_POLISH_COMPLETENESS_REVIEW_v1.0.md`: 내부 픽셀 자산 설계 완결성·비용·라이선스 검토
 
 ## 구현 데이터
 
