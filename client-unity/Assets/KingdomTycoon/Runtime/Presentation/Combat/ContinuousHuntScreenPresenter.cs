@@ -9,39 +9,40 @@ using UnityEngine.UI;
 
 namespace KingdomTycoon.Presentation.Combat
 {
-    /// <summary>Runtime-built screen so the corrected hunt loop is available in every upgraded P15 scene.</summary>
+    /// <summary>Runtime-built integrated kingdom and hunting world. All mutations go through ContinuousHuntGameService.</summary>
     public sealed class ContinuousHuntScreenPresenter : MonoBehaviour
     {
-        private static readonly string[] RegionIds = { "REGION_R01", "REGION_R02", "REGION_R03", "REGION_R04", "REGION_R05" };
-        private static readonly string[] RegionNames = { "초록바람 들판", "잿빛 채석장", "독안개 습지", "설원 협곡", "붉은 고원" };
-        private readonly List<MemberRow> rows = new();
-        private readonly List<ActorView> actors = new();
+        private const float WorldWidth = 4180f;
+        private readonly List<MemberButton> memberButtons = new();
+        private readonly Dictionary<string, RegionView> regionViews = new(StringComparer.Ordinal);
         private ContinuousHuntGameService service;
-        private TMP_Text title;
-        private TMP_Text summary;
-        private TMP_Text toast;
-        private TMP_Text fieldHint;
-        private Image monster;
-        private int selectedRegion;
-        private float nextTick;
         private ContinuousHuntOverviewDto overview;
+        private TMP_Text summary;
+        private TMP_Text selection;
+        private TMP_Text statusLine;
+        private RectTransform worldViewport;
+        private RectTransform worldContent;
+        private WorldMapDragSurface dragSurface;
+        private string selectedRegionId = "REGION_R01";
+        private float nextTick;
+
+        public RectTransform WorldViewport => worldViewport;
+        public RectTransform WorldContent => worldContent;
+        public WorldMapDragSurface DragSurface => dragSurface;
+        public string SelectedRegionId => selectedRegionId;
 
         public static ContinuousHuntScreenPresenter Install()
         {
             ContinuousHuntScreenPresenter current = FindFirstObjectByType<ContinuousHuntScreenPresenter>(FindObjectsInactive.Include);
             if (current != null) return current;
             var root = new GameObject("CONTINUOUS_HUNT_SCREEN", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster), typeof(ContinuousHuntScreenPresenter));
-            if (AppRoot.Instance != null) root.transform.SetParent(AppRoot.Instance.transform, false);
-            else DontDestroyOnLoad(root);
+            if (AppRoot.Instance != null) root.transform.SetParent(AppRoot.Instance.transform, false); else DontDestroyOnLoad(root);
             return root.GetComponent<ContinuousHuntScreenPresenter>();
         }
 
         private void Awake()
         {
-            Canvas canvas = GetComponent<Canvas>();
-            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            canvas.overrideSorting = true;
-            canvas.sortingOrder = 850;
+            Canvas canvas = GetComponent<Canvas>(); canvas.renderMode = RenderMode.ScreenSpaceOverlay; canvas.overrideSorting = true; canvas.sortingOrder = 850;
             CanvasScaler scaler = GetComponent<CanvasScaler>(); scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize; scaler.referenceResolution = new Vector2(1920, 1080); scaler.matchWidthOrHeight = .5f;
             RectTransform root = (RectTransform)transform; root.anchorMin = Vector2.zero; root.anchorMax = Vector2.one; root.offsetMin = root.offsetMax = Vector2.zero;
             BuildUi(); gameObject.SetActive(false);
@@ -49,185 +50,266 @@ namespace KingdomTycoon.Presentation.Combat
 
         public void Open()
         {
-            gameObject.SetActive(true);
-            transform.SetAsLastSibling();
+            gameObject.SetActive(true); transform.SetAsLastSibling();
             if (service == null)
             {
-                if (AppRoot.Instance == null || !AppRoot.Instance.IsInitialized) { ShowToast("게임 정보를 준비하고 있습니다."); return; }
-                service = AppRoot.Instance.Services.Get<ContinuousHuntGameService>();
-                service.Changed += OnChanged;
+                if (AppRoot.Instance == null || !AppRoot.Instance.IsInitialized) { ShowStatus("게임 정보를 준비하고 있습니다."); return; }
+                service = AppRoot.Instance.Services.Get<ContinuousHuntGameService>(); service.Changed += OnChanged;
             }
-            Refresh();
+            Refresh(); Canvas.ForceUpdateCanvases(); dragSurface.ClampToBounds();
         }
 
         public void Close()
         {
             gameObject.SetActive(false);
-            KingdomTycoon.Presentation.Regions.RegionMapScreenPresenter map = FindFirstObjectByType<KingdomTycoon.Presentation.Regions.RegionMapScreenPresenter>(FindObjectsInactive.Include);
-            if (map != null && map.gameObject.activeSelf) map.gameObject.SetActive(false);
+            KingdomTycoon.Presentation.Regions.RegionMapScreenPresenter legacy = FindFirstObjectByType<KingdomTycoon.Presentation.Regions.RegionMapScreenPresenter>(FindObjectsInactive.Include);
+            if (legacy != null && legacy.gameObject.activeSelf) legacy.gameObject.SetActive(false);
         }
 
         private void Update()
         {
-            AnimateActors();
+            AnimateWorld();
             if (service == null || Time.unscaledTime < nextTick) return;
             nextTick = Time.unscaledTime + 1f;
             try { service.AdvanceTo(DateTimeOffset.UtcNow); Refresh(); }
-            catch (Exception exception) { Debug.LogWarning(exception); ShowToast("사냥 기록을 갱신하지 못했습니다. 잠시 뒤 다시 시도합니다."); }
+            catch (Exception exception) { Debug.LogWarning(exception); ShowStatus("사냥 기록을 갱신하지 못했습니다. 저장 상태를 유지하고 다시 시도합니다."); }
         }
 
         private void BuildUi()
         {
-            Image background = Panel("배경", transform, new Color32(8, 15, 18, 255), Vector2.zero, Vector2.one);
-            Image safe = Panel("안전영역", background.transform, new Color32(14, 25, 27, 255), new Vector2(.018f, .025f), new Vector2(.982f, .975f));
+            Image background = Panel("월드배경", transform, new Color32(7, 13, 16, 255), Vector2.zero, Vector2.one);
+            Image safe = Panel("안전영역", background.transform, new Color32(13, 23, 25, 255), new Vector2(.014f, .02f), new Vector2(.986f, .98f));
             safe.gameObject.AddComponent<KingdomTycoon.UI.SafeAreaFitter>();
 
-            Text("표식", safe.transform, "상시 자동 사냥", 18, TextAlignmentOptions.Left, new Vector2(.025f, .925f), new Vector2(.25f, .975f), new Color32(116, 190, 169, 255));
-            title = Text("제목", safe.transform, RegionNames[0], 40, TextAlignmentOptions.Left, new Vector2(.025f, .855f), new Vector2(.46f, .94f), new Color32(235, 198, 116, 255));
-            summary = Text("요약", safe.transform, "배치 0명  ·  누적 수익 0골드", 21, TextAlignmentOptions.Right, new Vector2(.48f, .87f), new Vector2(.90f, .93f), new Color32(189, 205, 196, 255));
-            Button close = MakeButton("닫기", safe.transform, "왕국으로", new Color32(83, 61, 42, 255), new Vector2(.905f, .865f), new Vector2(.985f, .955f)); close.onClick.AddListener(Close);
+            Image header = Panel("상단정보", safe.transform, new Color32(20, 34, 35, 255), new Vector2(.012f, .895f), new Vector2(.988f, .988f));
+            Text("화면분류", header.transform, "왕국 관찰 · 상시 자동 사냥", 17, TextAlignmentOptions.Left, new Vector2(.018f, .54f), new Vector2(.42f, .94f), new Color32(119, 193, 171, 255));
+            Text("화면제목", header.transform, "통합 사냥 월드", 34, TextAlignmentOptions.Left, new Vector2(.018f, .05f), new Vector2(.38f, .62f), new Color32(238, 203, 123, 255));
+            summary = Text("전체요약", header.transform, "배치 0명 · 누적 수익 0골드", 20, TextAlignmentOptions.Right, new Vector2(.42f, .16f), new Vector2(.875f, .84f), new Color32(193, 211, 201, 255));
+            Button close = MakeButton("왕국으로", header.transform, "왕국으로", new Color32(91, 66, 45, 255), new Vector2(.89f, .12f), new Vector2(.986f, .88f)); close.onClick.AddListener(Close);
 
-            Image regions = Panel("사냥터목록", safe.transform, new Color32(20, 34, 36, 255), new Vector2(.025f, .12f), new Vector2(.185f, .84f));
-            Text("목록제목", regions.transform, "사냥터", 24, TextAlignmentOptions.Left, new Vector2(.08f, .90f), new Vector2(.92f, .98f), new Color32(225, 225, 211, 255));
-            for (int i = 0; i < RegionIds.Length; i++)
+            Image viewportImage = Panel("월드뷰포트", safe.transform, new Color32(19, 43, 47, 255), new Vector2(.012f, .17f), new Vector2(.988f, .885f));
+            viewportImage.raycastTarget = true; viewportImage.gameObject.AddComponent<RectMask2D>(); worldViewport = viewportImage.rectTransform;
+            dragSurface = viewportImage.gameObject.AddComponent<WorldMapDragSurface>();
+            var contentObject = new GameObject("드래그월드", typeof(RectTransform)); contentObject.transform.SetParent(viewportImage.transform, false); worldContent = (RectTransform)contentObject.transform;
+            worldContent.anchorMin = new Vector2(0f, 0f); worldContent.anchorMax = new Vector2(0f, 1f); worldContent.pivot = new Vector2(0f, .5f); worldContent.sizeDelta = new Vector2(WorldWidth, 0f); worldContent.anchoredPosition = Vector2.zero;
+            dragSurface.Configure(worldViewport, worldContent); BuildWorldBase();
+
+            Image drawer = Panel("용병배치서랍", safe.transform, new Color32(18, 31, 34, 255), new Vector2(.012f, .03f), new Vector2(.988f, .158f));
+            selection = Text("선택지역", drawer.transform, "초록바람 들판 · 용병을 눌러 배치", 19, TextAlignmentOptions.Left, new Vector2(.012f, .60f), new Vector2(.33f, .96f), new Color32(232, 206, 139, 255));
+            statusLine = Text("상태안내", drawer.transform, "월드를 좌우로 드래그해 사냥터를 관찰하세요.", 15, TextAlignmentOptions.Left, new Vector2(.012f, .08f), new Vector2(.33f, .58f), new Color32(151, 179, 171, 255));
+            for (int index = 0; index < 8; index++) memberButtons.Add(CreateMemberButton(drawer.transform, index));
+        }
+
+        private void BuildWorldBase()
+        {
+            Panel("하늘", worldContent, new Color32(28, 61, 64, 255), Vector2.zero, Vector2.one);
+            Panel("먼산", worldContent, new Color32(34, 72, 65, 255), new Vector2(0f, .35f), new Vector2(1f, .68f));
+            Panel("대지", worldContent, new Color32(45, 69, 51, 255), new Vector2(0f, 0f), new Vector2(1f, .38f));
+            Image road = FixedPanel("왕국길", worldContent, new Color32(119, 91, 58, 255), 200f, 3700f, .16f, .24f); road.raycastTarget = false;
+
+            Image kingdom = FixedPanel("왕국거점", worldContent, new Color32(41, 55, 48, 255), 50f, 580f, .08f, .92f);
+            Text("왕국이름", kingdom.transform, "재건 중인 왕국", 30, TextAlignmentOptions.Center, new Vector2(.05f, .82f), new Vector2(.95f, .95f), new Color32(235, 201, 122, 255));
+            Text("왕국설명", kingdom.transform, "귀환 · 판매 · 물약 · 장비 · 훈련 · 강화", 17, TextAlignmentOptions.Center, new Vector2(.08f, .68f), new Vector2(.92f, .80f), new Color32(174, 194, 182, 255));
+            Building(kingdom.transform, "성채", new Vector2(.34f, .26f), new Vector2(.66f, .66f), new Color32(111, 107, 94, 255));
+            Building(kingdom.transform, "상점", new Vector2(.08f, .15f), new Vector2(.30f, .44f), new Color32(155, 104, 56, 255));
+            Building(kingdom.transform, "대장간", new Vector2(.70f, .15f), new Vector2(.92f, .44f), new Color32(102, 82, 78, 255));
+            Text("드래그안내", worldContent, "← 드래그하여 모든 사냥터 관찰 →", 18, TextAlignmentOptions.Center, new Vector2(.08f, .90f), new Vector2(.40f, .98f), new Color32(201, 218, 205, 210));
+        }
+
+        private MemberButton CreateMemberButton(Transform parent, int index)
+        {
+            const float start = .345f, gap = .007f; float width = (.985f - start - gap * 7f) / 8f; float left = start + index * (width + gap);
+            Button button = MakeButton("용병_" + index, parent, "", new Color32(42, 59, 60, 255), new Vector2(left, .10f), new Vector2(left + width, .90f));
+            TMP_Text label = button.GetComponentInChildren<TMP_Text>(); label.fontSize = 15; label.textWrappingMode = TextWrappingModes.Normal; label.margin = new Vector4(6, 3, 6, 3);
+            var row = new MemberButton(button, label); button.onClick.AddListener(() => ToggleAssignment(row)); button.gameObject.SetActive(false); return row;
+        }
+
+        private void EnsureRegionViews()
+        {
+            if (overview == null) return;
+            foreach (WorldHuntRegionDto region in overview.Regions)
             {
-                int captured = i; float top = .86f - i * .16f;
-                Button tab = MakeButton("사냥터_" + (i + 1), regions.transform, $"{i + 1:00}  {RegionNames[i]}", i == 0 ? new Color32(49, 111, 94, 255) : new Color32(43, 58, 57, 255), new Vector2(.06f, top - .12f), new Vector2(.94f, top));
-                tab.onClick.AddListener(() => SelectRegion(captured));
+                if (!regionViews.TryGetValue(region.Id, out RegionView view))
+                {
+                    view = CreateRegionView(region); regionViews.Add(region.Id, view);
+                }
+                view.Root.anchoredPosition = new Vector2(region.WorldX, 0f);
             }
-
-            Image field = Panel("전장", safe.transform, new Color32(22, 45, 42, 255), new Vector2(.195f, .12f), new Vector2(.715f, .84f));
-            Image horizon = Panel("지면", field.transform, new Color32(49, 74, 56, 255), new Vector2(.02f, .04f), new Vector2(.98f, .42f));
-            Text("전장제목", field.transform, "용병들이 각자 목표를 찾아 사냥합니다", 23, TextAlignmentOptions.Left, new Vector2(.035f, .91f), new Vector2(.78f, .98f), new Color32(217, 226, 203, 255));
-            fieldHint = Text("전장안내", field.transform, "오른쪽 명단에서 용병을 배치하세요.", 24, TextAlignmentOptions.Center, new Vector2(.16f, .48f), new Vector2(.84f, .62f), new Color32(158, 180, 169, 255));
-            monster = Panel("몬스터", horizon.transform, new Color32(152, 65, 55, 255), new Vector2(.72f, .34f), new Vector2(.80f, .62f));
-            Text("몬스터표시", monster.transform, "짐승", 16, TextAlignmentOptions.Center, Vector2.zero, Vector2.one, Color.white);
-            for (int i = 0; i < 8; i++) actors.Add(CreateActor(horizon.transform, i));
-
-            Image roster = Panel("용병명단", safe.transform, new Color32(20, 33, 37, 255), new Vector2(.725f, .12f), new Vector2(.985f, .84f));
-            Text("명단제목", roster.transform, "용병 배치", 24, TextAlignmentOptions.Left, new Vector2(.05f, .91f), new Vector2(.95f, .985f), new Color32(225, 225, 211, 255));
-            Text("명단안내", roster.transform, "여러 명을 같은 사냥터에 배치할 수 있습니다.", 16, TextAlignmentOptions.Left, new Vector2(.05f, .855f), new Vector2(.95f, .92f), new Color32(142, 174, 165, 255));
-            for (int i = 0; i < 8; i++) rows.Add(CreateRow(roster.transform, i));
-
-            toast = Text("알림", safe.transform, "귀환하면 전리품을 팔고 스킬 훈련과 장비 강화를 마친 뒤 다시 출발합니다.", 19, TextAlignmentOptions.Center, new Vector2(.195f, .035f), new Vector2(.985f, .105f), new Color32(222, 196, 128, 255));
         }
 
-        private MemberRow CreateRow(Transform parent, int index)
+        private RegionView CreateRegionView(WorldHuntRegionDto region)
         {
-            float top = .84f - index * .098f;
-            Button button = MakeButton("용병_" + index, parent, "", new Color32(39, 55, 57, 255), new Vector2(.045f, top - .085f), new Vector2(.955f, top));
-            TMP_Text label = button.GetComponentInChildren<TMP_Text>(); label.alignment = TextAlignmentOptions.Left; label.margin = new Vector4(16, 2, 12, 2); label.fontSize = 15;
-            var row = new MemberRow(button, label); button.onClick.AddListener(() => Toggle(row)); return row;
+            Image rootImage = FixedPanel("월드지역_" + region.Id, worldContent, ThemeColor(region.Theme), region.WorldX, 600f, .07f, .93f);
+            Button button = rootImage.gameObject.AddComponent<Button>(); button.targetGraphic = rootImage;
+            var outline = rootImage.gameObject.AddComponent<Outline>(); outline.effectDistance = new Vector2(3f, -3f); outline.effectColor = new Color32(232, 197, 115, 0);
+            button.onClick.AddListener(() => SelectRegion(region.Id, true));
+            TMP_Text title = Text("지역명", rootImage.transform, region.DisplayName, 25, TextAlignmentOptions.Left, new Vector2(.04f, .87f), new Vector2(.68f, .97f), new Color32(242, 225, 176, 255));
+            TMP_Text meta = Text("지역정보", rootImage.transform, "", 15, TextAlignmentOptions.Right, new Vector2(.60f, .88f), new Vector2(.96f, .96f), new Color32(205, 217, 205, 255));
+            Panel("지역지면", rootImage.transform, GroundColor(region.Theme), new Vector2(.02f, .06f), new Vector2(.98f, .48f));
+            Text("지역길", rootImage.transform, "━━━━━━  사냥 순환로  ━━━━━━", 14, TextAlignmentOptions.Center, new Vector2(.06f, .43f), new Vector2(.94f, .50f), new Color32(210, 184, 126, 180));
+            Image locked = Panel("잠금표시", rootImage.transform, new Color32(12, 18, 21, 220), new Vector2(.02f, .05f), new Vector2(.98f, .86f));
+            Text("잠금문구", locked.transform, "아직 개방되지 않은 사냥터", 22, TextAlignmentOptions.Center, new Vector2(.12f, .38f), new Vector2(.88f, .62f), new Color32(161, 167, 164, 255));
+            var monsters = new List<MonsterView>(); for (int index = 0; index < 5; index++) monsters.Add(CreateMonsterView(rootImage.transform, index));
+            var actors = new List<ActorView>(); for (int index = 0; index < 8; index++) actors.Add(CreateActorView(rootImage.transform, index));
+            return new RegionView(rootImage.rectTransform, rootImage, outline, title, meta, locked.gameObject, monsters, actors);
         }
 
-        private ActorView CreateActor(Transform parent, int index)
+        private MonsterView CreateMonsterView(Transform parent, int index)
         {
-            var root = new GameObject("용병동작_" + index, typeof(RectTransform)); root.transform.SetParent(parent, false);
-            RectTransform rect = (RectTransform)root.transform; rect.anchorMin = rect.anchorMax = new Vector2(.12f, .12f + index * .105f); rect.sizeDelta = new Vector2(132, 58);
-            Image body = Panel("몸", root.transform, new Color32(67, 146, 126, 255), new Vector2(0, .18f), new Vector2(.34f, .9f));
-            TMP_Text label = Text("이름", root.transform, "", 15, TextAlignmentOptions.Left, new Vector2(.36f, 0), new Vector2(1, 1), Color.white);
-            root.SetActive(false); return new ActorView(root, rect, body, label, index);
+            float x = .10f + (index % 3) * .30f, y = index < 3 ? .60f : .32f;
+            var root = new GameObject("몬스터동작_" + index, typeof(RectTransform)); root.transform.SetParent(parent, false); RectTransform rect = (RectTransform)root.transform;
+            rect.anchorMin = rect.anchorMax = new Vector2(x, y); rect.pivot = new Vector2(.5f, .5f); rect.sizeDelta = new Vector2(150, 92);
+            Image body = Panel("몬스터몸", root.transform, new Color32(157, 72, 60, 255), new Vector2(.36f, .26f), new Vector2(.64f, .72f));
+            TMP_Text label = Text("몬스터이름", root.transform, "", 13, TextAlignmentOptions.Center, new Vector2(0f, .68f), new Vector2(1f, 1f), Color.white);
+            Image hpBack = Panel("몬스터체력바", root.transform, new Color32(37, 30, 30, 255), new Vector2(.12f, .08f), new Vector2(.88f, .22f));
+            Image hp = Panel("몬스터현재체력", hpBack.transform, new Color32(197, 69, 55, 255), Vector2.zero, Vector2.one); hp.type = Image.Type.Filled; hp.fillMethod = Image.FillMethod.Horizontal;
+            root.SetActive(false); return new MonsterView(root, rect, body, label, hp, index);
         }
 
-        private void SelectRegion(int index)
+        private ActorView CreateActorView(Transform parent, int index)
         {
-            selectedRegion = Mathf.Clamp(index, 0, RegionIds.Length - 1); title.text = RegionNames[selectedRegion]; Refresh();
-            ShowToast(selectedRegion == 0 ? "용병을 눌러 배치하거나 복귀시킬 수 있습니다." : "잠긴 사냥터는 지역 진행으로 개방할 수 있습니다.");
+            var root = new GameObject("용병동작_" + index, typeof(RectTransform)); root.transform.SetParent(parent, false); RectTransform rect = (RectTransform)root.transform;
+            float x = .12f + (index % 4) * .23f, y = index < 4 ? .18f : .08f; rect.anchorMin = rect.anchorMax = new Vector2(x, y); rect.sizeDelta = new Vector2(112, 58);
+            Image body = Panel("용병몸", root.transform, new Color32(68, 147, 126, 255), new Vector2(.02f, .18f), new Vector2(.30f, .88f));
+            TMP_Text label = Text("용병이름", root.transform, "", 12, TextAlignmentOptions.Left, new Vector2(.33f, 0f), new Vector2(1f, 1f), Color.white);
+            root.SetActive(false); return new ActorView(root, rect, body, label, index, rect.anchoredPosition);
         }
 
-        private void Toggle(MemberRow row)
+        private void SelectRegion(string regionId, bool pan)
         {
-            if (service == null || row.Member == null) return;
+            selectedRegionId = regionId; Refresh();
+            WorldHuntRegionDto region = overview?.Regions.SingleOrDefault(value => value.Id == regionId); if (pan && region != null) dragSurface.PanToWorldX(region.WorldX + 300f);
+        }
+
+        private void ToggleAssignment(MemberButton row)
+        {
+            if (service == null || row.Member == null || overview == null) return;
             try
             {
-                if (row.Member.AssignedRegionId == RegionIds[selectedRegion]) { service.Unassign(row.Member.InstanceId); ShowToast($"{row.Member.DisplayName}에게 귀환 명령을 내렸습니다."); }
-                else { service.Assign(row.Member.InstanceId, RegionIds[selectedRegion]); ShowToast($"{row.Member.DisplayName}을(를) {RegionNames[selectedRegion]}에 배치했습니다."); }
+                if (row.Member.AssignedRegionId == selectedRegionId) { service.Unassign(row.Member.InstanceId); ShowStatus($"{row.Member.DisplayName}에게 귀환 명령을 내렸습니다."); }
+                else { service.Assign(row.Member.InstanceId, selectedRegionId); ShowStatus($"{row.Member.DisplayName}을(를) 선택 사냥터에 배치했습니다."); }
                 Refresh();
             }
-            catch (Exception exception) { Debug.LogWarning(exception); ShowToast("아직 배치할 수 없는 사냥터입니다. 지역 개방 조건을 확인하세요."); }
+            catch (Exception exception) { Debug.LogWarning(exception); ShowStatus("배치할 수 없습니다. 지역 개방 상태와 최대 배치 인원을 확인하세요."); }
         }
 
         private void Refresh()
         {
             if (service == null || !service.IsBootstrapped) return;
-            overview = service.GetOverview();
-            IReadOnlyList<ContinuousHuntMemberDto> members = overview.Members;
-            int here = members.Count(value => value.AssignedRegionId == RegionIds[selectedRegion]);
-            long gold = members.Where(value => value.AssignedRegionId == RegionIds[selectedRegion]).Sum(value => value.EarnedGold);
-            summary.text = $"배치 {here}명  ·  누적 수익 {gold:N0}골드";
-            fieldHint.gameObject.SetActive(here == 0);
-            monster.gameObject.SetActive(here > 0);
-            for (int i = 0; i < rows.Count; i++)
+            overview = service.GetOverview(); EnsureRegionViews();
+            summary.text = $"배치 {overview.AssignedCount}명 · 누적 수익 {overview.EarnedGold:N0}골드 · 몬스터 {overview.Monsters.Count(value => value.State == "ACTIVE")}마리";
+            WorldHuntRegionDto selected = overview.Regions.Single(value => value.Id == selectedRegionId);
+            selection.text = $"{selected.DisplayName} · 배치 {selected.AssignedCount}/{selected.MaxActive}명";
+            foreach (WorldHuntRegionDto region in overview.Regions) RefreshRegion(region, regionViews[region.Id]);
+            for (int index = 0; index < memberButtons.Count; index++)
             {
-                MemberRow row = rows[i]; row.Member = i < members.Count ? members[i] : null; row.Button.gameObject.SetActive(row.Member != null);
+                MemberButton row = memberButtons[index]; row.Member = index < overview.Members.Count ? overview.Members[index] : null; row.Button.gameObject.SetActive(row.Member != null);
                 if (row.Member == null) continue;
-                bool selected = row.Member.AssignedRegionId == RegionIds[selectedRegion];
-                string assignment = row.Member.AssignedRegionId == null ? "대기" : selected ? "이곳에서 사냥 중" : "다른 사냥터 배치";
-                row.Label.text = $"<b>{row.Member.DisplayName}</b>  {Job(row.Member.JobId)}  ·  스킬 Lv {row.Member.TotalSkillLevels}  ·  최고 장비 +{row.Member.BestEnhancementLevel}\n체력 {row.Member.CurrentHpBps / 100}%  ·  가방 {row.Member.BagFill}/{row.Member.BagCapacity}  ·  {assignment}";
-                row.Button.image.color = selected ? new Color32(47, 111, 91, 255) : new Color32(39, 55, 57, 255);
+                bool here = row.Member.AssignedRegionId == selectedRegionId; string assigned = row.Member.AssignedRegionId == null ? "마을" : here ? "이곳" : "타지역";
+                row.Label.text = $"<b>{row.Member.DisplayName}</b>\n{Job(row.Member.JobId)} · {assigned}\n체력 {row.Member.CurrentHpBps / 100}% · 가방 {row.Member.BagFill}/{row.Member.BagCapacity}";
+                row.Button.image.color = here ? new Color32(49, 118, 94, 255) : row.Member.AssignedRegionId == null ? new Color32(49, 61, 61, 255) : new Color32(62, 72, 68, 255);
             }
-            ContinuousHuntMemberDto[] visible = members.Where(value => value.AssignedRegionId == RegionIds[selectedRegion]).Take(actors.Count).ToArray();
-            for (int i = 0; i < actors.Count; i++)
+            ContinuousHuntMemberDto active = overview.Members.FirstOrDefault(value => value.AssignedRegionId == selectedRegionId && value.State == "COMBAT") ?? overview.Members.FirstOrDefault(value => value.AssignedRegionId == selectedRegionId);
+            if (active != null) ShowStatus($"{active.DisplayName} · {State(active.State)} · 최근 피해 {active.LastCombatDamage:N0} · {Skill(active.LastSkillId)} · 가방 {active.BagFill}/{active.BagCapacity}");
+            else ShowStatus(selected.Unlocked ? "용병을 눌러 이 사냥터에 배치하세요. 여러 명을 함께 배치할 수 있습니다." : "왕국 진행으로 개방해야 배치할 수 있습니다.");
+        }
+
+        private void RefreshRegion(WorldHuntRegionDto region, RegionView view)
+        {
+            bool selected = region.Id == selectedRegionId; view.Outline.effectColor = selected ? new Color32(244, 197, 91, 255) : new Color32(0, 0, 0, 0);
+            view.Title.text = region.DisplayName; view.Meta.text = $"등급 {region.Tier} · 권장 {region.RecommendedPower}\n배치 {region.AssignedCount}/{region.MaxActive}"; view.Locked.SetActive(!region.Unlocked);
+            WorldHuntMonsterDto[] monsters = overview.Monsters.Where(value => value.RegionId == region.Id).OrderBy(value => value.SpawnSlot).ToArray();
+            for (int index = 0; index < view.Monsters.Count; index++)
             {
-                ActorView actor = actors[i]; actor.Member = i < visible.Length ? visible[i] : null; actor.Root.SetActive(actor.Member != null);
+                MonsterView actor = view.Monsters[index]; actor.Monster = index < monsters.Length ? monsters[index] : null; actor.Root.SetActive(actor.Monster != null && region.Unlocked);
+                if (actor.Monster == null) continue;
+                actor.Label.text = actor.Monster.State == "RESPAWNING" ? "재생성 중" : $"{actor.Monster.DisplayName}  레벨 {actor.Monster.Level}";
+                actor.Hp.fillAmount = actor.Monster.HpBps / 10000f; actor.Body.color = actor.Monster.Type == "ELITE" ? new Color32(142, 78, 166, 255) : new Color32(164, 72, 58, 255);
+                actor.Body.color = actor.Monster.State == "RESPAWNING" ? new Color32(82, 85, 83, 180) : actor.Body.color;
+            }
+            ContinuousHuntMemberDto[] members = overview.Members.Where(value => value.AssignedRegionId == region.Id).Take(view.Actors.Count).ToArray();
+            for (int index = 0; index < view.Actors.Count; index++)
+            {
+                ActorView actor = view.Actors[index]; actor.Member = index < members.Length ? members[index] : null; actor.Root.SetActive(actor.Member != null && region.Unlocked);
                 if (actor.Member != null) { actor.Label.text = $"{actor.Member.DisplayName}\n{State(actor.Member.State)}"; actor.Body.color = JobColor(actor.Member.JobId); }
             }
         }
 
-        private void AnimateActors()
+        private void AnimateWorld()
         {
-            if (!gameObject.activeInHierarchy) return;
-            float time = Time.unscaledTime;
-            foreach (ActorView actor in actors)
+            if (!gameObject.activeInHierarchy) return; float time = Time.unscaledTime;
+            foreach (RegionView region in regionViews.Values)
             {
-                if (actor.Member == null || !actor.Root.activeSelf) continue;
-                float baseX = actor.Member.State switch { "TRAVEL_TO_REGION" => .12f + Mathf.PingPong(time * .10f, .28f), "FIND_TARGET" => .42f + Mathf.Sin(time * 1.5f + actor.Index) * .05f, "COMBAT" => .58f + Mathf.PingPong(time * .8f, .08f), "LOOT" => .68f, "RETURN_TOWN" => .72f - Mathf.PingPong(time * .16f, .6f), _ => .12f };
-                actor.Rect.anchorMin = actor.Rect.anchorMax = new Vector2(baseX, .12f + actor.Index * .105f + Mathf.Sin(time * 2f + actor.Index) * .008f);
-                float pulse = actor.Member.State == "COMBAT" ? 1f + Mathf.PingPong(time * 2.8f, .12f) : 1f; actor.Rect.localScale = Vector3.one * pulse;
+                foreach (MonsterView monster in region.Monsters)
+                {
+                    if (monster.Monster == null || !monster.Root.activeSelf) continue;
+                    float pulse = monster.Monster.State == "ACTIVE" ? 1f + Mathf.Sin(time * 3.2f + monster.Index) * .04f : .82f; monster.Body.rectTransform.localScale = Vector3.one * pulse;
+                }
+                foreach (ActorView actor in region.Actors)
+                {
+                    if (actor.Member == null || !actor.Root.activeSelf) continue;
+                    float movement = actor.Member.State switch { "TRAVEL_TO_REGION" => Mathf.PingPong(time * 20f, 34f), "FIND_TARGET" => Mathf.Sin(time * 2f + actor.Index) * 12f, "COMBAT" => Mathf.PingPong(time * 34f, 22f), "LOOT" => 24f, "RETURN_TOWN" => -Mathf.PingPong(time * 28f, 36f), _ => 0f };
+                    actor.Rect.anchoredPosition = actor.BasePosition + new Vector2(movement, Mathf.Sin(time * 2.4f + actor.Index) * 3f);
+                    actor.Rect.localScale = actor.Member.State == "COMBAT" ? Vector3.one * (1f + Mathf.PingPong(time * 2.5f, .10f)) : Vector3.one;
+                }
             }
-            if (monster != null && monster.gameObject.activeSelf) monster.rectTransform.localScale = Vector3.one * (1f + Mathf.Sin(time * 4f) * .04f);
         }
 
         private void OnChanged(object sender, ContinuousHuntOverviewDto value) { overview = value; if (gameObject.activeInHierarchy) Refresh(); }
-        private void ShowToast(string message) { if (toast != null) toast.text = message; }
+        private void ShowStatus(string message) { if (statusLine != null) statusLine.text = message; }
         private void OnDestroy() { if (service != null) service.Changed -= OnChanged; }
 
+        private static void Building(Transform parent, string label, Vector2 min, Vector2 max, Color color)
+        {
+            Image body = Panel(label, parent, color, min, max); Text(label + "표시", body.transform, label, 15, TextAlignmentOptions.Center, new Vector2(0f, .15f), new Vector2(1f, .85f), Color.white);
+        }
+        private static Image FixedPanel(string name, Transform parent, Color color, float x, float width, float minY, float maxY)
+        {
+            var go = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)); go.transform.SetParent(parent, false); Image image = go.GetComponent<Image>(); image.color = color;
+            RectTransform rect = image.rectTransform; rect.anchorMin = new Vector2(0f, minY); rect.anchorMax = new Vector2(0f, maxY); rect.pivot = new Vector2(0f, .5f); rect.sizeDelta = new Vector2(width, 0f); rect.anchoredPosition = new Vector2(x, 0f); return image;
+        }
         private static Image Panel(string name, Transform parent, Color color, Vector2 min, Vector2 max)
         {
-            var go = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)); go.transform.SetParent(parent, false);
-            Image image = go.GetComponent<Image>(); image.color = color; SetRect(image.rectTransform, min, max); return image;
+            var go = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)); go.transform.SetParent(parent, false); Image image = go.GetComponent<Image>(); image.color = color; SetRect(image.rectTransform, min, max); return image;
         }
         private static TMP_Text Text(string name, Transform parent, string value, float size, TextAlignmentOptions alignment, Vector2 min, Vector2 max, Color color)
         {
-            var go = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI)); go.transform.SetParent(parent, false);
-            TMP_Text text = go.GetComponent<TMP_Text>(); text.text = value; text.fontSize = size; text.alignment = alignment; text.color = color; text.textWrappingMode = TextWrappingModes.Normal; SetRect(text.rectTransform, min, max); return text;
+            var go = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI)); go.transform.SetParent(parent, false); TMP_Text text = go.GetComponent<TMP_Text>();
+            text.text = value; text.fontSize = size; text.alignment = alignment; text.color = color; text.textWrappingMode = TextWrappingModes.Normal; text.raycastTarget = false; SetRect(text.rectTransform, min, max); return text;
         }
         private static Button MakeButton(string name, Transform parent, string value, Color color, Vector2 min, Vector2 max)
         {
-            Image image = Panel(name, parent, color, min, max); Button button = image.gameObject.AddComponent<Button>(); button.targetGraphic = image;
-            TMP_Text label = Text("글자", image.transform, value, 19, TextAlignmentOptions.Center, Vector2.zero, Vector2.one, Color.white); label.raycastTarget = false; return button;
+            Image image = Panel(name, parent, color, min, max); Button button = image.gameObject.AddComponent<Button>(); button.targetGraphic = image; Text("글자", image.transform, value, 18, TextAlignmentOptions.Center, Vector2.zero, Vector2.one, Color.white); return button;
         }
         private static void SetRect(RectTransform rect, Vector2 min, Vector2 max) { rect.anchorMin = min; rect.anchorMax = max; rect.offsetMin = rect.offsetMax = Vector2.zero; }
+        private static Color ThemeColor(string theme) => theme switch { "MEADOW" => new Color32(49, 91, 67, 255), "FOREST" => new Color32(38, 75, 64, 255), "MINE" => new Color32(76, 68, 61, 255), "SWAMP" => new Color32(61, 74, 53, 255), "FROST_RUIN" => new Color32(57, 78, 86, 255), _ => new Color32(50, 72, 66, 255) };
+        private static Color GroundColor(string theme) => theme switch { "MEADOW" => new Color32(71, 112, 65, 255), "FOREST" => new Color32(49, 88, 61, 255), "MINE" => new Color32(92, 78, 64, 255), "SWAMP" => new Color32(74, 89, 56, 255), "FROST_RUIN" => new Color32(82, 107, 114, 255), _ => new Color32(67, 91, 68, 255) };
         private static string Job(string id) => id switch { "JOB_WARRIOR" => "전사", "JOB_GUARDIAN" => "수호자", "JOB_ARCHER" => "궁수", "JOB_MAGE" => "마법사", "JOB_CLERIC" => "성직자", _ => "용병" };
-        private static string State(string state) => state switch { "IDLE_TOWN" => "마을 대기", "TRAVEL_TO_REGION" => "이동 중", "FIND_TARGET" => "목표 탐색", "COMBAT" => "전투 중", "LOOT" => "전리품 수집", "CONTINUE_DECISION" => "상태 점검", "RETURN_TOWN" => "마을 귀환", "SELL_LOOT" => "전리품 판매", "HEAL" => "치료", "BUY_CONSUMABLES" => "물약 구매", "EVALUATE_EQUIPMENT" => "장비 점검", "BUY_EQUIPMENT" => "장비 구매", "TRAIN_SKILLS" => "스킬 훈련", "ENHANCE_EQUIPMENT" => "장비 강화", _ => "정비 중" };
-        private static Color JobColor(string id) => id switch { "JOB_WARRIOR" => new Color32(174, 91, 65, 255), "JOB_ARCHER" => new Color32(72, 151, 102, 255), "JOB_ROGUE" => new Color32(126, 95, 162, 255), "JOB_MAGE" => new Color32(66, 117, 166, 255), "JOB_CLERIC" => new Color32(194, 164, 92, 255), _ => new Color32(93, 137, 128, 255) };
+        private static string State(string state) => state switch { "IDLE_TOWN" => "마을 대기", "TRAVEL_TO_REGION" => "이동 중", "FIND_TARGET" => "목표 탐색", "COMBAT" => "전투 중", "LOOT" => "전리품 수집", "CONTINUE_DECISION" => "상태 점검", "RETURN_TOWN" => "마을 귀환", "SELL_LOOT" => "전리품 정산", "HEAL" => "치료", "BUY_CONSUMABLES" => "물약 구매", "EVALUATE_EQUIPMENT" => "장비 비교", "BUY_EQUIPMENT" => "장비 구매", "TRAIN_SKILLS" => "스킬 훈련", "ENHANCE_EQUIPMENT" => "장비 강화", _ => "정비 중" };
+        private static string Skill(string id) => string.IsNullOrEmpty(id) ? "기본 공격" : "자동 스킬";
+        private static Color JobColor(string id) => id switch { "JOB_WARRIOR" => new Color32(181, 91, 64, 255), "JOB_GUARDIAN" => new Color32(105, 124, 151, 255), "JOB_ARCHER" => new Color32(75, 157, 102, 255), "JOB_MAGE" => new Color32(72, 119, 174, 255), "JOB_CLERIC" => new Color32(199, 167, 89, 255), _ => new Color32(93, 137, 128, 255) };
 
-        private sealed class MemberRow
+        private sealed class MemberButton
         {
-            public MemberRow(Button button, TMP_Text label) { Button = button; Label = label; }
-            public Button Button { get; }
-            public TMP_Text Label { get; }
-            public ContinuousHuntMemberDto Member { get; set; }
+            public MemberButton(Button button, TMP_Text label) { Button = button; Label = label; }
+            public Button Button { get; } public TMP_Text Label { get; } public ContinuousHuntMemberDto Member { get; set; }
+        }
+        private sealed class RegionView
+        {
+            public RegionView(RectTransform root, Image background, Outline outline, TMP_Text title, TMP_Text meta, GameObject locked, List<MonsterView> monsters, List<ActorView> actors)
+            { Root = root; Background = background; Outline = outline; Title = title; Meta = meta; Locked = locked; Monsters = monsters; Actors = actors; }
+            public RectTransform Root { get; } public Image Background { get; } public Outline Outline { get; } public TMP_Text Title { get; } public TMP_Text Meta { get; } public GameObject Locked { get; }
+            public List<MonsterView> Monsters { get; } public List<ActorView> Actors { get; }
+        }
+        private sealed class MonsterView
+        {
+            public MonsterView(GameObject root, RectTransform rect, Image body, TMP_Text label, Image hp, int index) { Root = root; Rect = rect; Body = body; Label = label; Hp = hp; Index = index; }
+            public GameObject Root { get; } public RectTransform Rect { get; } public Image Body { get; } public TMP_Text Label { get; } public Image Hp { get; } public int Index { get; } public WorldHuntMonsterDto Monster { get; set; }
         }
         private sealed class ActorView
         {
-            public ActorView(GameObject root, RectTransform rect, Image body, TMP_Text label, int index) { Root = root; Rect = rect; Body = body; Label = label; Index = index; }
-            public GameObject Root { get; }
-            public RectTransform Rect { get; }
-            public Image Body { get; }
-            public TMP_Text Label { get; }
-            public int Index { get; }
-            public ContinuousHuntMemberDto Member { get; set; }
+            public ActorView(GameObject root, RectTransform rect, Image body, TMP_Text label, int index, Vector2 basePosition) { Root = root; Rect = rect; Body = body; Label = label; Index = index; BasePosition = basePosition; }
+            public GameObject Root { get; } public RectTransform Rect { get; } public Image Body { get; } public TMP_Text Label { get; } public int Index { get; } public Vector2 BasePosition { get; } public ContinuousHuntMemberDto Member { get; set; }
         }
     }
 }
