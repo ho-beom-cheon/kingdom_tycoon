@@ -9,6 +9,18 @@
   "skillCastEveryCombatTicks": 3,
   "levelAttackBpsPerLevel": 150,
   "levelDefenseBpsPerLevel": 100,
+  "feedback": {
+    "hitFlashSeconds": 0.16,
+    "skillPulseSeconds": 0.36,
+    "damageFloatSeconds": 0.85,
+    "rewardFeedSeconds": 4.0,
+    "maximumRewardFeedEntries": 3,
+    "masterVolumeBps": 2200,
+    "hitFrequencyHz": 180,
+    "skillFrequencyHz": 480,
+    "rewardFrequencyHz": 720,
+    "growthFrequencyHz": 920
+  },
   "regions": [
     { "regionId": "REGION_R01", "worldX": 760, "theme": "MEADOW" },
     { "regionId": "REGION_R02", "worldX": 1420, "theme": "FOREST" },
