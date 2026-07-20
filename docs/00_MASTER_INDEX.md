@@ -48,6 +48,8 @@
   트랜잭션, Flyway, 운영 콘텐츠 배포 상세 기준선
 - `design/TYCOON_CORE_CONTINUOUS_AUTO_HUNT_CORRECTION_COMPLETE_DESIGN_v1.0.md`: 일반 사냥을 용병별 영구 배치·독립 순환으로 정정한 최종 계약
 - `reviews/CORE_CONTINUOUS_AUTO_HUNT_CORRECTION_COMPLETENESS_REVIEW_v1.0.md`: 정정 설계 완결성 검토
+- `design/TYCOON_CORE_AUTOMATIC_GROWTH_COMPLETE_DESIGN_v1.0.md`: 귀환 후 스킬 훈련·장비 강화·자동 복귀를 연결한 최종 계약
+- `reviews/CORE_AUTOMATIC_GROWTH_COMPLETENESS_REVIEW_v1.0.md`: 자동 성장 설계 완결성 및 기존 계약 충돌 검토
 
 ## 구현 데이터
 
