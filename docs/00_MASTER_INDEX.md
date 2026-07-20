@@ -46,6 +46,8 @@
 - `33_OPEN_DECISIONS.md`
 - `design/TYCOON_DB_INTERFACE_DESIGN_v1.0.md`: 서버 DB 스키마, 권한,
   트랜잭션, Flyway, 운영 콘텐츠 배포 상세 기준선
+- `design/TYCOON_CORE_CONTINUOUS_AUTO_HUNT_CORRECTION_COMPLETE_DESIGN_v1.0.md`: 일반 사냥을 용병별 영구 배치·독립 순환으로 정정한 최종 계약
+- `reviews/CORE_CONTINUOUS_AUTO_HUNT_CORRECTION_COMPLETENESS_REVIEW_v1.0.md`: 정정 설계 완결성 검토
 
 ## 구현 데이터
 
@@ -63,3 +65,4 @@
 - `reports/P16_SERVER_SKELETON_IMPLEMENTATION_EVIDENCE.md`: P16 서버 권위 API, Unity 게이트웨이, PostgreSQL 통합 검증
 - `design/TYCOON_P17_BALANCE_OPTIMIZATION_RC_COMPLETE_DESIGN_v1.0.md`: P17 밸런스·최적화·한국어 UI·Android RC 최종 계약
 - `reports/P17_BALANCE_OPTIMIZATION_RC_IMPLEMENTATION_EVIDENCE.md`: P17 출시 자산, 전체 QA, 무경고 Android RC 구현 증적
+- `reports/CORE_CONTINUOUS_AUTO_HUNT_CORRECTION_IMPLEMENTATION_EVIDENCE.md`: 상시 자동 사냥 구현·저장 호환·UI·회귀 검증 증적
