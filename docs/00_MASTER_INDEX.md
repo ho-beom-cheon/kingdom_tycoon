@@ -68,3 +68,4 @@
 - `design/TYCOON_P17_BALANCE_OPTIMIZATION_RC_COMPLETE_DESIGN_v1.0.md`: P17 밸런스·최적화·한국어 UI·Android RC 최종 계약
 - `reports/P17_BALANCE_OPTIMIZATION_RC_IMPLEMENTATION_EVIDENCE.md`: P17 출시 자산, 전체 QA, 무경고 Android RC 구현 증적
 - `reports/CORE_CONTINUOUS_AUTO_HUNT_CORRECTION_IMPLEMENTATION_EVIDENCE.md`: 상시 자동 사냥 구현·저장 호환·UI·회귀 검증 증적
+- `reports/CORE_AUTOMATIC_GROWTH_IMPLEMENTATION_EVIDENCE.md`: 귀환 후 자동 스킬·강화·복귀 구현과 전체 회귀 검증 증적
