@@ -74,3 +74,4 @@
 - `reports/CORE_CONTINUOUS_AUTO_HUNT_CORRECTION_IMPLEMENTATION_EVIDENCE.md`: 상시 자동 사냥 구현·저장 호환·UI·회귀 검증 증적
 - `reports/CORE_AUTOMATIC_GROWTH_IMPLEMENTATION_EVIDENCE.md`: 귀환 후 자동 스킬·강화·복귀 구현과 전체 회귀 검증 증적
 - `reports/CORE_WORLD_HUNT_ECONOMY_IMPLEMENTATION_EVIDENCE.md`: 통합 월드맵·필드 전투·전리품·상점·성장 순환 구현 증적
+- `reports/CORE_HUNT_GAME_FEEL_IMPLEMENTATION_EVIDENCE.md`: 타격·보상·성장·지역 차이·접근성 피드백 구현과 자동 검증 증적
