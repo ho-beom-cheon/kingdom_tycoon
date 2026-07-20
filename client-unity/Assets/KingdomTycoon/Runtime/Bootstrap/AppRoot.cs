@@ -106,6 +106,7 @@ namespace KingdomTycoon.Bootstrap
             Services.Register(new InventoryGameService(new SystemTrustedUtcClock()));
             Services.Register(new EconomyGameService(new SystemTrustedUtcClock()));
             Services.Register(new CombatGameService(new SystemTrustedUtcClock()));
+            Services.Register(new ContinuousHuntGameService(new SystemTrustedUtcClock()));
             Services.Register(new ProductionGameService(new SystemTrustedUtcClock()));
             Services.Register(new EquipmentGrowthGameService(new SystemTrustedUtcClock()));
             Services.Register(new ProgressionGameService(new SystemTrustedUtcClock()));
@@ -151,6 +152,7 @@ namespace KingdomTycoon.Bootstrap
             Services.Get<RegionGameService>().Bootstrap();
             Services.Get<RecruitmentGameService>().Bootstrap();
             Services.Get<CombatGameService>().Bootstrap();
+            Services.Get<ContinuousHuntGameService>().Bootstrap();
             Services.Get<ProductionGameService>().Bootstrap();
             Services.Get<EquipmentGrowthGameService>().Bootstrap();
             Services.Get<RaidGameService>().Bootstrap();

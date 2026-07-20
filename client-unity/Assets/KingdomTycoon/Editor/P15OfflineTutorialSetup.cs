@@ -193,7 +193,7 @@ namespace KingdomTycoon.Editor
             UnityEventTools.AddPersistentListener(hud.Find("NAV_KINGDOM").GetComponent<Button>().onClick, menu.CloseAll);
             UnityEventTools.AddPersistentListener(hud.Find("NAV_MERCENARIES").GetComponent<Button>().onClick, menu.PrepareMercenaries);
             UnityEventTools.AddPersistentListener(hud.Find("P09_CRAFT_NAV_BUTTON").GetComponent<Button>().onClick, menu.PrepareProduction);
-            UnityEventTools.AddPersistentListener(hud.Find("P12_REGION_MAP_NAV_BUTTON").GetComponent<Button>().onClick, menu.PrepareRegions);
+            UnityEventTools.AddPersistentListener(hud.Find("P12_REGION_MAP_NAV_BUTTON").GetComponent<Button>().onClick, menu.OpenRegions);
             UnityEventTools.AddPersistentListener(hud.Find("P13_RECRUITMENT_NAV_BUTTON").GetComponent<Button>().onClick, menu.PrepareRecruitment);
         }
 
