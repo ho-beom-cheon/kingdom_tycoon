@@ -19,6 +19,7 @@ namespace KingdomTycoon.Presentation.Combat
         private readonly List<FeedbackRow> feedbackRows = new();
         private ContinuousHuntGameService service;
         private WorldHuntFeedbackAudio feedbackAudio;
+        private WorldHuntPixelArtLibrary visuals;
         private ContinuousHuntOverviewDto overview;
         private TMP_Text summary;
         private TMP_Text selection;
@@ -38,6 +39,7 @@ namespace KingdomTycoon.Presentation.Combat
         public bool SoundEnabled => feedbackAudio != null && feedbackAudio.SoundEnabled;
         public bool ReducedMotion => WorldHuntFeedbackPreferences.ReducedMotion;
         public IReadOnlyList<TMP_Text> FeedbackTexts => feedbackRows.Select(value => value.Text).ToArray();
+        public int PixelArtSpriteCount => visuals?.SpriteCount ?? 0;
 
         public static ContinuousHuntScreenPresenter Install()
         {
@@ -53,7 +55,7 @@ namespace KingdomTycoon.Presentation.Combat
             Canvas canvas = GetComponent<Canvas>(); canvas.renderMode = RenderMode.ScreenSpaceOverlay; canvas.overrideSorting = true; canvas.sortingOrder = 850;
             CanvasScaler scaler = GetComponent<CanvasScaler>(); scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize; scaler.referenceResolution = new Vector2(1920, 1080); scaler.matchWidthOrHeight = .5f;
             RectTransform root = (RectTransform)transform; root.anchorMin = Vector2.zero; root.anchorMax = Vector2.one; root.offsetMin = root.offsetMax = Vector2.zero;
-            feedbackAudio = gameObject.AddComponent<WorldHuntFeedbackAudio>(); BuildUi(); UpdatePreferenceLabels(); gameObject.SetActive(false);
+            visuals = new WorldHuntPixelArtLibrary(); feedbackAudio = gameObject.AddComponent<WorldHuntFeedbackAudio>(); BuildUi(); UpdatePreferenceLabels(); gameObject.SetActive(false);
         }
 
         public void Open()
@@ -124,9 +126,8 @@ namespace KingdomTycoon.Presentation.Combat
             Image kingdom = FixedPanel("왕국거점", worldContent, new Color32(41, 55, 48, 255), 50f, 580f, .08f, .92f);
             Text("왕국이름", kingdom.transform, "재건 중인 왕국", 30, TextAlignmentOptions.Center, new Vector2(.05f, .82f), new Vector2(.95f, .95f), new Color32(235, 201, 122, 255));
             Text("왕국설명", kingdom.transform, "귀환 · 판매 · 물약 · 장비 · 훈련 · 강화", 17, TextAlignmentOptions.Center, new Vector2(.08f, .68f), new Vector2(.92f, .80f), new Color32(174, 194, 182, 255));
-            Building(kingdom.transform, "성채", new Vector2(.34f, .26f), new Vector2(.66f, .66f), new Color32(111, 107, 94, 255));
-            Building(kingdom.transform, "상점", new Vector2(.08f, .15f), new Vector2(.30f, .44f), new Color32(155, 104, 56, 255));
-            Building(kingdom.transform, "대장간", new Vector2(.70f, .15f), new Vector2(.92f, .44f), new Color32(102, 82, 78, 255));
+            Image landmark = PixelImage("왕국픽셀랜드마크", kingdom.transform, visuals.KingdomSprite, new Vector2(.22f, .13f), new Vector2(.78f, .68f)); landmark.color = Color.white;
+            Text("왕국시설표시", kingdom.transform, "상점  ·  성채  ·  대장간", 15, TextAlignmentOptions.Center, new Vector2(.08f, .04f), new Vector2(.92f, .17f), new Color32(232, 197, 115, 255));
             Text("드래그안내", worldContent, "← 드래그하여 모든 사냥터 관찰 →", 18, TextAlignmentOptions.Center, new Vector2(.08f, .90f), new Vector2(.40f, .98f), new Color32(201, 218, 205, 210));
         }
 
@@ -238,8 +239,9 @@ namespace KingdomTycoon.Presentation.Combat
         {
             const float start = .345f, gap = .007f; float width = (.985f - start - gap * 7f) / 8f; float left = start + index * (width + gap);
             Button button = MakeButton("용병_" + index, parent, "", new Color32(42, 59, 60, 255), new Vector2(left, .10f), new Vector2(left + width, .90f));
-            TMP_Text label = button.GetComponentInChildren<TMP_Text>(); label.fontSize = 15; label.textWrappingMode = TextWrappingModes.Normal; label.margin = new Vector4(6, 3, 6, 3);
-            var row = new MemberButton(button, label); button.onClick.AddListener(() => ToggleAssignment(row)); button.gameObject.SetActive(false); return row;
+            TMP_Text label = button.GetComponentInChildren<TMP_Text>(); label.fontSize = 13; label.alignment = TextAlignmentOptions.Left; label.textWrappingMode = TextWrappingModes.Normal; label.margin = new Vector4(4, 3, 3, 3); SetRect(label.rectTransform, new Vector2(.30f, .03f), new Vector2(.99f, .97f));
+            Image icon = PixelImage("직업아이콘", button.transform, visuals.JobSprite("JOB_WARRIOR"), new Vector2(.025f, .20f), new Vector2(.30f, .80f)); icon.color = Color.white;
+            var row = new MemberButton(button, label, icon); button.onClick.AddListener(() => ToggleAssignment(row)); button.gameObject.SetActive(false); return row;
         }
 
         private void EnsureRegionViews()
@@ -267,12 +269,18 @@ namespace KingdomTycoon.Presentation.Combat
             TMP_Text risk = Text("위험도", riskBackground.transform, "안정", 14, TextAlignmentOptions.Center, Vector2.zero, Vector2.one, Color.white);
             TMP_Text drop = Text("대표전리품", rootImage.transform, "주요 전리품", 14, TextAlignmentOptions.Left, new Vector2(.28f, .775f), new Vector2(.96f, .855f), new Color32(224, 205, 151, 255));
             Panel("지역지면", rootImage.transform, GroundColor(region.Theme), new Vector2(.02f, .06f), new Vector2(.98f, .48f));
+            var decorations = new List<Image>();
+            for (int index = 0; index < 3; index++)
+            {
+                float left = .055f + index * .325f; Image decoration = PixelImage("환경장식_" + index, rootImage.transform, visuals.DecorationSprite(region.Theme), new Vector2(left, .49f), new Vector2(left + .16f, .72f));
+                decoration.color = new Color32(255, 255, 255, index == 1 ? (byte)190 : (byte)235); if (index == 1) decoration.rectTransform.localScale = new Vector3(-1f, .86f, 1f); decorations.Add(decoration);
+            }
             Text("지역길", rootImage.transform, "━━━━━━  사냥 순환로  ━━━━━━", 14, TextAlignmentOptions.Center, new Vector2(.06f, .43f), new Vector2(.94f, .50f), new Color32(210, 184, 126, 180));
             Image locked = Panel("잠금표시", rootImage.transform, new Color32(12, 18, 21, 220), new Vector2(.02f, .05f), new Vector2(.98f, .86f));
             Text("잠금문구", locked.transform, "아직 개방되지 않은 사냥터", 22, TextAlignmentOptions.Center, new Vector2(.12f, .38f), new Vector2(.88f, .62f), new Color32(161, 167, 164, 255));
             var monsters = new List<MonsterView>(); for (int index = 0; index < 5; index++) monsters.Add(CreateMonsterView(rootImage.transform, index));
             var actors = new List<ActorView>(); for (int index = 0; index < 8; index++) actors.Add(CreateActorView(rootImage.transform, index));
-            return new RegionView(rootImage.rectTransform, rootImage, outline, title, meta, riskBackground, risk, drop, locked.gameObject, monsters, actors);
+            return new RegionView(rootImage.rectTransform, rootImage, outline, title, meta, riskBackground, risk, drop, locked.gameObject, decorations, monsters, actors);
         }
 
         private MonsterView CreateMonsterView(Transform parent, int index)
@@ -281,7 +289,7 @@ namespace KingdomTycoon.Presentation.Combat
             var root = new GameObject("몬스터동작_" + index, typeof(RectTransform)); root.transform.SetParent(parent, false); RectTransform rect = (RectTransform)root.transform;
             rect.anchorMin = rect.anchorMax = new Vector2(x, y); rect.pivot = new Vector2(.5f, .5f); rect.sizeDelta = new Vector2(150, 92);
             Image pulse = Panel("타격펄스", root.transform, new Color32(255, 230, 155, 0), new Vector2(.28f, .16f), new Vector2(.72f, .74f)); pulse.raycastTarget = false;
-            Image body = Panel("몬스터몸", root.transform, new Color32(157, 72, 60, 255), new Vector2(.36f, .22f), new Vector2(.64f, .68f));
+            Image body = PixelImage("몬스터몸", root.transform, visuals.MonsterSprite("MEADOW", false), new Vector2(.27f, .18f), new Vector2(.73f, .70f)); body.color = Color.white;
             Outline eliteOutline = body.gameObject.AddComponent<Outline>(); eliteOutline.effectDistance = new Vector2(2f, -2f); eliteOutline.effectColor = new Color32(211, 146, 235, 0);
             TMP_Text label = Text("몬스터이름", root.transform, "", 13, TextAlignmentOptions.Center, new Vector2(0f, .72f), new Vector2(1f, 1f), Color.white);
             TMP_Text feedback = Text("피해표시", root.transform, "", 20, TextAlignmentOptions.Center, new Vector2(-.10f, .32f), new Vector2(1.10f, .78f), new Color32(255, 244, 218, 255)); feedback.fontStyle = FontStyles.Bold; feedback.gameObject.SetActive(false);
@@ -294,8 +302,8 @@ namespace KingdomTycoon.Presentation.Combat
         {
             var root = new GameObject("용병동작_" + index, typeof(RectTransform)); root.transform.SetParent(parent, false); RectTransform rect = (RectTransform)root.transform;
             float x = .12f + (index % 4) * .23f, y = index < 4 ? .18f : .08f; rect.anchorMin = rect.anchorMax = new Vector2(x, y); rect.sizeDelta = new Vector2(112, 58);
-            Image body = Panel("용병몸", root.transform, new Color32(68, 147, 126, 255), new Vector2(.02f, .18f), new Vector2(.30f, .88f));
-            TMP_Text label = Text("용병이름", root.transform, "", 12, TextAlignmentOptions.Left, new Vector2(.33f, 0f), new Vector2(1f, 1f), Color.white);
+            Image body = PixelImage("용병몸", root.transform, visuals.JobSprite("JOB_WARRIOR"), new Vector2(-.04f, .06f), new Vector2(.38f, .98f)); body.color = Color.white;
+            TMP_Text label = Text("용병이름", root.transform, "", 12, TextAlignmentOptions.Left, new Vector2(.36f, 0f), new Vector2(1f, 1f), Color.white);
             root.SetActive(false); return new ActorView(root, rect, body, label, index, rect.anchoredPosition);
         }
 
@@ -332,6 +340,7 @@ namespace KingdomTycoon.Presentation.Combat
                 if (row.Member == null) continue;
                 bool here = row.Member.AssignedRegionId == selectedRegionId; string assigned = row.Member.AssignedRegionId == null ? "마을" : here ? "이곳" : "타지역";
                 row.Label.text = $"<b>{row.Member.DisplayName}</b>\n{Job(row.Member.JobId)} · {assigned}\n체력 {row.Member.CurrentHpBps / 100}% · 가방 {row.Member.BagFill}/{row.Member.BagCapacity}\n스킬 {row.Member.TotalSkillLevels} · 강화 +{row.Member.BestEnhancementLevel}";
+                row.Icon.sprite = visuals.JobSprite(row.Member.JobId);
                 row.Button.image.color = here ? new Color32(49, 118, 94, 255) : row.Member.AssignedRegionId == null ? new Color32(49, 61, 61, 255) : new Color32(62, 72, 68, 255);
             }
             ContinuousHuntMemberDto active = overview.Members.FirstOrDefault(value => value.AssignedRegionId == selectedRegionId && value.State == "COMBAT") ?? overview.Members.FirstOrDefault(value => value.AssignedRegionId == selectedRegionId);
@@ -351,15 +360,15 @@ namespace KingdomTycoon.Presentation.Combat
                 MonsterView actor = view.Monsters[index]; actor.Monster = index < monsters.Length ? monsters[index] : null; actor.Root.SetActive(actor.Monster != null && region.Unlocked);
                 if (actor.Monster == null) continue;
                 actor.Label.text = actor.Monster.State == "RESPAWNING" ? "재생성 중" : actor.Monster.Type == "ELITE" ? $"정예 · {actor.Monster.DisplayName}  레벨 {actor.Monster.Level}" : $"{actor.Monster.DisplayName}  레벨 {actor.Monster.Level}";
-                actor.Hp.fillAmount = actor.Monster.HpBps / 10000f; actor.BaseColor = actor.Monster.Type == "ELITE" ? new Color32(142, 78, 166, 255) : new Color32(164, 72, 58, 255);
-                if (actor.Monster.State == "RESPAWNING") actor.BaseColor = new Color32(82, 85, 83, 180); actor.Body.color = actor.BaseColor;
+                actor.Body.sprite = visuals.MonsterSprite(region.Theme, actor.Monster.Type == "ELITE"); actor.Hp.fillAmount = actor.Monster.HpBps / 10000f; actor.BaseColor = Color.white;
+                if (actor.Monster.State == "RESPAWNING") actor.BaseColor = new Color32(116, 125, 121, 150); actor.Body.color = actor.BaseColor;
                 actor.EliteOutline.effectColor = actor.Monster.Type == "ELITE" ? new Color32(211, 146, 235, 230) : new Color32(0, 0, 0, 0);
             }
             ContinuousHuntMemberDto[] members = overview.Members.Where(value => value.AssignedRegionId == region.Id).Take(view.Actors.Count).ToArray();
             for (int index = 0; index < view.Actors.Count; index++)
             {
                 ActorView actor = view.Actors[index]; actor.Member = index < members.Length ? members[index] : null; actor.Root.SetActive(actor.Member != null && region.Unlocked);
-                if (actor.Member != null) { actor.Label.text = $"{actor.Member.DisplayName}\n{State(actor.Member.State)}"; actor.Body.color = JobColor(actor.Member.JobId); }
+                if (actor.Member != null) { actor.Label.text = $"{actor.Member.DisplayName}\n{State(actor.Member.State)}"; actor.Body.sprite = visuals.JobSprite(actor.Member.JobId); actor.Body.color = Color.white; }
             }
         }
 
@@ -376,7 +385,7 @@ namespace KingdomTycoon.Presentation.Combat
                     if (time < monster.PulseUntil && !reduced) pulse += Mathf.Sin(Mathf.InverseLerp(monster.PulseStarted, monster.PulseUntil, time) * Mathf.PI) * .18f;
                     monster.Body.rectTransform.localScale = Vector3.one * pulse;
                     float flash = time < monster.FlashUntil ? Mathf.Sin(Mathf.InverseLerp(monster.FlashStarted, monster.FlashUntil, time) * Mathf.PI) : 0f;
-                    monster.Body.color = Color.Lerp(monster.BaseColor, Color.white, flash * .82f);
+                    monster.Body.color = Color.Lerp(monster.BaseColor, new Color32(255, 222, 151, 255), flash * .72f);
                     if (monster.Feedback.gameObject.activeSelf)
                     {
                         float progress = Mathf.InverseLerp(monster.FeedbackStarted, monster.FeedbackUntil, time); Color color = monster.FeedbackColor; color.a = 1f - progress; monster.Feedback.color = color;
@@ -397,12 +406,7 @@ namespace KingdomTycoon.Presentation.Combat
 
         private void OnChanged(object sender, ContinuousHuntOverviewDto value) { if (gameObject.activeInHierarchy) Refresh(value); else overview = value; }
         private void ShowStatus(string message) { if (statusLine != null) statusLine.text = message; }
-        private void OnDestroy() { if (service != null) service.Changed -= OnChanged; }
-
-        private static void Building(Transform parent, string label, Vector2 min, Vector2 max, Color color)
-        {
-            Image body = Panel(label, parent, color, min, max); Text(label + "표시", body.transform, label, 15, TextAlignmentOptions.Center, new Vector2(0f, .15f), new Vector2(1f, .85f), Color.white);
-        }
+        private void OnDestroy() { if (service != null) service.Changed -= OnChanged; visuals?.Dispose(); visuals = null; }
         private static Image FixedPanel(string name, Transform parent, Color color, float x, float width, float minY, float maxY)
         {
             var go = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)); go.transform.SetParent(parent, false); Image image = go.GetComponent<Image>(); image.color = color;
@@ -411,6 +415,10 @@ namespace KingdomTycoon.Presentation.Combat
         private static Image Panel(string name, Transform parent, Color color, Vector2 min, Vector2 max)
         {
             var go = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)); go.transform.SetParent(parent, false); Image image = go.GetComponent<Image>(); image.color = color; SetRect(image.rectTransform, min, max); return image;
+        }
+        private static Image PixelImage(string name, Transform parent, Sprite sprite, Vector2 min, Vector2 max)
+        {
+            Image image = Panel(name, parent, Color.white, min, max); image.sprite = sprite; image.preserveAspect = true; image.raycastTarget = false; return image;
         }
         private static TMP_Text Text(string name, Transform parent, string value, float size, TextAlignmentOptions alignment, Vector2 min, Vector2 max, Color color)
         {
@@ -437,20 +445,19 @@ namespace KingdomTycoon.Presentation.Combat
         private static string Job(string id) => id switch { "JOB_WARRIOR" => "전사", "JOB_GUARDIAN" => "수호자", "JOB_ARCHER" => "궁수", "JOB_MAGE" => "마법사", "JOB_CLERIC" => "성직자", _ => "용병" };
         private static string State(string state) => state switch { "IDLE_TOWN" => "마을 대기", "TRAVEL_TO_REGION" => "이동 중", "FIND_TARGET" => "목표 탐색", "COMBAT" => "전투 중", "LOOT" => "전리품 수집", "CONTINUE_DECISION" => "상태 점검", "RETURN_TOWN" => "마을 귀환", "SELL_LOOT" => "전리품 정산", "HEAL" => "치료", "BUY_CONSUMABLES" => "물약 구매", "EVALUATE_EQUIPMENT" => "장비 비교", "BUY_EQUIPMENT" => "장비 구매", "TRAIN_SKILLS" => "스킬 훈련", "ENHANCE_EQUIPMENT" => "장비 강화", _ => "정비 중" };
         private static string Skill(string id) => string.IsNullOrEmpty(id) ? "기본 공격" : "자동 스킬";
-        private static Color JobColor(string id) => id switch { "JOB_WARRIOR" => new Color32(181, 91, 64, 255), "JOB_GUARDIAN" => new Color32(105, 124, 151, 255), "JOB_ARCHER" => new Color32(75, 157, 102, 255), "JOB_MAGE" => new Color32(72, 119, 174, 255), "JOB_CLERIC" => new Color32(199, 167, 89, 255), _ => new Color32(93, 137, 128, 255) };
 
         private sealed class MemberButton
         {
-            public MemberButton(Button button, TMP_Text label) { Button = button; Label = label; }
-            public Button Button { get; } public TMP_Text Label { get; } public ContinuousHuntMemberDto Member { get; set; }
+            public MemberButton(Button button, TMP_Text label, Image icon) { Button = button; Label = label; Icon = icon; }
+            public Button Button { get; } public TMP_Text Label { get; } public Image Icon { get; } public ContinuousHuntMemberDto Member { get; set; }
         }
         private sealed class RegionView
         {
-            public RegionView(RectTransform root, Image background, Outline outline, TMP_Text title, TMP_Text meta, Image riskBackground, TMP_Text risk, TMP_Text drop, GameObject locked, List<MonsterView> monsters, List<ActorView> actors)
-            { Root = root; Background = background; Outline = outline; Title = title; Meta = meta; RiskBackground = riskBackground; Risk = risk; Drop = drop; Locked = locked; Monsters = monsters; Actors = actors; }
+            public RegionView(RectTransform root, Image background, Outline outline, TMP_Text title, TMP_Text meta, Image riskBackground, TMP_Text risk, TMP_Text drop, GameObject locked, List<Image> decorations, List<MonsterView> monsters, List<ActorView> actors)
+            { Root = root; Background = background; Outline = outline; Title = title; Meta = meta; RiskBackground = riskBackground; Risk = risk; Drop = drop; Locked = locked; Decorations = decorations; Monsters = monsters; Actors = actors; }
             public RectTransform Root { get; } public Image Background { get; } public Outline Outline { get; } public TMP_Text Title { get; } public TMP_Text Meta { get; }
             public Image RiskBackground { get; } public TMP_Text Risk { get; } public TMP_Text Drop { get; } public GameObject Locked { get; }
-            public List<MonsterView> Monsters { get; } public List<ActorView> Actors { get; }
+            public List<Image> Decorations { get; } public List<MonsterView> Monsters { get; } public List<ActorView> Actors { get; }
         }
         private sealed class MonsterView
         {
