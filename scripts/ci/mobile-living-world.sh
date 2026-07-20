@@ -28,7 +28,7 @@ grep -q 'PASS / IMPLEMENTATION MAY START' "$review"
 grep -q 'UNRESOLVED=0' "$review"
 
 printf '[mobile-living-world 2/4] Validating world, camera, assignment, and navigation wiring...\n'
-grep -q 'WorldSize = new(3000f, 4200f)' "$layout"
+grep -q 'WorldSize = new(3000f, 3600f)' "$layout"
 grep -q 'REGION_R01' "$layout"
 grep -q 'REGION_R05' "$layout"
 grep -q 'PanBy(Vector2 delta)' "$camera"

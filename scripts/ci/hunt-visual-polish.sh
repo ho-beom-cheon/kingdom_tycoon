@@ -32,7 +32,7 @@ grep -q 'visuals.MonsterSprite' "$screen"
 grep -q 'visuals.JobSprite' "$screen"
 
 printf '[hunt-visual-polish 3/4] Validating asset, layout and lifecycle coverage...\n'
-grep -q 'LibraryCreatesTwentyOnePointFilteredCachedSpritesWithinBudget' "$edit_tests"
+grep -q 'LibraryCreatesTwentySixPointFilteredCachedSpritesWithinBudget' "$edit_tests"
 grep -q 'JobsThemesAndEliteShapesHaveDistinctPixelFingerprints' "$edit_tests"
 grep -q 'DisposeDestroysOwnedAssetsAndRejectsFurtherAccess' "$edit_tests"
 grep -q 'PixelArtReplacesFlatActorsMonstersEnvironmentAndKingdomBlocks' "$play_tests"
