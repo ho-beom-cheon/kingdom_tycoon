@@ -58,6 +58,8 @@
 - `reviews/CORE_HUNT_VISUAL_POLISH_COMPLETENESS_REVIEW_v1.0.md`: 내부 픽셀 자산 설계 완결성·비용·라이선스 검토
 - `design/TYCOON_CORE_MOBILE_LIVING_WORLD_COMPLETE_DESIGN_v1.0.md`: 세로형 중앙 왕국·사방 사냥터·생활 동선·통합 메뉴·무료 에셋 최종 계약
 - `reviews/CORE_MOBILE_LIVING_WORLD_COMPLETENESS_REVIEW_v1.0.md`: 모바일 통합 생활 월드의 충돌·Save·입력·에셋·테스트 완결성 검토
+- `design/TYCOON_CORE_WORLD_GAMEPLAY_POLISH_COMPLETE_DESIGN_v1.0.md`: 사선형 왕국·자연스러운 사냥터 연결·건물 기능·캐릭터 상세 상호작용 최종 계약
+- `reviews/CORE_WORLD_GAMEPLAY_POLISH_COMPLETENESS_REVIEW_v1.0.md`: 게임형 월드 고도화의 저작권·Save·입력·상호작용·테스트 완결성 검토
 
 ## 구현 데이터
 
