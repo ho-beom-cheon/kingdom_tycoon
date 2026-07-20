@@ -1,4 +1,5 @@
 using System.Collections;
+using System.IO;
 using System.Linq;
 using KingdomTycoon.Bootstrap;
 using KingdomTycoon.Infrastructure.Combat;
@@ -37,7 +38,9 @@ namespace KingdomTycoon.Tests.PlayMode
             yield return Load(); ContinuousHuntScreenPresenter screen = ContinuousHuntScreenPresenter.Install(); screen.Open(); yield return null;
             Transform[] nodes = screen.GetComponentsInChildren<Transform>(true);
             Button[] members = nodes.Where(value => value.name.StartsWith("용병_")).Select(value => value.GetComponent<Button>()).Where(value => value != null && value.gameObject.activeSelf).Take(2).ToArray();
-            Assert.That(members.Length, Is.EqualTo(2)); members[0].onClick.Invoke(); members[1].onClick.Invoke(); yield return null;
+            Assert.That(members.Length, Is.EqualTo(2));
+            members[0].onClick.Invoke(); yield return null;
+            members[1].onClick.Invoke(); yield return null;
             ContinuousHuntOverviewDto overview = AppRoot.Instance.Services.Get<ContinuousHuntGameService>().GetOverview();
             Assert.That(overview.Members.Count(value => value.AssignedRegionId == "REGION_R01"), Is.GreaterThanOrEqualTo(2));
             Assert.That(nodes.Count(value => value.name.StartsWith("용병동작_") && value.gameObject.activeSelf), Is.GreaterThanOrEqualTo(2));
@@ -50,18 +53,78 @@ namespace KingdomTycoon.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator WorldContainsKingdomFiveGroundsMonstersHpBarsAndClampedDrag()
+        public IEnumerator WorldContainsCentralKingdomFourDirectionsMonstersZoomAndClampedTwoAxisDrag()
         {
             yield return Load(); ContinuousHuntScreenPresenter screen = ContinuousHuntScreenPresenter.Install(); screen.Open(); yield return null; Canvas.ForceUpdateCanvases();
             Assert.That(screen.WorldContent.Find("왕국거점"), Is.Not.Null);
             Assert.That(screen.WorldContent.Cast<Transform>().Count(value => value.name.StartsWith("월드지역_")), Is.EqualTo(5));
             Assert.That(screen.GetComponentsInChildren<Transform>(true).Count(value => value.name.StartsWith("몬스터동작_")), Is.EqualTo(25));
             Assert.That(screen.GetComponentsInChildren<Image>(true).Count(value => value.name == "몬스터현재체력"), Is.EqualTo(25));
-            float before = screen.WorldContent.anchoredPosition.x; screen.DragSurface.PanBy(-500f); yield return null;
-            Assert.That(screen.WorldContent.anchoredPosition.x, Is.LessThan(before));
-            screen.DragSurface.PanBy(-10000f); float minimum = screen.WorldViewport.rect.width - screen.WorldContent.rect.width;
-            Assert.That(screen.WorldContent.anchoredPosition.x, Is.EqualTo(minimum).Within(1f));
-            screen.DragSurface.PanBy(10000f); Assert.That(screen.WorldContent.anchoredPosition.x, Is.EqualTo(0f).Within(1f));
+            Vector2 north = screen.WorldContent.Find("월드지역_REGION_R01").GetComponent<RectTransform>().anchoredPosition;
+            Vector2 east = screen.WorldContent.Find("월드지역_REGION_R02").GetComponent<RectTransform>().anchoredPosition;
+            Vector2 south = screen.WorldContent.Find("월드지역_REGION_R03").GetComponent<RectTransform>().anchoredPosition;
+            Vector2 west = screen.WorldContent.Find("월드지역_REGION_R04").GetComponent<RectTransform>().anchoredPosition;
+            Assert.That(north.y, Is.GreaterThan(0f)); Assert.That(east.x, Is.GreaterThan(0f));
+            Assert.That(south.y, Is.LessThan(0f)); Assert.That(west.x, Is.LessThan(0f));
+
+            screen.DragSurface.PanBy(new Vector2(-500f, 420f)); yield return null;
+            Assert.That(screen.WorldContent.anchoredPosition.x, Is.LessThan(0f));
+            Assert.That(screen.WorldContent.anchoredPosition.y, Is.GreaterThan(0f));
+            screen.DragSurface.ZoomBy(10f);
+            Assert.That(screen.DragSurface.Zoom, Is.EqualTo(WorldMapDragSurface.MaximumZoom).Within(.001f));
+            screen.DragSurface.PanBy(new Vector2(-10000f, 10000f));
+            float maximumX = (screen.WorldContent.rect.width * screen.DragSurface.Zoom - screen.WorldViewport.rect.width) * .5f;
+            float maximumY = (screen.WorldContent.rect.height * screen.DragSurface.Zoom - screen.WorldViewport.rect.height) * .5f;
+            Assert.That(screen.WorldContent.anchoredPosition.x, Is.EqualTo(-maximumX).Within(1f));
+            Assert.That(screen.WorldContent.anchoredPosition.y, Is.EqualTo(maximumY).Within(1f));
+            screen.DragSurface.ResetView();
+            Assert.That(screen.WorldContent.anchoredPosition, Is.EqualTo(Vector2.zero));
+        }
+
+        [UnityTest]
+        public IEnumerator HuntingGroundTapOpensAssignmentSheetAndSupportsSeveralMercenaries()
+        {
+            yield return Load(); ContinuousHuntScreenPresenter screen = ContinuousHuntScreenPresenter.Install(); screen.Open(); yield return null;
+            Button ground = screen.WorldContent.Find("월드지역_REGION_R01").GetComponent<Button>();
+            ground.onClick.Invoke(); yield return null;
+            Assert.That(screen.AssignmentSheetOpen, Is.True);
+            Button[] members = screen.GetComponentsInChildren<Button>(true).Where(value => value.name.StartsWith("용병_") && value.gameObject.activeSelf).Take(3).ToArray();
+            Assert.That(members.Length, Is.EqualTo(3));
+            foreach (Button member in members) { member.onClick.Invoke(); yield return null; }
+            ContinuousHuntGameService service = AppRoot.Instance.Services.Get<ContinuousHuntGameService>();
+            Assert.That(service.GetOverview().Members.Count(value => value.AssignedRegionId == "REGION_R01"), Is.GreaterThanOrEqualTo(3));
+            foreach (ContinuousHuntMemberDto member in service.GetOverview().Members.Where(value => value.AssignedRegionId != null).ToArray()) service.Unassign(member.InstanceId);
+        }
+
+        [UnityTest]
+        public IEnumerator MobileWorldOpensAsKingdomHomeAndReplacesBottomNavigationWithTopMenu()
+        {
+            yield return Load(); yield return null;
+            ContinuousHuntScreenPresenter screen = Object.FindFirstObjectByType<ContinuousHuntScreenPresenter>(FindObjectsInactive.Include);
+            Assert.That(screen, Is.Not.Null);
+            Assert.That(screen.gameObject.activeInHierarchy, Is.True);
+            Assert.That(screen.WorldContent.anchoredPosition, Is.EqualTo(Vector2.zero));
+            Button menu = screen.GetComponentsInChildren<Button>(true).Single(value => value.name == "통합메뉴버튼");
+            menu.onClick.Invoke(); yield return null;
+            Assert.That(screen.MobileMenuOpen, Is.True);
+            Assert.That(screen.GetComponentsInChildren<Button>(true).Count(value => value.name.StartsWith("메뉴_")), Is.EqualTo(10));
+            Assert.That(Object.FindFirstObjectByType<KingdomTycoon.Presentation.Navigation.UnifiedNavigationMenu>(FindObjectsInactive.Include).IsPrimaryNavigationVisible, Is.False);
+        }
+
+        [UnityTest]
+        public IEnumerator PortraitWorldCaptureProducesVisualEvidence()
+        {
+            if (SystemInfo.graphicsDeviceType == UnityEngine.Rendering.GraphicsDeviceType.Null)
+                Assert.Ignore("visual evidence requires a graphics device");
+            yield return Load(); ContinuousHuntScreenPresenter screen = ContinuousHuntScreenPresenter.Install(); screen.Open(); yield return null;
+            Screen.SetResolution(1080, 1920, false); yield return null; Canvas.ForceUpdateCanvases();
+            string directory = Path.GetFullPath(Path.Combine(UnityEngine.Application.dataPath, "..", "..", "artifacts"));
+            Directory.CreateDirectory(directory);
+            string path = Path.Combine(directory, "mobile-living-world-portrait.png");
+            int distinctColors = Capture(screen, path, 1080, 1920);
+            Assert.That(File.Exists(path), Is.True);
+            Assert.That(new FileInfo(path).Length, Is.GreaterThan(20000));
+            Assert.That(distinctColors, Is.GreaterThan(12), "rendered evidence must contain the living world, not a blank frame");
         }
 
         [UnityTest]
@@ -118,7 +181,8 @@ namespace KingdomTycoon.Tests.PlayMode
 
             Image[] decorations = images.Where(value => value.name.StartsWith("환경장식_")).ToArray();
             Assert.That(decorations.Length, Is.EqualTo(15)); Assert.That(decorations.All(value => value.sprite != null && !value.raycastTarget), Is.True);
-            Assert.That(decorations.Select(value => value.sprite.name).Distinct().Count(), Is.EqualTo(5));
+            Assert.That(screen.ExternalSpriteCount, Is.GreaterThanOrEqualTo(10));
+            Assert.That(decorations.Any(value => value.sprite.name.StartsWith("CC0_NinjaAdventure_")), Is.True);
             Assert.That(images.Single(value => value.name == "왕국픽셀랜드마크").sprite, Is.Not.Null);
             Assert.That(screen.GetComponentsInChildren<Transform>(true).Any(value => value.name is "성채" or "상점" or "대장간"), Is.False);
 
@@ -133,10 +197,10 @@ namespace KingdomTycoon.Tests.PlayMode
         public IEnumerator SupportedAspectsKeepAllTouchTargetsInsideSafeAreaWithoutOverlap()
         {
             yield return Load(); ContinuousHuntScreenPresenter screen = ContinuousHuntScreenPresenter.Install(); screen.Open();
-            foreach ((int width, int height) in new[] { (1920, 1080), (2400, 1080) })
+            foreach ((int width, int height) in new[] { (1080, 1920), (1080, 2400), (1920, 1080) })
             {
                 Screen.SetResolution(width, height, false); yield return null; Canvas.ForceUpdateCanvases();
-                Button[] buttons = screen.GetComponentsInChildren<Button>(true).Where(value => value.gameObject.activeSelf).ToArray();
+                Button[] buttons = screen.GetComponentsInChildren<Button>(true).Where(value => value.gameObject.activeInHierarchy).ToArray();
                 Assert.That(buttons.All(value => value.GetComponent<RectTransform>().rect.width >= 64 && value.GetComponent<RectTransform>().rect.height >= 64), Is.True);
                 for (int i = 0; i < buttons.Length; i++) for (int j = i + 1; j < buttons.Length; j++)
                 {
@@ -151,7 +215,8 @@ namespace KingdomTycoon.Tests.PlayMode
         public IEnumerator VisibleHuntingEntryPointOpensContinuousHuntScreen()
         {
             yield return Load();
-            RegionMapEntryButton hunting = GameObject.Find("P12_REGION_MAP_NAV_BUTTON").GetComponent<RegionMapEntryButton>();
+            RegionMapEntryButton hunting = Object.FindFirstObjectByType<RegionMapEntryButton>(FindObjectsInactive.Include);
+            Assert.That(hunting, Is.Not.Null);
 
             hunting.OpenRegionMap();
             yield return null;
@@ -170,6 +235,68 @@ namespace KingdomTycoon.Tests.PlayMode
         {
             Vector3[] corners = new Vector3[4]; rect.GetWorldCorners(corners); return Rect.MinMaxRect(corners[0].x, corners[0].y, corners[2].x, corners[2].y);
         }
+
+        private static int Capture(ContinuousHuntScreenPresenter screen, string path, int width, int height)
+        {
+            Canvas canvas = screen.GetComponent<Canvas>();
+            RectTransform root = screen.GetComponent<RectTransform>();
+            RenderMode oldMode = canvas.renderMode;
+            Camera oldCamera = canvas.worldCamera;
+            Vector2 oldSize = root.sizeDelta;
+            Vector3 oldPosition = root.position;
+            Vector3 oldScale = root.localScale;
+            var cameraObject = new GameObject("생활월드증적카메라", typeof(Camera));
+            Camera camera = cameraObject.GetComponent<Camera>();
+            camera.clearFlags = CameraClearFlags.SolidColor;
+            camera.backgroundColor = new Color32(8, 18, 20, 255);
+            camera.orthographic = true;
+            camera.orthographicSize = height / 2f;
+            camera.nearClipPlane = .1f;
+            camera.farClipPlane = 100f;
+            camera.aspect = width / (float)height;
+            camera.transform.position = new Vector3(0f, 0f, -10f);
+            var target = new RenderTexture(width, height, 24, RenderTextureFormat.ARGB32);
+            target.Create();
+            camera.targetTexture = target;
+            canvas.renderMode = RenderMode.WorldSpace;
+            canvas.worldCamera = camera;
+            root.anchorMin = root.anchorMax = root.pivot = new Vector2(.5f, .5f);
+            root.sizeDelta = new Vector2(width, height);
+            root.position = Vector3.zero;
+            root.localScale = Vector3.one;
+            RectTransform safe = screen.transform.Find("월드배경/안전영역").GetComponent<RectTransform>();
+            safe.anchorMin = Vector2.zero;
+            safe.anchorMax = Vector2.one;
+            safe.offsetMin = safe.offsetMax = Vector2.zero;
+            Canvas.ForceUpdateCanvases();
+            screen.DragSurface.ResetView();
+            RenderTexture previous = RenderTexture.active;
+            RenderTexture.active = target;
+            GL.Clear(true, true, camera.backgroundColor);
+            camera.Render();
+            RenderTexture.active = target;
+            var texture = new Texture2D(width, height, TextureFormat.RGB24, false);
+            texture.ReadPixels(new Rect(0, 0, width, height), 0, 0);
+            texture.Apply(false, false);
+            var colors = new System.Collections.Generic.HashSet<Color32>();
+            for (int y = 0; y < height; y += 40)
+            for (int x = 0; x < width; x += 40)
+                colors.Add(texture.GetPixel(x, y));
+            File.WriteAllBytes(path, texture.EncodeToPNG());
+            RenderTexture.active = previous;
+            camera.targetTexture = null;
+            target.Release();
+            Object.DestroyImmediate(target);
+            Object.DestroyImmediate(texture);
+            Object.DestroyImmediate(cameraObject);
+            canvas.renderMode = oldMode;
+            canvas.worldCamera = oldCamera;
+            root.sizeDelta = oldSize;
+            root.position = oldPosition;
+            root.localScale = oldScale;
+            return colors.Count;
+        }
+
         private static IEnumerator Load() { yield return SceneManager.LoadSceneAsync("Bootstrap", LoadSceneMode.Single); yield return new WaitUntil(() => SceneManager.GetActiveScene().name == "Kingdom" && AppRoot.Instance != null && AppRoot.Instance.IsInitialized); yield return null; }
     }
 }

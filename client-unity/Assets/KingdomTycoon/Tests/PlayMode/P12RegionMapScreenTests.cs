@@ -22,12 +22,17 @@ namespace KingdomTycoon.Tests.PlayMode
         [UnityTearDown] public IEnumerator CleanupRoot() { if (AppRoot.Instance != null) Object.Destroy(AppRoot.Instance.gameObject); yield return null; }
 
         [UnityTest]
-        public IEnumerator BootstrapContainsStableRegionHierarchyAndEntryOpensScreen()
+        public IEnumerator BootstrapKeepsLegacyHierarchyWhileEntryOpensContinuousWorld()
         {
             yield return Load(); RegionMapScreenPresenter presenter = Object.FindFirstObjectByType<RegionMapScreenPresenter>(FindObjectsInactive.Include); Assert.That(presenter, Is.Not.Null); Transform[] nodes = presenter.GetComponentsInChildren<Transform>(true);
             foreach (string id in RequiredIds) Assert.That(nodes.Count(value => value.name == id), Is.EqualTo(1), id); RegionMapEntryButton entry = Object.FindFirstObjectByType<RegionMapEntryButton>(FindObjectsInactive.Include); Assert.That(entry, Is.Not.Null);
-            entry.GetComponent<Button>().onClick.Invoke(); yield return null; Assert.That(presenter.gameObject.activeSelf, Is.True); Assert.That(nodes.Single(value => value.name == "P12_MAP_PANEL").gameObject.activeInHierarchy, Is.True);
-            nodes.Single(value => value.name == "P12_CLOSE").GetComponent<Button>().onClick.Invoke(); yield return null; Assert.That(presenter.gameObject.activeSelf, Is.False);
+            entry.GetComponent<Button>().onClick.Invoke(); yield return null;
+            Assert.That(presenter.gameObject.activeSelf, Is.False);
+            Assert.That(nodes.Single(value => value.name == "P12_MAP_PANEL").gameObject.activeInHierarchy, Is.False);
+            KingdomTycoon.Presentation.Combat.ContinuousHuntScreenPresenter world = Object.FindFirstObjectByType<KingdomTycoon.Presentation.Combat.ContinuousHuntScreenPresenter>(FindObjectsInactive.Include);
+            Assert.That(world, Is.Not.Null);
+            Assert.That(world.gameObject.activeSelf, Is.True);
+            Assert.That(world.WorldContent.Cast<Transform>().Count(value => value.name.StartsWith("월드지역_")), Is.EqualTo(5));
         }
 
         [UnityTest]

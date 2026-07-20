@@ -79,7 +79,8 @@ namespace KingdomTycoon.Tests.PlayMode
             UnifiedNavigationMenu navigation = Object.FindFirstObjectByType<UnifiedNavigationMenu>(FindObjectsInactive.Include);
             navigation.OpenRegions();
             yield return null;
-            Assert.That(Object.FindFirstObjectByType<RegionMapScreenPresenter>(FindObjectsInactive.Include).gameObject.activeSelf, Is.True);
+            Assert.That(Object.FindFirstObjectByType<RegionMapScreenPresenter>(FindObjectsInactive.Include).gameObject.activeSelf, Is.False);
+            Assert.That(Object.FindFirstObjectByType<KingdomTycoon.Presentation.Combat.ContinuousHuntScreenPresenter>(FindObjectsInactive.Include).gameObject.activeSelf, Is.True);
 
             navigation.OpenInventory();
             yield return new WaitUntil(() => SceneManager.GetActiveScene().name == "Inventory");
