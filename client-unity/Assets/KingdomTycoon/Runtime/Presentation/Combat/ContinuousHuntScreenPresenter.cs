@@ -109,14 +109,14 @@ namespace KingdomTycoon.Presentation.Combat
             Text("명단안내", roster.transform, "여러 명을 같은 사냥터에 배치할 수 있습니다.", 16, TextAlignmentOptions.Left, new Vector2(.05f, .855f), new Vector2(.95f, .92f), new Color32(142, 174, 165, 255));
             for (int i = 0; i < 8; i++) rows.Add(CreateRow(roster.transform, i));
 
-            toast = Text("알림", safe.transform, "배치한 용병은 귀환과 정비 후 자동으로 다시 출발합니다.", 19, TextAlignmentOptions.Center, new Vector2(.195f, .035f), new Vector2(.985f, .105f), new Color32(222, 196, 128, 255));
+            toast = Text("알림", safe.transform, "귀환하면 전리품을 팔고 스킬 훈련과 장비 강화를 마친 뒤 다시 출발합니다.", 19, TextAlignmentOptions.Center, new Vector2(.195f, .035f), new Vector2(.985f, .105f), new Color32(222, 196, 128, 255));
         }
 
         private MemberRow CreateRow(Transform parent, int index)
         {
             float top = .84f - index * .098f;
             Button button = MakeButton("용병_" + index, parent, "", new Color32(39, 55, 57, 255), new Vector2(.045f, top - .085f), new Vector2(.955f, top));
-            TMP_Text label = button.GetComponentInChildren<TMP_Text>(); label.alignment = TextAlignmentOptions.Left; label.margin = new Vector4(16, 2, 12, 2); label.fontSize = 17;
+            TMP_Text label = button.GetComponentInChildren<TMP_Text>(); label.alignment = TextAlignmentOptions.Left; label.margin = new Vector4(16, 2, 12, 2); label.fontSize = 15;
             var row = new MemberRow(button, label); button.onClick.AddListener(() => Toggle(row)); return row;
         }
 
@@ -163,7 +163,7 @@ namespace KingdomTycoon.Presentation.Combat
                 if (row.Member == null) continue;
                 bool selected = row.Member.AssignedRegionId == RegionIds[selectedRegion];
                 string assignment = row.Member.AssignedRegionId == null ? "대기" : selected ? "이곳에서 사냥 중" : "다른 사냥터 배치";
-                row.Label.text = $"<b>{row.Member.DisplayName}</b>  {Job(row.Member.JobId)}\n체력 {row.Member.CurrentHpBps / 100}%  ·  가방 {row.Member.BagFill}/{row.Member.BagCapacity}  ·  {assignment}";
+                row.Label.text = $"<b>{row.Member.DisplayName}</b>  {Job(row.Member.JobId)}  ·  스킬 Lv {row.Member.TotalSkillLevels}  ·  최고 장비 +{row.Member.BestEnhancementLevel}\n체력 {row.Member.CurrentHpBps / 100}%  ·  가방 {row.Member.BagFill}/{row.Member.BagCapacity}  ·  {assignment}";
                 row.Button.image.color = selected ? new Color32(47, 111, 91, 255) : new Color32(39, 55, 57, 255);
             }
             ContinuousHuntMemberDto[] visible = members.Where(value => value.AssignedRegionId == RegionIds[selectedRegion]).Take(actors.Count).ToArray();
@@ -208,8 +208,8 @@ namespace KingdomTycoon.Presentation.Combat
             TMP_Text label = Text("글자", image.transform, value, 19, TextAlignmentOptions.Center, Vector2.zero, Vector2.one, Color.white); label.raycastTarget = false; return button;
         }
         private static void SetRect(RectTransform rect, Vector2 min, Vector2 max) { rect.anchorMin = min; rect.anchorMax = max; rect.offsetMin = rect.offsetMax = Vector2.zero; }
-        private static string Job(string id) => id switch { "JOB_WARRIOR" => "전사", "JOB_ARCHER" => "궁수", "JOB_ROGUE" => "도적", "JOB_MAGE" => "마법사", "JOB_CLERIC" => "성직자", _ => "용병" };
-        private static string State(string state) => state switch { "IDLE_TOWN" => "마을 대기", "TRAVEL_TO_REGION" => "이동 중", "FIND_TARGET" => "목표 탐색", "COMBAT" => "전투 중", "LOOT" => "전리품 수집", "CONTINUE_DECISION" => "상태 점검", "RETURN_TOWN" => "마을 귀환", "SELL_LOOT" => "전리품 판매", "HEAL" => "치료", "BUY_CONSUMABLES" => "물약 구매", "EVALUATE_EQUIPMENT" => "장비 점검", "BUY_EQUIPMENT" => "장비 구매", _ => "정비 중" };
+        private static string Job(string id) => id switch { "JOB_WARRIOR" => "전사", "JOB_GUARDIAN" => "수호자", "JOB_ARCHER" => "궁수", "JOB_MAGE" => "마법사", "JOB_CLERIC" => "성직자", _ => "용병" };
+        private static string State(string state) => state switch { "IDLE_TOWN" => "마을 대기", "TRAVEL_TO_REGION" => "이동 중", "FIND_TARGET" => "목표 탐색", "COMBAT" => "전투 중", "LOOT" => "전리품 수집", "CONTINUE_DECISION" => "상태 점검", "RETURN_TOWN" => "마을 귀환", "SELL_LOOT" => "전리품 판매", "HEAL" => "치료", "BUY_CONSUMABLES" => "물약 구매", "EVALUATE_EQUIPMENT" => "장비 점검", "BUY_EQUIPMENT" => "장비 구매", "TRAIN_SKILLS" => "스킬 훈련", "ENHANCE_EQUIPMENT" => "장비 강화", _ => "정비 중" };
         private static Color JobColor(string id) => id switch { "JOB_WARRIOR" => new Color32(174, 91, 65, 255), "JOB_ARCHER" => new Color32(72, 151, 102, 255), "JOB_ROGUE" => new Color32(126, 95, 162, 255), "JOB_MAGE" => new Color32(66, 117, 166, 255), "JOB_CLERIC" => new Color32(194, 164, 92, 255), _ => new Color32(93, 137, 128, 255) };
 
         private sealed class MemberRow

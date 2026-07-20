@@ -29,7 +29,7 @@ namespace KingdomTycoon.Tests.PlayMode
             Assert.That(overview.Members.Count(value => value.AssignedRegionId == "REGION_R01"), Is.GreaterThanOrEqualTo(2));
             Assert.That(nodes.Count(value => value.name.StartsWith("용병동작_") && value.gameObject.activeSelf), Is.GreaterThanOrEqualTo(2));
             string text = string.Join(" ", screen.GetComponentsInChildren<TMP_Text>(true).Select(value => value.text));
-            Assert.That(text, Does.Contain("상시 자동 사냥")); Assert.That(text, Does.Contain("용병 배치"));
+            Assert.That(text, Does.Contain("상시 자동 사냥")); Assert.That(text, Does.Contain("용병 배치")); Assert.That(text, Does.Contain("스킬 Lv")); Assert.That(text, Does.Contain("최고 장비"));
             ContinuousHuntGameService service = AppRoot.Instance.Services.Get<ContinuousHuntGameService>();
             foreach (ContinuousHuntMemberDto member in service.GetOverview().Members.Where(value => value.AssignedRegionId != null).ToArray()) service.Unassign(member.InstanceId);
             service.AdvanceTo(System.DateTimeOffset.UtcNow.AddMinutes(2));
