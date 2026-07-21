@@ -90,3 +90,5 @@
 - `reviews/CORE_RUNTIME_PERFORMANCE_STABILIZATION_COMPLETENESS_REVIEW_v1.0.md`: 런타임 성능 안정화 설계 완결성 및 기존 계약 충돌 검토
 - `design/TYCOON_CORE_RUNTIME_PERFORMANCE_STABILIZATION_COMPLETE_DESIGN_v1.1.md`: 대형 Save 복제·입력 경합·비활성 지역 모션 병목 제거 보강 계약
 - `reviews/CORE_RUNTIME_PERFORMANCE_STABILIZATION_COMPLETENESS_REVIEW_v1.1.md`: 실측 기반 v1.1 보강 계약의 저장·품질·회귀 완결성 검토
+- `design/TYCOON_WORLD_INTERACTION_RESPONSE_COMPLETE_DESIGN_v1.0.md`: 건물·캐릭터 탭 유실과 상세 패널 지연 제거 계약
+- `reviews/WORLD_INTERACTION_RESPONSE_COMPLETENESS_REVIEW_v1.0.md`: 월드 상호작용 응답 계약의 입력·Save·UI 완결성 검토
