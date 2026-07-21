@@ -61,6 +61,7 @@ namespace KingdomTycoon.Tests.PlayMode
             Assert.That(screen.WorldContent.Cast<Transform>().Count(value => value.name.StartsWith("월드지역_")), Is.EqualTo(5));
             Assert.That(screen.GetComponentsInChildren<Transform>(true).Count(value => value.name.StartsWith("몬스터동작_")), Is.EqualTo(25));
             Assert.That(screen.GetComponentsInChildren<Image>(true).Count(value => value.name == "몬스터현재체력"), Is.EqualTo(25));
+            Assert.That(screen.IsolatedCanvasCount, Is.GreaterThanOrEqualTo(8), "월드, 사냥터, 용병 동적 레이어는 Canvas 갱신 범위를 분리해야 합니다.");
             Vector2 north = screen.WorldContent.Find("월드지역_REGION_R01").GetComponent<RectTransform>().anchoredPosition;
             Vector2 east = screen.WorldContent.Find("월드지역_REGION_R02").GetComponent<RectTransform>().anchoredPosition;
             Vector2 south = screen.WorldContent.Find("월드지역_REGION_R03").GetComponent<RectTransform>().anchoredPosition;

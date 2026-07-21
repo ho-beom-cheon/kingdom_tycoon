@@ -7,6 +7,7 @@ using KingdomTycoon.Infrastructure.Combat;
 using KingdomTycoon.Infrastructure.Mercenaries;
 using KingdomTycoon.Presentation.Navigation;
 using TMPro;
+using Unity.Profiling;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -15,6 +16,14 @@ namespace KingdomTycoon.Presentation.Combat
     /// <summary>Portrait-first continuous kingdom and hunting world. Mutations are delegated to application services.</summary>
     public sealed class ContinuousHuntScreenPresenter : MonoBehaviour
     {
+        private const float VisualPublishInterval = .2f;
+        private const float InputIdleBeforeSave = 1.5f;
+        private const float CatchUpFrameInterval = .05f;
+        private const float SimulationPollInterval = .25f;
+        private static readonly ProfilerMarker SimulationMarker = new("KingdomTycoon.World.Simulation");
+        private static readonly ProfilerMarker RefreshMarker = new("KingdomTycoon.World.Refresh");
+        private static readonly ProfilerMarker AnimationMarker = new("KingdomTycoon.World.Animation");
+        private static readonly ProfilerMarker PersistenceMarker = new("KingdomTycoon.World.Persistence");
         private readonly List<MemberButton> memberButtons = new();
         private readonly List<ActorView> actorViews = new();
         private readonly Dictionary<string, RegionView> regionViews = new(StringComparer.Ordinal);
@@ -32,6 +41,7 @@ namespace KingdomTycoon.Presentation.Combat
         private TMP_Text statusLine;
         private RectTransform worldViewport;
         private RectTransform worldContent;
+        private RectTransform actorLayer;
         private WorldMapDragSurface dragSurface;
         private GameObject assignmentSheet;
         private GameObject menuPanel;
@@ -64,6 +74,9 @@ namespace KingdomTycoon.Presentation.Combat
         private string selectedRegionId = "REGION_R01";
         private float nextTick;
         private float nextWorldAnimationFrame;
+        private float nextVisualPublish;
+        private float nextPersistence;
+        private float lastInteractionAt;
 
         public RectTransform WorldViewport => worldViewport;
         public RectTransform WorldContent => worldContent;
@@ -80,6 +93,7 @@ namespace KingdomTycoon.Presentation.Combat
         public IReadOnlyList<TMP_Text> FeedbackTexts => feedbackRows.Select(value => value.Text).ToArray();
         public int PixelArtSpriteCount => visuals?.SpriteCount ?? 0;
         public int ExternalSpriteCount => externalVisuals?.LoadedSpriteCount ?? 0;
+        public int IsolatedCanvasCount => GetComponentsInChildren<Canvas>(true).Length;
 
         public static ContinuousHuntScreenPresenter Install()
         {
@@ -120,6 +134,9 @@ namespace KingdomTycoon.Presentation.Combat
             navigation?.SetNavigationVisible(false);
             feedbackTracker.Reset();
             ClearFeedbackRows();
+            lastInteractionAt = Time.unscaledTime;
+            nextVisualPublish = Time.unscaledTime;
+            nextPersistence = Time.unscaledTime + ContinuousHuntGameService.PersistenceIntervalSeconds;
             if (service == null)
             {
                 if (AppRoot.Instance == null || !AppRoot.Instance.IsInitialized)
@@ -155,18 +172,40 @@ namespace KingdomTycoon.Presentation.Combat
         {
             if (CharacterDetailOpen) ApplyResponsiveCharacterLayout();
             bool cameraMoving = dragSurface != null && dragSurface.IsCameraMoving;
+            if (cameraMoving) MarkInteraction();
+            bool panelOpen = AssignmentSheetOpen || MobileMenuOpen || FacilityPanelOpen || CharacterDetailOpen;
             if (!cameraMoving && Time.unscaledTime >= nextWorldAnimationFrame)
             {
-                nextWorldAnimationFrame = Time.unscaledTime + (1f / 30f);
-                AnimateWorld();
+                nextWorldAnimationFrame = Time.unscaledTime + (panelOpen ? 1f / 15f : 1f / 30f);
+                using (AnimationMarker.Auto()) AnimateWorld();
             }
-            if (service == null || cameraMoving || Time.unscaledTime < nextTick) return;
-            nextTick = Time.unscaledTime + 1f;
-            try { service.AdvanceTo(DateTimeOffset.UtcNow); }
-            catch (Exception exception)
+            if (service == null || cameraMoving) return;
+            DateTimeOffset now = DateTimeOffset.UtcNow;
+            if (Time.unscaledTime >= nextTick)
             {
-                Debug.LogWarning(exception);
-                ShowStatus("사냥 기록을 갱신하지 못했습니다. 저장 상태를 유지하고 다시 시도합니다.");
+                try
+                {
+                    int steps;
+                    using (SimulationMarker.Auto()) steps = service.AdvanceBudgetedTo(now, ContinuousHuntGameService.RuntimeStepBudget);
+                    bool catchingUp = steps >= ContinuousHuntGameService.RuntimeStepBudget && service.HasDueWork(now);
+                    nextTick = Time.unscaledTime + (catchingUp ? CatchUpFrameInterval : SimulationPollInterval);
+                }
+                catch (Exception exception)
+                {
+                    nextTick = Time.unscaledTime + 1f;
+                    Debug.LogWarning(exception);
+                    ShowStatus("사냥 기록을 갱신하지 못했습니다. 저장 상태를 유지하고 다시 시도합니다.");
+                }
+            }
+            if (Time.unscaledTime >= nextVisualPublish)
+            {
+                service.PublishPending();
+                nextVisualPublish = Time.unscaledTime + VisualPublishInterval;
+            }
+            if (service.HasPendingPersistence && Time.unscaledTime >= nextPersistence && Time.unscaledTime - lastInteractionAt >= InputIdleBeforeSave)
+            {
+                FlushPendingSafely(now);
+                nextPersistence = Time.unscaledTime + ContinuousHuntGameService.PersistenceIntervalSeconds;
             }
         }
 
@@ -187,6 +226,9 @@ namespace KingdomTycoon.Presentation.Combat
             worldContent.anchorMin = worldContent.anchorMax = worldContent.pivot = new Vector2(.5f, .5f);
             worldContent.sizeDelta = MobileLivingWorldLayout.WorldSize;
             worldContent.anchoredPosition = Vector2.zero;
+            Canvas worldCanvas = contentObject.AddComponent<Canvas>();
+            worldCanvas.overrideSorting = false;
+            contentObject.AddComponent<GraphicRaycaster>();
             dragSurface.Configure(worldViewport, worldContent);
             BuildWorldBase();
 
@@ -198,10 +240,11 @@ namespace KingdomTycoon.Presentation.Combat
             Button news = MakeButton("소식버튼", safe.transform, "소식", new Color32(58, 79, 88, 245), new Vector2(.755f, .905f), new Vector2(.86f, .985f));
             Button menu = MakeButton("통합메뉴버튼", safe.transform, "메뉴", new Color32(83, 61, 92, 245), new Vector2(.87f, .905f), new Vector2(.98f, .985f));
             home.GetComponentInChildren<TMP_Text>().fontSize = 19;
-            home.onClick.AddListener(() => { dragSurface.ResetView(); ShowStatus("중앙 왕국으로 돌아왔습니다."); });
-            news.onClick.AddListener(() => feedbackRail.SetActive(!feedbackRail.activeSelf));
+            home.onClick.AddListener(() => { MarkInteraction(); dragSurface.ResetView(); ShowStatus("중앙 왕국으로 돌아왔습니다."); });
+            news.onClick.AddListener(() => { MarkInteraction(); feedbackRail.SetActive(!feedbackRail.activeSelf); });
             menu.onClick.AddListener(() =>
             {
+                MarkInteraction();
                 bool opening = !menuPanel.activeSelf;
                 CloseWorldPanels();
                 menuPanel.SetActive(opening);
@@ -247,7 +290,8 @@ namespace KingdomTycoon.Presentation.Combat
             BuildFacility(kingdom.transform, "FAC_BLACKSMITH", "대장간", MobileLivingWorldLayout.FacilityPosition("FAC_BLACKSMITH"), false);
             BuildFacility(kingdom.transform, "FAC_INFIRMARY", "치료소", MobileLivingWorldLayout.FacilityPosition("FAC_INFIRMARY"), false);
             BuildFacility(kingdom.transform, "FAC_GUILD", "모험가 길드", MobileLivingWorldLayout.FacilityPosition("FAC_GUILD"), true);
-            for (int index = 0; index < 8; index++) actorViews.Add(CreateActorView(worldContent, index));
+            actorLayer = CreateCanvasLayer("용병동적레이어", worldContent);
+            for (int index = 0; index < 8; index++) actorViews.Add(CreateActorView(actorLayer, index));
         }
 
         private void BuildRoadConnection(string regionId)
@@ -328,7 +372,7 @@ namespace KingdomTycoon.Presentation.Combat
             Text("메뉴제목", panel.transform, "왕국 관리", 27, TextAlignmentOptions.Left, new Vector2(.06f, .89f), new Vector2(.72f, .98f), new Color32(244, 207, 119, 255));
             Text("메뉴설명", panel.transform, "사냥 · 스킬 훈련 · 장비 강화", 15, TextAlignmentOptions.Left, new Vector2(.06f, .82f), new Vector2(.94f, .89f), new Color32(168, 199, 187, 255));
             Button close = MakeButton("메뉴닫기", panel.transform, "닫기", new Color32(86, 67, 56, 255), new Vector2(.75f, .89f), new Vector2(.95f, .98f));
-            close.onClick.AddListener(() => menuPanel.SetActive(false));
+            close.onClick.AddListener(() => { MarkInteraction(); menuPanel.SetActive(false); });
             AddMenuButton(panel.transform, "메뉴_용병", "용병", 0, () => Navigation()?.OpenMercenaries());
             AddMenuButton(panel.transform, "메뉴_가방", "가방", 1, () => Navigation()?.OpenInventory());
             AddMenuButton(panel.transform, "메뉴_상점", "상점", 2, () => Navigation()?.OpenStore());
@@ -356,7 +400,7 @@ namespace KingdomTycoon.Presentation.Combat
             float top = .81f - row * .135f;
             Button button = MakeButton(name, parent, label, column == 0 ? new Color32(48, 86, 78, 255) : new Color32(75, 70, 91, 255),
                 new Vector2(left, top - .105f), new Vector2(left + .42f, top));
-            button.onClick.AddListener(() => { menuPanel.SetActive(false); action?.Invoke(); });
+            button.onClick.AddListener(() => { MarkInteraction(); menuPanel.SetActive(false); action?.Invoke(); });
         }
 
         private void BuildAssignmentSheet(Transform parent)
@@ -365,7 +409,7 @@ namespace KingdomTycoon.Presentation.Combat
             assignmentSheet = drawer.gameObject;
             selection = Text("선택지역", drawer.transform, "사냥터를 선택해 주세요.", 25, TextAlignmentOptions.Left, new Vector2(.04f, .86f), new Vector2(.78f, .97f), new Color32(241, 208, 128, 255));
             Button close = MakeButton("배치시트닫기", drawer.transform, "닫기", new Color32(88, 68, 55, 255), new Vector2(.80f, .86f), new Vector2(.96f, .97f));
-            close.onClick.AddListener(() => assignmentSheet.SetActive(false));
+            close.onClick.AddListener(() => { MarkInteraction(); assignmentSheet.SetActive(false); });
             statusLine = Text("상태안내", drawer.transform, "상시 자동 사냥 · 판매 · 치료 · 스킬 훈련 · 장비 강화가 계속 이어집니다.", 17, TextAlignmentOptions.Left, new Vector2(.04f, .74f), new Vector2(.96f, .86f), new Color32(170, 200, 190, 255));
             for (int index = 0; index < 8; index++) memberButtons.Add(CreateMemberButton(drawer.transform, index));
             assignmentSheet.SetActive(false);
@@ -382,7 +426,7 @@ namespace KingdomTycoon.Presentation.Combat
             facilityDescription = Text("시설기능설명", panel.transform, string.Empty, 17, TextAlignmentOptions.Left, new Vector2(.32f, .48f), new Vector2(.95f, .74f), new Color32(213, 228, 215, 255));
             facilityStatus = Text("시설현재상태", panel.transform, string.Empty, 16, TextAlignmentOptions.Left, new Vector2(.32f, .31f), new Vector2(.95f, .49f), new Color32(145, 202, 181, 255));
             Button close = MakeButton("시설패널닫기", panel.transform, "닫기", new Color32(86, 66, 55, 255), new Vector2(.80f, .78f), new Vector2(.96f, .94f));
-            close.onClick.AddListener(() => facilityPanel.SetActive(false));
+            close.onClick.AddListener(() => { MarkInteraction(); facilityPanel.SetActive(false); });
             facilityPrimaryButton = MakeButton("시설주요기능", panel.transform, "주요 기능", new Color32(173, 104, 48, 255), new Vector2(.04f, .055f), new Vector2(.49f, .27f));
             facilitySecondaryButton = MakeButton("시설보조기능", panel.transform, "보조 기능", new Color32(48, 112, 94, 255), new Vector2(.51f, .055f), new Vector2(.96f, .27f));
             facilityPrimaryButton.onClick.AddListener(() => RouteFacilityAction(selectedFacility?.PrimaryAction));
@@ -467,6 +511,7 @@ namespace KingdomTycoon.Presentation.Combat
         private void ShowFacility(string facilityId)
         {
             if (dragSurface.ConsumeTapSuppression()) return;
+            MarkInteraction();
             selectedFacility = WorldFacilityInteractionCatalog.Get(facilityId);
             CloseWorldPanels();
             facilityPanel.SetActive(true);
@@ -482,6 +527,7 @@ namespace KingdomTycoon.Presentation.Combat
         private void RouteFacilityAction(WorldFacilityAction? action)
         {
             if (!action.HasValue) return;
+            MarkInteraction();
             facilityPanel.SetActive(false);
             switch (action.Value)
             {
@@ -498,6 +544,7 @@ namespace KingdomTycoon.Presentation.Combat
         private void ShowCharacterDetail(ActorView actor)
         {
             if (actor?.Member == null || dragSurface.ConsumeTapSuppression()) return;
+            MarkInteraction();
             try
             {
                 mercenaryRoster ??= AppRoot.Instance?.Services.Get<MercenaryRosterService>();
@@ -518,6 +565,7 @@ namespace KingdomTycoon.Presentation.Combat
 
         private void SelectCharacterTab(int tab)
         {
+            MarkInteraction();
             selectedCharacterTab = Mathf.Clamp(tab, 0, 2);
             RenderCharacterDetail();
         }
@@ -571,12 +619,14 @@ namespace KingdomTycoon.Presentation.Combat
 
         private void OpenInventoryFromCharacter()
         {
+            MarkInteraction();
             CloseCharacterDetail();
             Navigation()?.OpenInventory();
         }
 
         private void CloseCharacterDetail()
         {
+            MarkInteraction();
             characterDetailModal?.SetActive(false);
             selectedMemberInstanceId = null;
         }
@@ -593,8 +643,12 @@ namespace KingdomTycoon.Presentation.Combat
         {
             if (characterDetailCard == null) return;
             bool landscape = Screen.width > Screen.height;
-            characterDetailCard.anchorMin = landscape ? new Vector2(.16f, .04f) : new Vector2(.055f, .075f);
-            characterDetailCard.anchorMax = landscape ? new Vector2(.84f, .96f) : new Vector2(.945f, .91f);
+            Vector2 minimum = landscape ? new Vector2(.16f, .04f) : new Vector2(.055f, .075f);
+            Vector2 maximum = landscape ? new Vector2(.84f, .96f) : new Vector2(.945f, .91f);
+            if (characterDetailCard.anchorMin == minimum && characterDetailCard.anchorMax == maximum &&
+                characterDetailCard.offsetMin == Vector2.zero && characterDetailCard.offsetMax == Vector2.zero) return;
+            characterDetailCard.anchorMin = minimum;
+            characterDetailCard.anchorMax = maximum;
             characterDetailCard.offsetMin = characterDetailCard.offsetMax = Vector2.zero;
         }
 
@@ -628,16 +682,18 @@ namespace KingdomTycoon.Presentation.Combat
         private void EnsureRegionViews()
         {
             if (overview == null) return;
+            bool created = false;
             foreach (WorldHuntRegionDto region in overview.Regions)
             {
                 if (!regionViews.TryGetValue(region.Id, out RegionView view))
                 {
                     view = CreateRegionView(region);
                     regionViews.Add(region.Id, view);
+                    created = true;
                 }
-                view.Root.anchoredPosition = MobileLivingWorldLayout.RegionPosition(region.Id);
+                SetAnchoredPositionIfChanged(view.Root, MobileLivingWorldLayout.RegionPosition(region.Id));
             }
-            foreach (ActorView actor in actorViews) actor.Rect.SetAsLastSibling();
+            if (created && actorLayer != null) actorLayer.SetAsLastSibling();
         }
 
         private RegionView CreateRegionView(WorldHuntRegionDto region)
@@ -645,6 +701,9 @@ namespace KingdomTycoon.Presentation.Combat
             Sprite groundSprite = externalVisuals.Ground(region.Theme);
             Image rootImage = WorldPanel("월드지역_" + region.Id, worldContent, new Color(1f, 1f, 1f, .01f),
                 MobileLivingWorldLayout.RegionPosition(region.Id), new Vector2(680f, 560f));
+            Canvas regionCanvas = rootImage.gameObject.AddComponent<Canvas>();
+            regionCanvas.overrideSorting = false;
+            rootImage.gameObject.AddComponent<GraphicRaycaster>();
             Button button = rootImage.gameObject.AddComponent<Button>();
             button.targetGraphic = rootImage;
             button.onClick.AddListener(() => SelectRegion(region.Id));
@@ -746,6 +805,7 @@ namespace KingdomTycoon.Presentation.Combat
         private void SelectRegion(string regionId)
         {
             if (dragSurface.ConsumeTapSuppression()) return;
+            MarkInteraction();
             selectedRegionId = regionId;
             CloseWorldPanels();
             assignmentSheet.SetActive(true);
@@ -755,6 +815,7 @@ namespace KingdomTycoon.Presentation.Combat
         private void ToggleAssignment(MemberButton row)
         {
             if (row.Member == null || service == null) return;
+            MarkInteraction();
             try
             {
                 if (row.Member.AssignedRegionId == selectedRegionId)
@@ -777,27 +838,32 @@ namespace KingdomTycoon.Presentation.Combat
 
         private void Refresh(ContinuousHuntOverviewDto snapshot = null)
         {
+            using (RefreshMarker.Auto()) RefreshCore(snapshot);
+        }
+
+        private void RefreshCore(ContinuousHuntOverviewDto snapshot)
+        {
             if (service == null) return;
             overview = snapshot ?? service.GetOverview();
             feedbackAudio.Configure(overview.Feedback);
             IReadOnlyList<WorldHuntFeedbackEvent> feedback = feedbackTracker.Observe(overview);
             EnsureRegionViews();
-            summary.text = $"배치 {overview.AssignedCount}명 · 누적 수익 {overview.EarnedGold:N0}골드";
+            SetTextIfChanged(summary, $"배치 {overview.AssignedCount}명 · 누적 수익 {overview.EarnedGold:N0}골드");
             WorldHuntRegionDto selected = overview.Regions.FirstOrDefault(value => value.Id == selectedRegionId) ?? overview.Regions.First();
             selectedRegionId = selected.Id;
-            selection.text = $"{selected.DisplayName} · {MobileLivingWorldLayout.DirectionOf(selected.Id)} · 배치 {selected.AssignedCount}/{selected.MaxActive}";
+            SetTextIfChanged(selection, $"{selected.DisplayName} · {MobileLivingWorldLayout.DirectionOf(selected.Id)} · 배치 {selected.AssignedCount}/{selected.MaxActive}");
             for (int index = 0; index < memberButtons.Count; index++)
             {
                 MemberButton row = memberButtons[index];
-                if (index >= overview.Members.Count) { row.Button.gameObject.SetActive(false); continue; }
+                if (index >= overview.Members.Count) { SetActiveIfChanged(row.Button.gameObject, false); continue; }
                 ContinuousHuntMemberDto member = overview.Members[index];
                 row.Member = member;
-                row.Button.gameObject.SetActive(true);
+                SetActiveIfChanged(row.Button.gameObject, true);
                 bool here = member.AssignedRegionId == selectedRegionId;
                 string location = member.AssignedRegionId == null ? "왕국" : overview.Regions.First(value => value.Id == member.AssignedRegionId).DisplayName;
-                row.Label.text = $"{member.DisplayName} · {Job(member.JobId)}\n체력 {member.CurrentHpBps / 100f:0}% · {location}\n{(here ? "배치 해제" : "이곳에 배치")}";
-                row.Icon.sprite = visuals.JobSprite(member.JobId);
-                row.Button.targetGraphic.color = here ? new Color32(42, 112, 83, 255) : new Color32(42, 62, 62, 255);
+                SetTextIfChanged(row.Label, $"{member.DisplayName} · {Job(member.JobId)}\n체력 {member.CurrentHpBps / 100f:0}% · {location}\n{(here ? "배치 해제" : "이곳에 배치")}");
+                SetSpriteIfChanged(row.Icon, visuals.JobSprite(member.JobId));
+                SetColorIfChanged(row.Button.targetGraphic, here ? new Color32(42, 112, 83, 255) : new Color32(42, 62, 62, 255));
             }
             foreach (WorldHuntRegionDto region in overview.Regions) RefreshRegion(region, regionViews[region.Id]);
             RefreshActors();
@@ -810,29 +876,29 @@ namespace KingdomTycoon.Presentation.Combat
         private void RefreshRegion(WorldHuntRegionDto region, RegionView view)
         {
             bool selected = region.Id == selectedRegionId;
-            view.Outline.effectColor = selected ? new Color32(244, 208, 119, 230) : new Color32(232, 197, 115, 0);
-            view.Title.text = region.DisplayName;
-            view.Meta.text = $"티어 {region.Tier} · 전투력 {region.RecommendedPower:N0}\n배치 {region.AssignedCount}/{region.MaxActive}";
-            view.RiskBackground.color = RiskColor(region.Tier);
-            view.Risk.text = region.RiskLabel;
-            view.Drop.text = "주요 " + region.DropPreview;
-            view.Locked.SetActive(!region.Unlocked);
+            SetOutlineColorIfChanged(view.Outline, selected ? new Color32(244, 208, 119, 230) : new Color32(232, 197, 115, 0));
+            SetTextIfChanged(view.Title, region.DisplayName);
+            SetTextIfChanged(view.Meta, $"티어 {region.Tier} · 전투력 {region.RecommendedPower:N0}\n배치 {region.AssignedCount}/{region.MaxActive}");
+            SetColorIfChanged(view.RiskBackground, RiskColor(region.Tier));
+            SetTextIfChanged(view.Risk, region.RiskLabel);
+            SetTextIfChanged(view.Drop, "주요 " + region.DropPreview);
+            SetActiveIfChanged(view.Locked, !region.Unlocked);
             WorldHuntMonsterDto[] monsters = overview.Monsters.Where(value => value.RegionId == region.Id).OrderBy(value => value.SpawnSlot).ToArray();
             for (int index = 0; index < view.Monsters.Count; index++)
             {
                 MonsterView monsterView = view.Monsters[index];
-                if (index >= monsters.Length) { monsterView.Root.SetActive(false); monsterView.Monster = null; continue; }
+                if (index >= monsters.Length) { SetActiveIfChanged(monsterView.Root, false); monsterView.Monster = null; continue; }
                 WorldHuntMonsterDto monster = monsters[index];
-                monsterView.Root.SetActive(region.Unlocked);
+                SetActiveIfChanged(monsterView.Root, region.Unlocked);
                 monsterView.Monster = monster;
                 bool elite = string.Equals(monster.Type, "ELITE", StringComparison.Ordinal);
-                monsterView.Body.sprite = visuals.MonsterSprite(region.Theme, elite);
+                SetSpriteIfChanged(monsterView.Body, visuals.MonsterSprite(region.Theme, elite));
                 monsterView.BaseColor = monster.State == "RESPAWNING" ? new Color(1f, 1f, 1f, .36f) : Color.white;
-                monsterView.Body.color = monsterView.BaseColor;
-                monsterView.EliteOutline.enabled = elite;
-                monsterView.EliteOutline.effectColor = new Color32(202, 132, 235, 255);
-                monsterView.Label.text = monster.State == "RESPAWNING" ? $"{monster.DisplayName}\n재등장 준비" : $"{(elite ? "정예 " : string.Empty)}{monster.DisplayName}\n레벨 {monster.Level}";
-                monsterView.Hp.rectTransform.anchorMax = new Vector2(monster.HpBps / 10000f, 1f);
+                SetColorIfChanged(monsterView.Body, monsterView.BaseColor);
+                if (monsterView.EliteOutline.enabled != elite) monsterView.EliteOutline.enabled = elite;
+                SetOutlineColorIfChanged(monsterView.EliteOutline, new Color32(202, 132, 235, 255));
+                SetTextIfChanged(monsterView.Label, monster.State == "RESPAWNING" ? $"{monster.DisplayName}\n재등장 준비" : $"{(elite ? "정예 " : string.Empty)}{monster.DisplayName}\n레벨 {monster.Level}");
+                SetAnchorMaxIfChanged(monsterView.Hp.rectTransform, new Vector2(monster.HpBps / 10000f, 1f));
             }
         }
 
@@ -841,25 +907,25 @@ namespace KingdomTycoon.Presentation.Combat
             for (int index = 0; index < actorViews.Count; index++)
             {
                 ActorView view = actorViews[index];
-                if (index >= overview.Members.Count) { view.Root.SetActive(false); view.Member = null; continue; }
+                if (index >= overview.Members.Count) { SetActiveIfChanged(view.Root, false); view.Member = null; continue; }
                 ContinuousHuntMemberDto member = overview.Members[index];
                 bool wasActive = view.Root.activeSelf;
-                view.Root.SetActive(true);
+                SetActiveIfChanged(view.Root, true);
                 view.Member = member;
-                view.Body.sprite = visuals.JobSprite(member.JobId);
-                view.Label.text = $"{member.DisplayName}\n{State(member.State)}";
-                view.Badge.color = StateColor(member.State);
+                SetSpriteIfChanged(view.Body, visuals.JobSprite(member.JobId));
+                SetTextIfChanged(view.Label, $"{member.DisplayName}\n{State(member.State)}");
+                SetColorIfChanged(view.Badge, StateColor(member.State));
                 Color selectionColor = member.InstanceId == selectedMemberInstanceId && CharacterDetailOpen
                     ? new Color32(255, 218, 112, 230)
                     : new Color32(255, 218, 112, 0);
-                view.SelectionOutline.effectColor = selectionColor;
+                SetOutlineColorIfChanged(view.SelectionOutline, selectionColor);
                 string townFacility = MobileLivingWorldLayout.FacilityForState(member.State);
                 view.Target = townFacility == null
                     ? MobileLivingWorldLayout.TargetFor(member)
                     : MobileLivingWorldLayout.FacilityPosition(townFacility) + ActorFormationOffset(index);
                 if (!wasActive || !view.Initialized)
                 {
-                    view.Rect.anchoredPosition = view.Target;
+                    SetAnchoredPositionIfChanged(view.Rect, view.Target);
                     view.Initialized = true;
                 }
             }
@@ -872,6 +938,7 @@ namespace KingdomTycoon.Presentation.Combat
             UpdateFeedbackRows(now);
             foreach (RegionView region in regionViews.Values)
             {
+                if (!IsWorldPointVisible(region.Root.anchoredPosition, 480f)) continue;
                 foreach (MonsterView monster in region.Monsters)
                 {
                     if (!monster.Root.activeSelf || monster.Monster == null) continue;
@@ -894,6 +961,7 @@ namespace KingdomTycoon.Presentation.Combat
             foreach (ActorView actor in actorViews)
             {
                 if (!actor.Root.activeSelf || actor.Member == null) continue;
+                if (!IsWorldPointVisible(actor.Rect.anchoredPosition, 220f)) continue;
                 float speed = ReducedMotion ? 4f : 2.3f;
                 Vector2 livingTarget = actor.Target;
                 if (!ReducedMotion && (actor.Member.State is "IDLE_TOWN" or "FIND_TARGET"))
@@ -910,6 +978,7 @@ namespace KingdomTycoon.Presentation.Combat
 
         private void ToggleSound()
         {
+            MarkInteraction();
             feedbackAudio.SetSoundEnabled(!feedbackAudio.SoundEnabled);
             UpdatePreferenceLabels();
             ShowStatus(feedbackAudio.SoundEnabled ? "사냥 효과음을 켰습니다." : "사냥 효과음을 껐습니다. 시각 피드백은 유지됩니다.");
@@ -917,6 +986,7 @@ namespace KingdomTycoon.Presentation.Combat
 
         private void ToggleMotion()
         {
+            MarkInteraction();
             WorldHuntFeedbackPreferences.ReducedMotion = !WorldHuntFeedbackPreferences.ReducedMotion;
             UpdatePreferenceLabels();
             ShowStatus(ReducedMotion ? "모션 감소를 적용했습니다. 숫자와 상태 표시는 유지됩니다." : "기본 전투 모션을 적용했습니다.");
@@ -1030,7 +1100,45 @@ namespace KingdomTycoon.Presentation.Combat
 
         private void ShowStatus(string message)
         {
-            if (statusLine != null) statusLine.text = message;
+            SetTextIfChanged(statusLine, message);
+        }
+
+        private void MarkInteraction()
+        {
+            lastInteractionAt = Time.unscaledTime;
+        }
+
+        private void FlushPendingSafely(DateTimeOffset now)
+        {
+            if (service == null || !service.HasPendingPersistence) return;
+            try
+            {
+                using (PersistenceMarker.Auto()) service.FlushPending(now);
+            }
+            catch (Exception exception)
+            {
+                nextPersistence = Time.unscaledTime + 5f;
+                Debug.LogWarning(exception);
+            }
+        }
+
+        private bool IsWorldPointVisible(Vector2 worldPoint, float margin)
+        {
+            if (worldViewport == null || worldContent == null) return true;
+            float zoom = Mathf.Max(.01f, worldContent.localScale.x);
+            Vector2 viewportPoint = worldContent.anchoredPosition + worldPoint * zoom;
+            Vector2 half = worldViewport.rect.size * .5f + Vector2.one * margin;
+            return Mathf.Abs(viewportPoint.x) <= half.x && Mathf.Abs(viewportPoint.y) <= half.y;
+        }
+
+        private void OnApplicationPause(bool paused)
+        {
+            if (paused) FlushPendingSafely(DateTimeOffset.UtcNow);
+        }
+
+        private void OnApplicationQuit()
+        {
+            FlushPendingSafely(DateTimeOffset.UtcNow);
         }
 
         private void OnDestroy()
@@ -1071,6 +1179,18 @@ namespace KingdomTycoon.Presentation.Combat
             rect.sizeDelta = size;
             rect.anchoredPosition = position;
             return image;
+        }
+
+        private static RectTransform CreateCanvasLayer(string name, Transform parent)
+        {
+            var go = new GameObject(name, typeof(RectTransform), typeof(Canvas), typeof(GraphicRaycaster));
+            go.transform.SetParent(parent, false);
+            RectTransform rect = (RectTransform)go.transform;
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = rect.offsetMax = Vector2.zero;
+            go.GetComponent<Canvas>().overrideSorting = false;
+            return rect;
         }
 
         private static Image Panel(string name, Transform parent, Color color, Vector2 min, Vector2 max)
@@ -1124,6 +1244,41 @@ namespace KingdomTycoon.Presentation.Combat
             rect.anchorMin = min;
             rect.anchorMax = max;
             rect.offsetMin = rect.offsetMax = Vector2.zero;
+        }
+
+        private static void SetTextIfChanged(TMP_Text target, string value)
+        {
+            if (target != null && target.text != value) target.text = value;
+        }
+
+        private static void SetActiveIfChanged(GameObject target, bool active)
+        {
+            if (target != null && target.activeSelf != active) target.SetActive(active);
+        }
+
+        private static void SetColorIfChanged(Graphic target, Color value)
+        {
+            if (target != null && target.color != value) target.color = value;
+        }
+
+        private static void SetSpriteIfChanged(Image target, Sprite value)
+        {
+            if (target != null && target.sprite != value) target.sprite = value;
+        }
+
+        private static void SetOutlineColorIfChanged(Outline target, Color value)
+        {
+            if (target != null && target.effectColor != value) target.effectColor = value;
+        }
+
+        private static void SetAnchorMaxIfChanged(RectTransform target, Vector2 value)
+        {
+            if (target != null && target.anchorMax != value) target.anchorMax = value;
+        }
+
+        private static void SetAnchoredPositionIfChanged(RectTransform target, Vector2 value)
+        {
+            if (target != null && target.anchoredPosition != value) target.anchoredPosition = value;
         }
 
         private static Color ThemeColor(string theme) => theme switch
