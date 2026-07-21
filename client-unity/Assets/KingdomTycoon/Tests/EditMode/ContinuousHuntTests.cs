@@ -226,6 +226,23 @@ namespace KingdomTycoon.Tests.EditMode
             Assert.That(hunt.HasDueWork(clock.UtcNow), Is.True, "남은 따라잡기 작업은 다음 프레임으로 넘겨야 합니다.");
         }
 
+        [Test]
+        public void OverviewReadAndTransientAdoptionAvoidRedundantFullSaveClones()
+        {
+            JObject current = game.CurrentDocument;
+
+            ContinuousHuntOverviewDto overview = hunt.GetOverview();
+
+            Assert.That(overview.Members, Is.Not.Empty);
+            Assert.That(game.CurrentDocument, Is.SameAs(current), "읽기 모델 생성은 대형 Save를 교체하거나 복제하면 안 됩니다.");
+
+            JObject isolatedDraft = game.Snapshot();
+            game.SynchronizeTransientDocument(isolatedDraft);
+
+            Assert.That(game.CurrentDocument, Is.SameAs(isolatedDraft), "이미 격리된 임시 draft는 두 번째 전체 Save 복제 없이 소유권을 이전해야 합니다.");
+            Assert.That(game.Revision, Is.EqualTo(isolatedDraft.Value<long>("revision")));
+        }
+
         private static void SeedProductionStoreStock(JObject document, string jobId)
         {
             JObject store = (JObject)document["payload"]!["economy"]!["store"]!; const string operationId = "019f9000-0000-7000-8000-000000000801";

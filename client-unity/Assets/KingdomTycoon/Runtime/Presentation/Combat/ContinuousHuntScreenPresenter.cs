@@ -9,6 +9,7 @@ using KingdomTycoon.Presentation.Navigation;
 using TMPro;
 using Unity.Profiling;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 namespace KingdomTycoon.Presentation.Combat
@@ -20,6 +21,10 @@ namespace KingdomTycoon.Presentation.Combat
         private const float InputIdleBeforeSave = 1.5f;
         private const float CatchUpFrameInterval = .05f;
         private const float SimulationPollInterval = .25f;
+        private const float InputPriorityGraceSeconds = .15f;
+        private const float ActiveWorldAnimationInterval = 1f / 24f;
+        private const float PanelWorldAnimationInterval = 1f / 12f;
+        private const float IdleRegionAnimationInterval = 1f / 8f;
         private static readonly ProfilerMarker SimulationMarker = new("KingdomTycoon.World.Simulation");
         private static readonly ProfilerMarker RefreshMarker = new("KingdomTycoon.World.Refresh");
         private static readonly ProfilerMarker AnimationMarker = new("KingdomTycoon.World.Animation");
@@ -77,6 +82,7 @@ namespace KingdomTycoon.Presentation.Combat
         private float nextVisualPublish;
         private float nextPersistence;
         private float lastInteractionAt;
+        private float inputPriorityUntil;
 
         public RectTransform WorldViewport => worldViewport;
         public RectTransform WorldContent => worldContent;
@@ -170,16 +176,18 @@ namespace KingdomTycoon.Presentation.Combat
 
         private void Update()
         {
+            if (HasDirectPointerInput()) MarkInteraction();
             if (CharacterDetailOpen) ApplyResponsiveCharacterLayout();
             bool cameraMoving = dragSurface != null && dragSurface.IsCameraMoving;
             if (cameraMoving) MarkInteraction();
+            bool inputHasPriority = cameraMoving || Time.unscaledTime < inputPriorityUntil;
             bool panelOpen = AssignmentSheetOpen || MobileMenuOpen || FacilityPanelOpen || CharacterDetailOpen;
-            if (!cameraMoving && Time.unscaledTime >= nextWorldAnimationFrame)
+            if (!inputHasPriority && Time.unscaledTime >= nextWorldAnimationFrame)
             {
-                nextWorldAnimationFrame = Time.unscaledTime + (panelOpen ? 1f / 15f : 1f / 30f);
+                nextWorldAnimationFrame = Time.unscaledTime + (panelOpen ? PanelWorldAnimationInterval : ActiveWorldAnimationInterval);
                 using (AnimationMarker.Auto()) AnimateWorld();
             }
-            if (service == null || cameraMoving) return;
+            if (service == null || inputHasPriority) return;
             DateTimeOffset now = DateTimeOffset.UtcNow;
             if (Time.unscaledTime >= nextTick)
             {
@@ -736,7 +744,7 @@ namespace KingdomTycoon.Presentation.Combat
             for (int index = 0; index < 5; index++) monsters.Add(CreateMonsterView(rootImage.transform, index));
             GameObject locked = Panel("잠금", rootImage.transform, new Color32(12, 18, 21, 235), new Vector2(.24f, .30f), new Vector2(.76f, .58f)).gameObject;
             Text("잠금문구", locked.transform, "아직 개방되지 않은 사냥터", 20, TextAlignmentOptions.Center, new Vector2(.08f, .20f), new Vector2(.92f, .80f), Color.white);
-            return new RegionView(rootImage.rectTransform, rootImage, outline, title, meta, riskBackground, risk, drop, locked, decorations, monsters);
+            return new RegionView(region.Id, rootImage.rectTransform, rootImage, outline, title, meta, riskBackground, risk, drop, locked, decorations, monsters);
         }
 
         private static void AddGroundPatch(Transform parent, string name, Sprite sprite, string theme, Vector2 min, Vector2 max)
@@ -875,6 +883,7 @@ namespace KingdomTycoon.Presentation.Combat
 
         private void RefreshRegion(WorldHuntRegionDto region, RegionView view)
         {
+            view.AssignedCount = region.AssignedCount;
             bool selected = region.Id == selectedRegionId;
             SetOutlineColorIfChanged(view.Outline, selected ? new Color32(244, 208, 119, 230) : new Color32(232, 197, 115, 0));
             SetTextIfChanged(view.Title, region.DisplayName);
@@ -939,15 +948,18 @@ namespace KingdomTycoon.Presentation.Combat
             foreach (RegionView region in regionViews.Values)
             {
                 if (!IsWorldPointVisible(region.Root.anchoredPosition, 480f)) continue;
+                bool activeRegion = region.AssignedCount > 0 || region.RegionId == selectedRegionId;
+                if (!activeRegion && now < region.NextAmbientAnimationAt) continue;
+                region.NextAmbientAnimationAt = now + (activeRegion ? ActiveWorldAnimationInterval : IdleRegionAnimationInterval);
                 foreach (MonsterView monster in region.Monsters)
                 {
                     if (!monster.Root.activeSelf || monster.Monster == null) continue;
                     float phase = now * .55f + monster.Index * 1.37f;
                     Vector2 roam = ReducedMotion || monster.Monster.State == "RESPAWNING" ? Vector2.zero : new Vector2(Mathf.Sin(phase) * 13f, Mathf.Cos(phase * .73f) * 8f);
-                    monster.Rect.anchoredPosition = monster.BasePosition + roam;
-                    monster.Body.color = now < monster.FlashUntil ? Color.Lerp(monster.BaseColor, Color.white, .86f) : monster.BaseColor;
+                    SetAnchoredPositionIfChanged(monster.Rect, monster.BasePosition + roam);
+                    SetColorIfChanged(monster.Body, now < monster.FlashUntil ? Color.Lerp(monster.BaseColor, Color.white, .86f) : monster.BaseColor);
                     float pulse = now < monster.PulseUntil ? 1f - Mathf.Clamp01((now - monster.PulseStarted) / Mathf.Max(.01f, monster.PulseUntil - monster.PulseStarted)) : 0f;
-                    Color pulseColor = monster.Pulse.color; pulseColor.a = pulse * .68f; monster.Pulse.color = pulseColor;
+                    Color pulseColor = monster.Pulse.color; pulseColor.a = pulse * .68f; SetColorIfChanged(monster.Pulse, pulseColor);
                     if (monster.Feedback.gameObject.activeSelf)
                     {
                         float duration = Mathf.Max(.01f, monster.FeedbackUntil - monster.FeedbackStarted);
@@ -969,10 +981,10 @@ namespace KingdomTycoon.Presentation.Combat
                     float phase = now * .46f + actor.Index * 1.19f;
                     livingTarget += new Vector2(Mathf.Sin(phase) * 34f, Mathf.Cos(phase * .77f) * 20f);
                 }
-                actor.Rect.anchoredPosition = Vector2.Lerp(actor.Rect.anchoredPosition, livingTarget, 1f - Mathf.Exp(-speed * Time.unscaledDeltaTime));
+                SetAnchoredPositionIfChanged(actor.Rect, Vector2.Lerp(actor.Rect.anchoredPosition, livingTarget, 1f - Mathf.Exp(-speed * Time.unscaledDeltaTime)));
                 float lunge = now < actor.LungeUntil && !ReducedMotion ? Mathf.Sin(Mathf.Clamp01((now - actor.LungeStarted) / Mathf.Max(.01f, actor.LungeUntil - actor.LungeStarted)) * Mathf.PI) * 18f : 0f;
                 float bob = ReducedMotion ? 0f : Mathf.Abs(Mathf.Sin(now * 4.2f + actor.Index * .8f)) * 3f;
-                actor.Body.rectTransform.anchoredPosition = new Vector2(lunge, bob);
+                SetAnchoredPositionIfChanged(actor.Body.rectTransform, new Vector2(lunge, bob));
             }
         }
 
@@ -1079,7 +1091,7 @@ namespace KingdomTycoon.Presentation.Combat
                 Color color = row.Color;
                 float remaining = row.ExpiresAt - now;
                 color.a = overview?.Feedback != null && remaining < .5f ? Mathf.Clamp01(remaining / .5f) : 1f;
-                row.Text.color = color;
+                SetColorIfChanged(row.Text, color);
             }
         }
 
@@ -1106,6 +1118,14 @@ namespace KingdomTycoon.Presentation.Combat
         private void MarkInteraction()
         {
             lastInteractionAt = Time.unscaledTime;
+            inputPriorityUntil = Mathf.Max(inputPriorityUntil, lastInteractionAt + InputPriorityGraceSeconds);
+        }
+
+        private static bool HasDirectPointerInput()
+        {
+            if (Mouse.current?.leftButton.isPressed == true) return true;
+            Touchscreen touchscreen = Touchscreen.current;
+            return touchscreen != null && touchscreen.primaryTouch.press.isPressed;
         }
 
         private void FlushPendingSafely(DateTimeOffset now)
@@ -1360,12 +1380,13 @@ namespace KingdomTycoon.Presentation.Combat
 
         private sealed class RegionView
         {
-            public RegionView(RectTransform root, Image background, Outline outline, TMP_Text title, TMP_Text meta, Image riskBackground,
+            public RegionView(string regionId, RectTransform root, Image background, Outline outline, TMP_Text title, TMP_Text meta, Image riskBackground,
                 TMP_Text risk, TMP_Text drop, GameObject locked, List<Image> decorations, List<MonsterView> monsters)
             {
-                Root = root; Background = background; Outline = outline; Title = title; Meta = meta; RiskBackground = riskBackground;
+                RegionId = regionId; Root = root; Background = background; Outline = outline; Title = title; Meta = meta; RiskBackground = riskBackground;
                 Risk = risk; Drop = drop; Locked = locked; Decorations = decorations; Monsters = monsters;
             }
+            public string RegionId { get; }
             public RectTransform Root { get; }
             public Image Background { get; }
             public Outline Outline { get; }
@@ -1377,6 +1398,8 @@ namespace KingdomTycoon.Presentation.Combat
             public GameObject Locked { get; }
             public List<Image> Decorations { get; }
             public List<MonsterView> Monsters { get; }
+            public int AssignedCount { get; set; }
+            public float NextAmbientAnimationAt { get; set; }
         }
 
         private sealed class MonsterView

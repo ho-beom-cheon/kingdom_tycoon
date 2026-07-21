@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 
 namespace KingdomTycoon.Presentation.Combat
 {
@@ -131,10 +132,16 @@ namespace KingdomTycoon.Presentation.Combat
 
         private void HandlePinch()
         {
-            if (Input.touchCount != 2) { previousPinchDistance = 0f; return; }
-            Touch first = Input.GetTouch(0);
-            Touch second = Input.GetTouch(1);
-            float distance = Vector2.Distance(first.position, second.position);
+            Touchscreen touchscreen = Touchscreen.current;
+            if (touchscreen == null || touchscreen.touches.Count < 2 ||
+                !touchscreen.touches[0].press.isPressed || !touchscreen.touches[1].press.isPressed)
+            {
+                previousPinchDistance = 0f;
+                return;
+            }
+            float distance = Vector2.Distance(
+                touchscreen.touches[0].position.ReadValue(),
+                touchscreen.touches[1].position.ReadValue());
             if (previousPinchDistance > 0f) ZoomBy((distance - previousPinchDistance) / 700f);
             previousPinchDistance = distance;
         }

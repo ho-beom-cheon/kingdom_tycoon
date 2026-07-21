@@ -177,14 +177,14 @@ namespace KingdomTycoon.Infrastructure.Combat
             if (changed) Commit(draft, game.Revision, clock.UtcNow);
             IsBootstrapped = true;
             observedRevision = game.Revision;
-            nextDueUtc = EarliestWorldDue(game.Snapshot());
+            nextDueUtc = EarliestWorldDue(game.CurrentDocument);
             AdvanceTo(clock.UtcNow);
         }
 
         public ContinuousHuntOverviewDto GetOverview()
         {
             EnsureReady();
-            return BuildOverview(game.Snapshot());
+            return BuildOverview(game.CurrentDocument);
         }
 
         public static bool NormalizeDocument(JObject document, DateTimeOffset now)
@@ -268,7 +268,7 @@ namespace KingdomTycoon.Infrastructure.Combat
             if (observedRevision != game.Revision)
             {
                 observedRevision = game.Revision;
-                nextDueUtc = EarliestWorldDue(game.Snapshot());
+                nextDueUtc = EarliestWorldDue(game.CurrentDocument);
             }
             if (nextDueUtc != DateTimeOffset.MinValue && nextDueUtc > now) return 0;
             JObject draft = game.Snapshot(); bool changed = Normalize(draft, now) | EnsureWorldState(draft, now); int steps = 0;
@@ -298,7 +298,7 @@ namespace KingdomTycoon.Infrastructure.Combat
                     if (game.Revision > revisionBeforeStore) HasPendingPersistence = false;
                     observedRevision = game.Revision;
                     overviewDirty = true;
-                    nextDueUtc = EarliestWorldDue(game.Snapshot());
+                    nextDueUtc = EarliestWorldDue(game.CurrentDocument);
                 }
                 catch (Exception exception) { UnityEngine.Debug.LogWarning("상점 자동 순환을 다음 귀환으로 미룹니다: " + exception.Message); }
             }
@@ -645,10 +645,10 @@ namespace KingdomTycoon.Infrastructure.Combat
             observedRevision = game.Revision;
             HasPendingPersistence = true;
             overviewDirty = true;
-            nextDueUtc = EarliestWorldDue(draft);
+            nextDueUtc = EarliestWorldDue(game.CurrentDocument);
         }
 
-        private void Publish() => Changed?.Invoke(this, BuildOverview(game.Snapshot()));
+        private void Publish() => Changed?.Invoke(this, BuildOverview(game.CurrentDocument));
         private void Transition(JObject autonomy, string state, string reason, DateTimeOffset at) => SetState(autonomy, state, reason, at, worldRules.DecisionSeconds);
         private static void SetState(JObject autonomy, string state, string reason, DateTimeOffset at, int decisionSeconds)
         { autonomy["state"] = state; autonomy["reasonCode"] = reason; autonomy["stateStartedAtUtc"] = FormatUtc(at); autonomy["nextDecisionAtUtc"] = FormatUtc(at.AddSeconds(decisionSeconds)); }

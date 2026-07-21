@@ -188,7 +188,9 @@ namespace KingdomTycoon.Infrastructure.Facilities
             if (document == null) throw new ArgumentNullException(nameof(document));
             if (document.Value<string>("profileId") != ActiveProfileId) throw new InvalidOperationException("SAVE_PROFILE_ID_MISMATCH");
             if (document.Value<long>("revision") != Revision) throw new InvalidOperationException("SAVE_REVISION_CONFLICT");
-            CurrentDocument = (JObject)document.DeepClone();
+            // The transient caller transfers ownership of an already isolated Snapshot draft.
+            // Avoid cloning large immutable journals again on every real-time simulation tick.
+            CurrentDocument = document;
         }
 
         public FacilityOperationResult StartBuild(StartFacilityBuildCommand command) => Mutate(command, now =>
