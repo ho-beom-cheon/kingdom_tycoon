@@ -63,6 +63,7 @@ namespace KingdomTycoon.Presentation.Combat
         private Button motionButton;
         private string selectedRegionId = "REGION_R01";
         private float nextTick;
+        private float nextWorldAnimationFrame;
 
         public RectTransform WorldViewport => worldViewport;
         public RectTransform WorldContent => worldContent;
@@ -153,8 +154,13 @@ namespace KingdomTycoon.Presentation.Combat
         private void Update()
         {
             if (CharacterDetailOpen) ApplyResponsiveCharacterLayout();
-            AnimateWorld();
-            if (service == null || Time.unscaledTime < nextTick) return;
+            bool cameraMoving = dragSurface != null && dragSurface.IsCameraMoving;
+            if (!cameraMoving && Time.unscaledTime >= nextWorldAnimationFrame)
+            {
+                nextWorldAnimationFrame = Time.unscaledTime + (1f / 30f);
+                AnimateWorld();
+            }
+            if (service == null || cameraMoving || Time.unscaledTime < nextTick) return;
             nextTick = Time.unscaledTime + 1f;
             try { service.AdvanceTo(DateTimeOffset.UtcNow); }
             catch (Exception exception)
@@ -899,7 +905,6 @@ namespace KingdomTycoon.Presentation.Combat
                 float lunge = now < actor.LungeUntil && !ReducedMotion ? Mathf.Sin(Mathf.Clamp01((now - actor.LungeStarted) / Mathf.Max(.01f, actor.LungeUntil - actor.LungeStarted)) * Mathf.PI) * 18f : 0f;
                 float bob = ReducedMotion ? 0f : Mathf.Abs(Mathf.Sin(now * 4.2f + actor.Index * .8f)) * 3f;
                 actor.Body.rectTransform.anchoredPosition = new Vector2(lunge, bob);
-                actor.Rect.SetAsLastSibling();
             }
         }
 

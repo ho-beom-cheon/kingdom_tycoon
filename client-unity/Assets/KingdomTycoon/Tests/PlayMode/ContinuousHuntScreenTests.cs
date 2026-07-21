@@ -8,6 +8,7 @@ using KingdomTycoon.Presentation.Regions;
 using NUnit.Framework;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 using UnityEngine.UI;
@@ -80,6 +81,31 @@ namespace KingdomTycoon.Tests.PlayMode
             screen.DragSurface.ResetView();
             Assert.That(screen.WorldContent.anchoredPosition, Is.EqualTo(Vector2.zero));
             Assert.That(screen.DragSurface.Zoom, Is.EqualTo(WorldMapDragSurface.StartingZoom).Within(.001f));
+        }
+
+        [UnityTest]
+        public IEnumerator CameraDragCoalescesPointerInputAndTracksTheFingerResponsively()
+        {
+            yield return Load(); ContinuousHuntScreenPresenter screen = ContinuousHuntScreenPresenter.Install(); screen.Open(); yield return null; Canvas.ForceUpdateCanvases();
+            Vector2 before = screen.WorldContent.anchoredPosition;
+            float canvasScale = screen.GetComponent<Canvas>().scaleFactor;
+            var pointer = new PointerEventData(EventSystem.current);
+            screen.DragSurface.OnBeginDrag(pointer);
+            for (int index = 0; index < 12; index++)
+            {
+                pointer.delta = new Vector2(-8f, 5f);
+                screen.DragSurface.OnDrag(pointer);
+            }
+
+            Assert.That(screen.DragSurface.IsCameraMoving, Is.True);
+            Assert.That(screen.WorldContent.anchoredPosition, Is.EqualTo(before), "pointer bursts must be applied once per rendered frame");
+            yield return null;
+
+            Vector2 expected = before + new Vector2(-96f, 60f) / canvasScale * WorldMapDragSurface.DirectManipulationGain;
+            Assert.That(screen.WorldContent.anchoredPosition.x, Is.EqualTo(expected.x).Within(1f));
+            Assert.That(screen.WorldContent.anchoredPosition.y, Is.EqualTo(expected.y).Within(1f));
+            screen.DragSurface.OnEndDrag(pointer);
+            Assert.That(screen.DragSurface.TapSuppressed, Is.True);
         }
 
         [UnityTest]
