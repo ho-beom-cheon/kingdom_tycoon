@@ -84,3 +84,7 @@
 - `reports/CORE_HUNT_VISUAL_POLISH_IMPLEMENTATION_EVIDENCE.md`: 직업·몬스터·지역·왕국 내부 픽셀 자산 구현과 자동 검증 증적
 - `reports/CORE_MOBILE_LIVING_WORLD_IMPLEMENTATION_EVIDENCE.md`: 세로형 통합 생활 월드·2축 카메라·복수 배치·상단 메뉴·CC0 에셋 구현 증적
 - `reports/CORE_WORLD_GAMEPLAY_POLISH_IMPLEMENTATION_EVIDENCE.md`: 사선형 왕국 월드·연결 사냥터·건물 기능·캐릭터 상세·전체 회귀 구현 증적
+
+## 런타임 성능 안정화
+- `design/TYCOON_CORE_RUNTIME_PERFORMANCE_STABILIZATION_COMPLETE_DESIGN_v1.0.md`: 자동 사냥 계산·저장·Canvas 재빌드 병목 제거 최종 계약
+- `reviews/CORE_RUNTIME_PERFORMANCE_STABILIZATION_COMPLETENESS_REVIEW_v1.0.md`: 런타임 성능 안정화 설계 완결성 및 기존 계약 충돌 검토
