@@ -19,6 +19,18 @@ namespace KingdomTycoon.Tests.EditMode
         }
 
         [Test]
+        public void SameSaveRevisionStillEmitsOneLiveCombatDifference()
+        {
+            var tracker = new WorldHuntFeedbackTracker();
+            string monsterId = "019f9000-0000-7000-8000-000000000201";
+            tracker.Observe(Overview(3, Member(target: monsterId), Monster(monsterId, 100, "ACTIVE")));
+            ContinuousHuntOverviewDto damaged = Overview(3, Member(target: monsterId, damage: 25), Monster(monsterId, 75, "ACTIVE"));
+
+            Assert.That(tracker.Observe(damaged).Single().Amount, Is.EqualTo(25));
+            Assert.That(tracker.Observe(damaged), Is.Empty, "같은 실시간 상태를 다시 발행해도 피드백은 중복되면 안 됩니다.");
+        }
+
+        [Test]
         public void DamageSkillDefeatAndRespawnUseTheCorrectMonsterAndAttacker()
         {
             var tracker = new WorldHuntFeedbackTracker(); string monsterId = "019f9000-0000-7000-8000-000000000201";

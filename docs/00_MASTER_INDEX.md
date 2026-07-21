@@ -58,6 +58,8 @@
 - `reviews/CORE_HUNT_VISUAL_POLISH_COMPLETENESS_REVIEW_v1.0.md`: 내부 픽셀 자산 설계 완결성·비용·라이선스 검토
 - `design/TYCOON_CORE_MOBILE_LIVING_WORLD_COMPLETE_DESIGN_v1.0.md`: 세로형 중앙 왕국·사방 사냥터·생활 동선·통합 메뉴·무료 에셋 최종 계약
 - `reviews/CORE_MOBILE_LIVING_WORLD_COMPLETENESS_REVIEW_v1.0.md`: 모바일 통합 생활 월드의 충돌·Save·입력·에셋·테스트 완결성 검토
+- `design/TYCOON_CORE_WORLD_GAMEPLAY_POLISH_COMPLETE_DESIGN_v1.0.md`: 사선형 왕국·자연스러운 사냥터 연결·건물 기능·캐릭터 상세 상호작용 최종 계약
+- `reviews/CORE_WORLD_GAMEPLAY_POLISH_COMPLETENESS_REVIEW_v1.0.md`: 게임형 월드 고도화의 저작권·Save·입력·상호작용·테스트 완결성 검토
 
 ## 구현 데이터
 
@@ -81,3 +83,12 @@
 - `reports/CORE_HUNT_GAME_FEEL_IMPLEMENTATION_EVIDENCE.md`: 타격·보상·성장·지역 차이·접근성 피드백 구현과 자동 검증 증적
 - `reports/CORE_HUNT_VISUAL_POLISH_IMPLEMENTATION_EVIDENCE.md`: 직업·몬스터·지역·왕국 내부 픽셀 자산 구현과 자동 검증 증적
 - `reports/CORE_MOBILE_LIVING_WORLD_IMPLEMENTATION_EVIDENCE.md`: 세로형 통합 생활 월드·2축 카메라·복수 배치·상단 메뉴·CC0 에셋 구현 증적
+- `reports/CORE_WORLD_GAMEPLAY_POLISH_IMPLEMENTATION_EVIDENCE.md`: 사선형 왕국 월드·연결 사냥터·건물 기능·캐릭터 상세·전체 회귀 구현 증적
+
+## 런타임 성능 안정화
+- `design/TYCOON_CORE_RUNTIME_PERFORMANCE_STABILIZATION_COMPLETE_DESIGN_v1.0.md`: 자동 사냥 계산·저장·Canvas 재빌드 병목 제거 최종 계약
+- `reviews/CORE_RUNTIME_PERFORMANCE_STABILIZATION_COMPLETENESS_REVIEW_v1.0.md`: 런타임 성능 안정화 설계 완결성 및 기존 계약 충돌 검토
+- `design/TYCOON_CORE_RUNTIME_PERFORMANCE_STABILIZATION_COMPLETE_DESIGN_v1.1.md`: 대형 Save 복제·입력 경합·비활성 지역 모션 병목 제거 보강 계약
+- `reviews/CORE_RUNTIME_PERFORMANCE_STABILIZATION_COMPLETENESS_REVIEW_v1.1.md`: 실측 기반 v1.1 보강 계약의 저장·품질·회귀 완결성 검토
+- `design/TYCOON_WORLD_INTERACTION_RESPONSE_COMPLETE_DESIGN_v1.0.md`: 건물·캐릭터 탭 유실과 상세 패널 지연 제거 계약
+- `reviews/WORLD_INTERACTION_RESPONSE_COMPLETENESS_REVIEW_v1.0.md`: 월드 상호작용 응답 계약의 입력·Save·UI 완결성 검토

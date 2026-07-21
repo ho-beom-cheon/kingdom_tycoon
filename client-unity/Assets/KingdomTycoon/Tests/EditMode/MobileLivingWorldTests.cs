@@ -10,13 +10,23 @@ namespace KingdomTycoon.Tests.EditMode
     public sealed class MobileLivingWorldTests
     {
         [Test]
-        public void FiveRegionsOccupyAllFourDirectionsWithoutCoveringKingdom()
+        public void FiveRegionsFormAnObliqueRingWithoutCoveringKingdom()
         {
             string[] ids = { "REGION_R01", "REGION_R02", "REGION_R03", "REGION_R04", "REGION_R05" };
             Vector2[] positions = ids.Select(MobileLivingWorldLayout.RegionPosition).ToArray();
             Assert.That(positions.Distinct().Count(), Is.EqualTo(5));
             Assert.That(positions.All(value => value.magnitude >= 850f), Is.True);
-            CollectionAssert.AreEquivalent(new[] { "북쪽", "동쪽", "남쪽", "서쪽" }, ids.Select(MobileLivingWorldLayout.DirectionOf).Distinct());
+            CollectionAssert.AreEquivalent(new[] { "북서쪽", "북동쪽", "남동쪽", "남서쪽", "북쪽" }, ids.Select(MobileLivingWorldLayout.DirectionOf));
+            Assert.That(MobileLivingWorldLayout.WorldSize, Is.EqualTo(new Vector2(3000f, 3600f)));
+        }
+
+        [Test]
+        public void ProjectionCompressesDepthAndShearsTheWorldConsistently()
+        {
+            Vector2 projected = MobileLivingWorldLayout.Project(new Vector2(100f, 500f));
+            Assert.That(projected, Is.EqualTo(new Vector2(180f, 370f)));
+            Assert.That(MobileLivingWorldLayout.RegionPosition("REGION_R01"), Is.EqualTo(MobileLivingWorldLayout.Project(new Vector2(-620f, 1050f))));
+            Assert.That(MobileLivingWorldLayout.KingdomGateForRegion("REGION_R03").y, Is.LessThan(0f));
         }
 
         [Test]
@@ -38,6 +48,19 @@ namespace KingdomTycoon.Tests.EditMode
                 Assert.That(MobileLivingWorldLayout.FacilityForState(state), Is.EqualTo(facility), state);
                 Assert.That(MobileLivingWorldLayout.FacilityPosition(facility), Is.Not.EqualTo(new Vector2(float.NaN, float.NaN)), facility);
             }
+        }
+
+        [Test]
+        public void EveryVisibleFacilityHasTwoKoreanFeatureRoutes()
+        {
+            Assert.That(WorldFacilityInteractionCatalog.All.Count, Is.EqualTo(5));
+            WorldFacilityInteractionDefinition tavern = WorldFacilityInteractionCatalog.Get("FAC_TAVERN");
+            Assert.That(tavern.PrimaryLabel, Is.EqualTo("용병 모집"));
+            Assert.That(tavern.PrimaryAction, Is.EqualTo(WorldFacilityAction.Recruitment));
+            Assert.That(tavern.SecondaryAction, Is.EqualTo(WorldFacilityAction.Mercenaries));
+            WorldFacilityInteractionDefinition blacksmith = WorldFacilityInteractionCatalog.Get("FAC_BLACKSMITH");
+            Assert.That(blacksmith.PrimaryAction, Is.EqualTo(WorldFacilityAction.EquipmentGrowth));
+            Assert.That(blacksmith.SecondaryAction, Is.EqualTo(WorldFacilityAction.Production));
         }
 
         [Test]

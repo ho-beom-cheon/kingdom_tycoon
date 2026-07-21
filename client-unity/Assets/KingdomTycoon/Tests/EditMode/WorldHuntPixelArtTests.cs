@@ -13,14 +13,15 @@ namespace KingdomTycoon.Tests.EditMode
         private static readonly string[] Themes = { "MEADOW", "FOREST", "MINE", "SWAMP", "FROST_RUIN" };
 
         [Test]
-        public void LibraryCreatesTwentyOnePointFilteredCachedSpritesWithinBudget()
+        public void LibraryCreatesTwentySixPointFilteredCachedSpritesWithinBudget()
         {
             using var library = new WorldHuntPixelArtLibrary();
-            Assert.That(library.SpriteCount, Is.EqualTo(21));
-            Assert.That(library.AllSprites.Sum(value => value.texture.width * value.texture.height), Is.EqualTo(22784));
+            Assert.That(library.SpriteCount, Is.EqualTo(26));
+            Assert.That(library.AllSprites.Sum(value => value.texture.width * value.texture.height), Is.EqualTo(43264));
             Assert.That(library.AllSprites.All(value => value.texture.filterMode == FilterMode.Point && value.texture.wrapMode == TextureWrapMode.Clamp), Is.True);
             Assert.That(ReferenceEquals(library.JobSprite("JOB_WARRIOR"), library.JobSprite("JOB_WARRIOR")), Is.True);
             Assert.That(ReferenceEquals(library.MonsterSprite("MEADOW", false), library.MonsterSprite("MEADOW", false)), Is.True);
+            Assert.That(ReferenceEquals(library.FacilitySprite("FAC_TAVERN"), library.FacilitySprite("FAC_TAVERN")), Is.True);
         }
 
         [Test]
@@ -31,6 +32,8 @@ namespace KingdomTycoon.Tests.EditMode
             Assert.That(Themes.Select(value => Fingerprint(library.DecorationSprite(value))).Distinct().Count(), Is.EqualTo(5));
             Assert.That(Themes.Select(value => Fingerprint(library.MonsterSprite(value, false))).Distinct().Count(), Is.EqualTo(5));
             foreach (string theme in Themes) Assert.That(Fingerprint(library.MonsterSprite(theme, false)), Is.Not.EqualTo(Fingerprint(library.MonsterSprite(theme, true))), theme);
+            string[] facilities = { "FAC_TAVERN", "FAC_STORE", "FAC_BLACKSMITH", "FAC_INFIRMARY", "FAC_GUILD" };
+            Assert.That(facilities.Select(value => Fingerprint(library.FacilitySprite(value))).Distinct().Count(), Is.EqualTo(5));
         }
 
         [Test]

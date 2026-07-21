@@ -39,7 +39,7 @@ namespace KingdomTycoon.Presentation.Combat
         public bool IsCombat => Type is WorldHuntFeedbackType.BasicHit or WorldHuntFeedbackType.SkillHit or WorldHuntFeedbackType.MonsterDefeated or WorldHuntFeedbackType.MonsterRespawned;
     }
 
-    /// <summary>Turns committed read-model differences into disposable presentation events.</summary>
+    /// <summary>Turns live read-model differences into disposable presentation events.</summary>
     public sealed class WorldHuntFeedbackTracker
     {
         private ContinuousHuntOverviewDto previous;
@@ -54,8 +54,6 @@ namespace KingdomTycoon.Presentation.Combat
                 previous = current;
                 return Array.Empty<WorldHuntFeedbackEvent>();
             }
-            if (current.Revision == previous.Revision) return Array.Empty<WorldHuntFeedbackEvent>();
-
             var events = new List<WorldHuntFeedbackEvent>();
             Dictionary<string, WorldHuntMonsterDto> oldMonsters = previous.Monsters.ToDictionary(value => value.InstanceId, StringComparer.Ordinal);
             Dictionary<string, WorldHuntMonsterDto> oldSlots = previous.Monsters.ToDictionary(SlotKey, StringComparer.Ordinal);

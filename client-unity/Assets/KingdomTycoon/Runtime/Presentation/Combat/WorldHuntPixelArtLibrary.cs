@@ -9,8 +9,10 @@ namespace KingdomTycoon.Presentation.Combat
     {
         public const int CharacterSize = 32;
         public const int KingdomSize = 48;
+        public const int FacilitySize = 64;
         private static readonly string[] JobIds = { "JOB_WARRIOR", "JOB_GUARDIAN", "JOB_ARCHER", "JOB_MAGE", "JOB_CLERIC" };
         private static readonly string[] Themes = { "MEADOW", "FOREST", "MINE", "SWAMP", "FROST_RUIN" };
+        private static readonly string[] FacilityIds = { "FAC_TAVERN", "FAC_STORE", "FAC_BLACKSMITH", "FAC_INFIRMARY", "FAC_GUILD" };
         private static readonly Color32 Transparent = new(0, 0, 0, 0);
         private static readonly Color32 Outline = new(24, 20, 27, 255);
         private static readonly Color32 Skin = new(202, 145, 101, 255);
@@ -19,6 +21,7 @@ namespace KingdomTycoon.Presentation.Combat
         private readonly Dictionary<string, Sprite> jobs = new(StringComparer.Ordinal);
         private readonly Dictionary<string, Sprite> monsters = new(StringComparer.Ordinal);
         private readonly Dictionary<string, Sprite> decorations = new(StringComparer.Ordinal);
+        private readonly Dictionary<string, Sprite> facilities = new(StringComparer.Ordinal);
         private readonly List<Sprite> sprites = new();
         private readonly List<Texture2D> textures = new();
         private Sprite kingdom;
@@ -33,6 +36,8 @@ namespace KingdomTycoon.Presentation.Combat
                 decorations.Add(theme, Create($"헌트_환경_{theme}", CharacterSize, canvas => DrawDecoration(canvas, theme)));
             }
             kingdom = Create("헌트_왕국_랜드마크", KingdomSize, DrawKingdom);
+            foreach (string facilityId in FacilityIds)
+                facilities.Add(facilityId, Create($"헌트_시설_{facilityId}", FacilitySize, canvas => DrawFacility(canvas, facilityId)));
         }
 
         public int SpriteCount => sprites.Count;
@@ -59,13 +64,19 @@ namespace KingdomTycoon.Presentation.Combat
             return decorations.TryGetValue(theme ?? string.Empty, out Sprite value) ? value : decorations["MEADOW"];
         }
 
+        public Sprite FacilitySprite(string facilityId)
+        {
+            EnsureAlive();
+            return facilities.TryGetValue(facilityId ?? string.Empty, out Sprite value) ? value : facilities["FAC_TAVERN"];
+        }
+
         public void Dispose()
         {
             if (IsDisposed) return;
             IsDisposed = true;
             foreach (Sprite sprite in sprites) DestroyOwned(sprite);
             foreach (Texture2D texture in textures) DestroyOwned(texture);
-            sprites.Clear(); textures.Clear(); jobs.Clear(); monsters.Clear(); decorations.Clear(); kingdom = null;
+            sprites.Clear(); textures.Clear(); jobs.Clear(); monsters.Clear(); decorations.Clear(); facilities.Clear(); kingdom = null;
         }
 
         private Sprite Create(string name, int size, Action<PixelCanvas> draw)
@@ -201,6 +212,44 @@ namespace KingdomTycoon.Presentation.Combat
             c.Triangle(6, 32, 15, 32, 10, 39, Outline); c.Triangle(8, 32, 13, 32, 10, 37, roof); c.Triangle(33, 32, 42, 32, 38, 39, Outline); c.Triangle(35, 32, 40, 32, 38, 37, roof);
             c.Rect(21, 9, 27, 23, Outline); c.Rect(22, 10, 26, 22, stoneDark); c.Rect(17, 29, 21, 34, Outline); c.Rect(18, 30, 20, 33, warm); c.Rect(27, 29, 31, 34, Outline); c.Rect(28, 30, 30, 33, warm);
             c.Rect(4, 8, 13, 15, Outline); c.Rect(5, 9, 12, 14, roof); c.Rect(35, 8, 45, 15, Outline); c.Rect(36, 9, 44, 14, roof); c.Line(41, 15, 41, 24, Outline, 3); c.Set(42, 25, smoke); c.Set(43, 27, smoke); c.Set(42, 29, smoke);
+        }
+
+        private static void DrawFacility(PixelCanvas c, string facilityId)
+        {
+            Color32 shadow = new(48, 45, 45, 255);
+            Color32 wall = new(151, 124, 88, 255);
+            Color32 wallLight = new(196, 166, 112, 255);
+            (Color32 roof, Color32 accent) = facilityId switch
+            {
+                "FAC_STORE" => (new Color32(188, 123, 49, 255), new Color32(246, 205, 96, 255)),
+                "FAC_BLACKSMITH" => (new Color32(115, 61, 51, 255), new Color32(235, 112, 59, 255)),
+                "FAC_INFIRMARY" => (new Color32(55, 125, 116, 255), new Color32(157, 226, 191, 255)),
+                "FAC_GUILD" => (new Color32(65, 80, 126, 255), new Color32(200, 180, 94, 255)),
+                _ => (new Color32(139, 71, 48, 255), new Color32(231, 170, 77, 255))
+            };
+
+            c.Ellipse(32, 5, 27, 4, shadow, true);
+            c.Rect(12, 10, 52, 39, Outline); c.Rect(14, 12, 50, 38, wall);
+            c.Triangle(7, 39, 57, 39, 32, 61, Outline); c.Triangle(10, 40, 54, 40, 32, 58, roof);
+            c.Rect(27, 10, 38, 29, Outline); c.Rect(29, 11, 36, 27, shadow);
+            c.Rect(17, 22, 25, 31, Outline); c.Rect(19, 24, 23, 29, accent);
+            c.Rect(41, 22, 49, 31, Outline); c.Rect(43, 24, 47, 29, accent);
+            c.Line(14, 37, 50, 37, wallLight, 2);
+
+            switch (facilityId)
+            {
+                case "FAC_TAVERN":
+                    c.Rect(8, 24, 16, 37, Outline); c.Rect(10, 26, 14, 35, accent); c.Line(7, 20, 17, 20, Outline, 3); c.Line(9, 21, 15, 21, wallLight); break;
+                case "FAC_STORE":
+                    for (int x = 14; x <= 46; x += 8) c.Rect(x, 32, x + 5, 39, x % 16 == 14 ? accent : wallLight);
+                    c.Rect(45, 7, 56, 17, Outline); c.Rect(47, 9, 54, 15, roof); break;
+                case "FAC_BLACKSMITH":
+                    c.Rect(45, 40, 53, 57, Outline); c.Rect(47, 42, 51, 55, shadow); c.Triangle(5, 8, 20, 8, 13, 17, Outline); c.Rect(9, 8, 17, 11, accent); break;
+                case "FAC_INFIRMARY":
+                    c.Rect(27, 44, 37, 57, Outline); c.Rect(21, 48, 43, 54, Outline); c.Rect(29, 45, 35, 56, accent); c.Rect(23, 50, 41, 52, accent); break;
+                case "FAC_GUILD":
+                    c.Rect(5, 16, 14, 47, Outline); c.Rect(7, 18, 12, 45, roof); c.Triangle(4, 47, 15, 47, 10, 58, Outline); c.Triangle(6, 47, 13, 47, 10, 56, accent); c.Line(10, 18, 10, 42, wallLight, 2); break;
+            }
         }
 
         private static (Color32 dark, Color32 main, Color32 light, Color32 accent) JobPalette(string id) => id switch

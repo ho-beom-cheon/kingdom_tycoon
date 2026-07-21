@@ -130,6 +130,8 @@ namespace KingdomTycoon.Infrastructure.Combat
     {
         internal const int ExperiencePerFallbackKill = 12;
         internal const int ContributionPerKill = 8;
+        public const int RuntimeStepBudget = 24;
+        public const int PersistenceIntervalSeconds = 20;
         private readonly ITrustedUtcClock clock;
         private readonly AutomaticGrowthRules growthRules;
         private readonly WorldHuntRules worldRules;
@@ -141,6 +143,9 @@ namespace KingdomTycoon.Infrastructure.Combat
         private Dictionary<string, int> rankOrder;
         private Dictionary<string, SkillUnlock[]> skillsByJob;
         private Dictionary<int, EnhancementRule> enhancementRules;
+        private DateTimeOffset nextDueUtc = DateTimeOffset.MinValue;
+        private long observedRevision = -1;
+        private bool overviewDirty;
 
         public ContinuousHuntGameService(ITrustedUtcClock clock, string automaticGrowthRulesJson, string worldHuntRulesJson)
         {
@@ -151,6 +156,7 @@ namespace KingdomTycoon.Infrastructure.Combat
 
         public int InitializationOrder => 75;
         public bool IsBootstrapped { get; private set; }
+        public bool HasPendingPersistence { get; private set; }
         public event EventHandler<ContinuousHuntOverviewDto> Changed;
 
         public void Initialize(ServiceRegistry services)
@@ -170,13 +176,15 @@ namespace KingdomTycoon.Infrastructure.Combat
             changed |= EnsureWorldState(draft, clock.UtcNow);
             if (changed) Commit(draft, game.Revision, clock.UtcNow);
             IsBootstrapped = true;
+            observedRevision = game.Revision;
+            nextDueUtc = EarliestWorldDue(game.CurrentDocument);
             AdvanceTo(clock.UtcNow);
         }
 
         public ContinuousHuntOverviewDto GetOverview()
         {
             EnsureReady();
-            return BuildOverview(game.Snapshot());
+            return BuildOverview(game.CurrentDocument);
         }
 
         public static bool NormalizeDocument(JObject document, DateTimeOffset now)
@@ -200,7 +208,7 @@ namespace KingdomTycoon.Infrastructure.Combat
             ReleaseTarget(draft, autonomy.Value<string>("targetInstanceId"), mercenaryInstanceId);
             autonomy["assignedRegionId"] = regionId; autonomy["autoResume"] = true; autonomy["currentRegionId"] = regionId; autonomy["targetInstanceId"] = null;
             Transition(autonomy, "TRAVEL_TO_REGION", "POLICY", clock.UtcNow);
-            Commit(draft, game.Revision, clock.UtcNow); Publish();
+            ApplyTransient(draft); PublishPending();
         }
 
         public void Unassign(string mercenaryInstanceId)
@@ -209,30 +217,89 @@ namespace KingdomTycoon.Infrastructure.Combat
             ReleaseTarget(draft, autonomy.Value<string>("targetInstanceId"), mercenaryInstanceId);
             autonomy["targetInstanceId"] = null; autonomy["assignedRegionId"] = null; autonomy["autoResume"] = false; autonomy["reasonCode"] = "PLAYER_RECALL";
             if (IsTownState(autonomy.Value<string>("state"))) { autonomy["currentRegionId"] = null; Transition(autonomy, "IDLE_TOWN", "PLAYER_RECALL", clock.UtcNow); }
-            Commit(draft, game.Revision, clock.UtcNow); Publish();
+            ApplyTransient(draft); PublishPending();
         }
 
         public int AdvanceTo(DateTimeOffset now)
         {
-            EnsureReady(); JObject draft = game.Snapshot(); bool changed = Normalize(draft, now) | EnsureWorldState(draft, now); int steps = 0;
+            int steps = AdvanceInternal(now, int.MaxValue);
+            PublishPending();
+            return steps;
+        }
+
+        public int AdvanceBudgetedTo(DateTimeOffset now, int maximumSteps)
+        {
+            if (maximumSteps < 1) throw new ArgumentOutOfRangeException(nameof(maximumSteps));
+            return AdvanceInternal(now, maximumSteps);
+        }
+
+        public bool HasDueWork(DateTimeOffset now)
+        {
+            EnsureReady();
+            return nextDueUtc <= now;
+        }
+
+        public bool PublishPending()
+        {
+            EnsureReady();
+            if (!overviewDirty) return false;
+            overviewDirty = false;
+            Publish();
+            return true;
+        }
+
+        public bool FlushPending(DateTimeOffset now)
+        {
+            EnsureReady();
+            if (!HasPendingPersistence) return false;
+            JObject draft = game.Snapshot();
+            SaveWriteResult result = save.Repository.Save(game.ActiveProfileId, draft, game.Revision, now);
+            if (!result.Success)
+                throw new InvalidOperationException((result.ErrorCode ?? "CONTINUOUS_HUNT_SAVE_FAILED") + ": " + string.Join(" | ", result.Report.Issues.Select(value => value.ToString())));
+            game.SynchronizeCommittedDocument(result.Document);
+            observedRevision = game.Revision;
+            HasPendingPersistence = false;
+            return true;
+        }
+
+        private int AdvanceInternal(DateTimeOffset now, int maximumSteps)
+        {
+            EnsureReady();
+            if (observedRevision != game.Revision)
+            {
+                observedRevision = game.Revision;
+                nextDueUtc = EarliestWorldDue(game.CurrentDocument);
+            }
+            if (nextDueUtc != DateTimeOffset.MinValue && nextDueUtc > now) return 0;
+            JObject draft = game.Snapshot(); bool changed = Normalize(draft, now) | EnsureWorldState(draft, now); int steps = 0;
             var settled = new List<string>();
             foreach (JObject mercenary in draft["payload"]!["mercenaries"]!.Children<JObject>().OrderBy(value => value.Value<string>("instanceId"), StringComparer.Ordinal))
             {
                 JObject autonomy = (JObject)mercenary["autonomy"]!; int memberSteps = 0;
-                while (memberSteps < worldRules.MaximumCatchUpSteps && ShouldAdvance(autonomy) && Due(autonomy, now))
+                while (steps < maximumSteps && memberSteps < worldRules.MaximumCatchUpSteps && ShouldAdvance(autonomy) && Due(autonomy, now))
                 {
                     DateTimeOffset at = NextDecision(autonomy); changed |= RespawnDue(draft, at);
                     bool reachedStore = AdvanceMember(draft, mercenary, autonomy, at);
                     memberSteps++; steps++; changed = true;
                     if (reachedStore) { settled.Add(mercenary.Value<string>("instanceId")); break; }
                 }
+                if (steps >= maximumSteps) break;
             }
             changed |= RespawnDue(draft, now);
+            nextDueUtc = EarliestWorldDue(draft);
             if (!changed) return 0;
-            Commit(draft, game.Revision, now); Publish();
+            ApplyTransient(draft);
             if (settled.Count > 0)
             {
-                try { economy.RunStoreAutonomyCycle(DeterministicCycleId(game.ActiveProfileId, now, game.Revision), settled); }
+                long revisionBeforeStore = game.Revision;
+                try
+                {
+                    economy.RunStoreAutonomyCycle(DeterministicCycleId(game.ActiveProfileId, now, game.Revision), settled);
+                    if (game.Revision > revisionBeforeStore) HasPendingPersistence = false;
+                    observedRevision = game.Revision;
+                    overviewDirty = true;
+                    nextDueUtc = EarliestWorldDue(game.CurrentDocument);
+                }
                 catch (Exception exception) { UnityEngine.Debug.LogWarning("상점 자동 순환을 다음 귀환으로 미룹니다: " + exception.Message); }
             }
             return steps;
@@ -240,7 +307,13 @@ namespace KingdomTycoon.Infrastructure.Combat
 
         public void Shutdown()
         {
+            if (IsBootstrapped && HasPendingPersistence)
+            {
+                try { FlushPending(clock.UtcNow); }
+                catch (Exception exception) { UnityEngine.Debug.LogWarning("자동 사냥 종료 저장을 완료하지 못했습니다: " + exception.Message); }
+            }
             Changed = null; enhancementRules = null; skillsByJob = null; rankOrder = null; worldCatalog = null; content = null; economy = null; game = null; save = null; IsBootstrapped = false;
+            HasPendingPersistence = false; overviewDirty = false; nextDueUtc = DateTimeOffset.MinValue; observedRevision = -1;
         }
 
         internal static bool Normalize(JObject document, DateTimeOffset now)
@@ -563,9 +636,19 @@ namespace KingdomTycoon.Infrastructure.Combat
             SaveWriteResult result = save.Repository.Save(game.ActiveProfileId, draft, expectedRevision, now);
             if (!result.Success) throw new InvalidOperationException((result.ErrorCode ?? "CONTINUOUS_HUNT_SAVE_FAILED") + ": " + string.Join(" | ", result.Report.Issues.Select(value => value.ToString())));
             game.SynchronizeCommittedDocument(result.Document);
+            observedRevision = game.Revision;
         }
 
-        private void Publish() => Changed?.Invoke(this, BuildOverview(game.Snapshot()));
+        private void ApplyTransient(JObject draft)
+        {
+            game.SynchronizeTransientDocument(draft);
+            observedRevision = game.Revision;
+            HasPendingPersistence = true;
+            overviewDirty = true;
+            nextDueUtc = EarliestWorldDue(game.CurrentDocument);
+        }
+
+        private void Publish() => Changed?.Invoke(this, BuildOverview(game.CurrentDocument));
         private void Transition(JObject autonomy, string state, string reason, DateTimeOffset at) => SetState(autonomy, state, reason, at, worldRules.DecisionSeconds);
         private static void SetState(JObject autonomy, string state, string reason, DateTimeOffset at, int decisionSeconds)
         { autonomy["state"] = state; autonomy["reasonCode"] = reason; autonomy["stateStartedAtUtc"] = FormatUtc(at); autonomy["nextDecisionAtUtc"] = FormatUtc(at.AddSeconds(decisionSeconds)); }
@@ -578,6 +661,21 @@ namespace KingdomTycoon.Infrastructure.Combat
         private static bool ShouldAdvance(JObject autonomy) => autonomy["assignedRegionId"]!.Type != JTokenType.Null || autonomy.Value<string>("state") is not "IDLE_TOWN";
         private static DateTimeOffset NextDecision(JObject autonomy) => DateTimeOffset.TryParse(autonomy.Value<string>("nextDecisionAtUtc"), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out DateTimeOffset value) ? value : DateTimeOffset.MinValue;
         private static bool Due(JObject autonomy, DateTimeOffset now) => NextDecision(autonomy) <= now;
+        private static DateTimeOffset EarliestWorldDue(JObject document)
+        {
+            if (document == null) return DateTimeOffset.MaxValue;
+            IEnumerable<DateTimeOffset> memberDue = document["payload"]!["mercenaries"]!.Children<JObject>()
+                .Select(value => (JObject)value["autonomy"]!)
+                .Where(ShouldAdvance)
+                .Select(NextDecision);
+            IEnumerable<DateTimeOffset> monsterDue = document["payload"]!["worldHunt"]!["regions"]!.Children<JObject>()
+                .SelectMany(value => value["monsters"]!.Children<JObject>())
+                .Where(value => value.Value<string>("state") == "RESPAWNING")
+                .Select(value => ParseNullableUtc(value["respawnAtUtc"]))
+                .Where(value => value.HasValue)
+                .Select(value => value.Value);
+            return memberDue.Concat(monsterDue).DefaultIfEmpty(DateTimeOffset.MaxValue).Min();
+        }
         private static DateTimeOffset? ParseNullableUtc(JToken value) => value == null || value.Type == JTokenType.Null ? null : DateTimeOffset.TryParse(value.Value<string>(), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out DateTimeOffset parsed) ? parsed : null;
         private static string NullableString(JToken token) => token == null || token.Type == JTokenType.Null ? null : token.Value<string>();
         private int SkillBonusBps(JObject mercenary, int perLevel) => Math.Min(growthRules.MaximumSkillHuntBonusBps, checked(TotalSkillLevels(mercenary) * perLevel));

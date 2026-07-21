@@ -8,6 +8,7 @@ using KingdomTycoon.Presentation.Regions;
 using NUnit.Framework;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 using UnityEngine.UI;
@@ -60,6 +61,7 @@ namespace KingdomTycoon.Tests.PlayMode
             Assert.That(screen.WorldContent.Cast<Transform>().Count(value => value.name.StartsWith("월드지역_")), Is.EqualTo(5));
             Assert.That(screen.GetComponentsInChildren<Transform>(true).Count(value => value.name.StartsWith("몬스터동작_")), Is.EqualTo(25));
             Assert.That(screen.GetComponentsInChildren<Image>(true).Count(value => value.name == "몬스터현재체력"), Is.EqualTo(25));
+            Assert.That(screen.IsolatedCanvasCount, Is.GreaterThanOrEqualTo(8), "월드, 사냥터, 용병 동적 레이어는 Canvas 갱신 범위를 분리해야 합니다.");
             Vector2 north = screen.WorldContent.Find("월드지역_REGION_R01").GetComponent<RectTransform>().anchoredPosition;
             Vector2 east = screen.WorldContent.Find("월드지역_REGION_R02").GetComponent<RectTransform>().anchoredPosition;
             Vector2 south = screen.WorldContent.Find("월드지역_REGION_R03").GetComponent<RectTransform>().anchoredPosition;
@@ -79,6 +81,52 @@ namespace KingdomTycoon.Tests.PlayMode
             Assert.That(screen.WorldContent.anchoredPosition.y, Is.EqualTo(maximumY).Within(1f));
             screen.DragSurface.ResetView();
             Assert.That(screen.WorldContent.anchoredPosition, Is.EqualTo(Vector2.zero));
+            Assert.That(screen.DragSurface.Zoom, Is.EqualTo(WorldMapDragSurface.StartingZoom).Within(.001f));
+        }
+
+        [UnityTest]
+        public IEnumerator CameraDragCoalescesPointerInputAndTracksTheFingerResponsively()
+        {
+            yield return Load(); ContinuousHuntScreenPresenter screen = ContinuousHuntScreenPresenter.Install(); screen.Open(); yield return null; Canvas.ForceUpdateCanvases();
+            Vector2 before = screen.WorldContent.anchoredPosition;
+            float canvasScale = screen.GetComponent<Canvas>().scaleFactor;
+            var pointer = new PointerEventData(EventSystem.current);
+            screen.DragSurface.OnBeginDrag(pointer);
+            for (int index = 0; index < 12; index++)
+            {
+                pointer.delta = new Vector2(-8f, 5f);
+                screen.DragSurface.OnDrag(pointer);
+            }
+
+            Assert.That(screen.DragSurface.IsCameraMoving, Is.True);
+            Assert.That(screen.WorldContent.anchoredPosition, Is.EqualTo(before), "pointer bursts must be applied once per rendered frame");
+            yield return null;
+
+            Vector2 expected = before + new Vector2(-96f, 60f) / canvasScale * WorldMapDragSurface.DirectManipulationGain;
+            Assert.That(screen.WorldContent.anchoredPosition.x, Is.EqualTo(expected.x).Within(1f));
+            Assert.That(screen.WorldContent.anchoredPosition.y, Is.EqualTo(expected.y).Within(1f));
+            screen.DragSurface.OnEndDrag(pointer);
+            Assert.That(screen.DragSurface.TapSuppressed, Is.True);
+        }
+
+        [UnityTest]
+        public IEnumerator CameraDragDoesNotConsumeTheNextIntentionalBuildingTap()
+        {
+            yield return Load(); ContinuousHuntScreenPresenter screen = ContinuousHuntScreenPresenter.Install(); screen.Open(); yield return null;
+            var pointer = new PointerEventData(EventSystem.current) { delta = new Vector2(64f, 0f) };
+            screen.DragSurface.OnBeginDrag(pointer);
+            screen.DragSurface.OnDrag(pointer);
+            screen.DragSurface.OnEndDrag(pointer);
+            Assert.That(screen.DragSurface.TapSuppressed, Is.True);
+
+            yield return new WaitForSecondsRealtime(WorldMapDragSurface.TapSuppressionLifetime + .02f);
+            Assert.That(screen.DragSurface.TapSuppressed, Is.False);
+            Button tavern = screen.WorldContent.Find("왕국거점/시설_FAC_TAVERN").GetComponent<Button>();
+            tavern.onClick.Invoke();
+            yield return null;
+
+            Assert.That(screen.FacilityPanelOpen, Is.True);
+            Assert.That(screen.SelectedFacilityId, Is.EqualTo("FAC_TAVERN"));
         }
 
         [UnityTest]
@@ -97,6 +145,60 @@ namespace KingdomTycoon.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator KingdomBuildingsOpenContextualKoreanFeaturePanels()
+        {
+            yield return Load(); ContinuousHuntScreenPresenter screen = ContinuousHuntScreenPresenter.Install(); screen.Open(); yield return null;
+            Button tavern = screen.WorldContent.Find("왕국거점/시설_FAC_TAVERN").GetComponent<Button>();
+            tavern.onClick.Invoke(); yield return null;
+            Assert.That(screen.FacilityPanelOpen, Is.True);
+            Assert.That(screen.SelectedFacilityId, Is.EqualTo("FAC_TAVERN"));
+            string tavernText = string.Join(" ", screen.GetComponentsInChildren<TMP_Text>(true).Where(value => value.gameObject.activeInHierarchy).Select(value => value.text));
+            Assert.That(tavernText, Does.Contain("황금 사슴 주점"));
+            Assert.That(tavernText, Does.Contain("용병 모집"));
+
+            Button blacksmith = screen.WorldContent.Find("왕국거점/시설_FAC_BLACKSMITH").GetComponent<Button>();
+            blacksmith.onClick.Invoke(); yield return null;
+            Assert.That(screen.SelectedFacilityId, Is.EqualTo("FAC_BLACKSMITH"));
+            Assert.That(string.Join(" ", screen.GetComponentsInChildren<TMP_Text>(true).Where(value => value.gameObject.activeInHierarchy).Select(value => value.text)), Does.Contain("장비 공방"));
+        }
+
+        [UnityTest]
+        public IEnumerator MercenaryTapOpensRealStatusEquipmentAndActivityDetail()
+        {
+            yield return Load(); ContinuousHuntScreenPresenter screen = ContinuousHuntScreenPresenter.Install(); screen.Open(); yield return null;
+            Button actor = screen.GetComponentsInChildren<Button>(true).First(value => value.name == "용병선택_0" && value.gameObject.activeInHierarchy);
+            var pointer = new PointerEventData(EventSystem.current) { pointerId = -101, position = new Vector2(400f, 700f) };
+            ExecuteEvents.Execute(actor.gameObject, pointer, ExecuteEvents.pointerDownHandler);
+            yield return null;
+            pointer.position += new Vector2(4f, 3f);
+            ExecuteEvents.Execute(actor.gameObject, pointer, ExecuteEvents.pointerUpHandler);
+            yield return null;
+            Assert.That(screen.CharacterDetailOpen, Is.True);
+            Assert.That(screen.SelectedMemberInstanceId, Is.Not.Null.And.Not.Empty);
+            string text = string.Join(" ", screen.GetComponentsInChildren<TMP_Text>(true).Where(value => value.gameObject.activeInHierarchy).Select(value => value.text));
+            Assert.That(text, Does.Contain("장비·기록"));
+            Assert.That(text, Does.Contain("현재 활동"));
+            Assert.That(text, Does.Contain("무기"));
+            Assert.That(text, Does.Contain("개인 골드"));
+            Assert.That(text.IndexOf('\uFFFD'), Is.EqualTo(-1));
+        }
+
+        [UnityTest]
+        public IEnumerator TownMercenaryTouchTargetsUseSeparatedLivingPositions()
+        {
+            yield return Load(); ContinuousHuntScreenPresenter screen = ContinuousHuntScreenPresenter.Install(); screen.Open(); yield return null;
+            RectTransform[] actors = screen.GetComponentsInChildren<RectTransform>(true)
+                .Where(value => value.name.StartsWith("용병동작_") && value.gameObject.activeInHierarchy).ToArray();
+            Assert.That(actors.Length, Is.GreaterThanOrEqualTo(4));
+            for (int i = 0; i < actors.Length; i++) for (int j = i + 1; j < actors.Length; j++)
+            {
+                Rect a = new(actors[i].anchoredPosition - actors[i].sizeDelta * .5f, actors[i].sizeDelta);
+                Rect b = new(actors[j].anchoredPosition - actors[j].sizeDelta * .5f, actors[j].sizeDelta);
+                Assert.That(a.Overlaps(b), Is.False, $"{actors[i].name} overlaps {actors[j].name}");
+            }
+        }
+
+        [UnityTest]
         public IEnumerator MobileWorldOpensAsKingdomHomeAndReplacesBottomNavigationWithTopMenu()
         {
             yield return Load(); yield return null;
@@ -104,6 +206,7 @@ namespace KingdomTycoon.Tests.PlayMode
             Assert.That(screen, Is.Not.Null);
             Assert.That(screen.gameObject.activeInHierarchy, Is.True);
             Assert.That(screen.WorldContent.anchoredPosition, Is.EqualTo(Vector2.zero));
+            Assert.That(screen.DragSurface.Zoom, Is.EqualTo(WorldMapDragSurface.StartingZoom).Within(.001f));
             Button menu = screen.GetComponentsInChildren<Button>(true).Single(value => value.name == "통합메뉴버튼");
             menu.onClick.Invoke(); yield return null;
             Assert.That(screen.MobileMenuOpen, Is.True);
@@ -125,6 +228,24 @@ namespace KingdomTycoon.Tests.PlayMode
             Assert.That(File.Exists(path), Is.True);
             Assert.That(new FileInfo(path).Length, Is.GreaterThan(20000));
             Assert.That(distinctColors, Is.GreaterThan(12), "rendered evidence must contain the living world, not a blank frame");
+        }
+
+        [UnityTest]
+        public IEnumerator CharacterDetailCaptureProducesVisualEvidence()
+        {
+            if (SystemInfo.graphicsDeviceType == UnityEngine.Rendering.GraphicsDeviceType.Null)
+                Assert.Ignore("visual evidence requires a graphics device");
+            yield return Load(); ContinuousHuntScreenPresenter screen = ContinuousHuntScreenPresenter.Install(); screen.Open(); yield return null;
+            Screen.SetResolution(1080, 1920, false); yield return null; Canvas.ForceUpdateCanvases();
+            Button actor = screen.GetComponentsInChildren<Button>(true).First(value => value.name == "용병선택_0" && value.gameObject.activeInHierarchy);
+            actor.onClick.Invoke(); yield return null; Canvas.ForceUpdateCanvases();
+            string directory = Path.GetFullPath(Path.Combine(UnityEngine.Application.dataPath, "..", "..", "artifacts"));
+            Directory.CreateDirectory(directory);
+            string path = Path.Combine(directory, "world-gameplay-polish-character-detail.png");
+            int distinctColors = Capture(screen, path, 1080, 1920);
+            Assert.That(File.Exists(path), Is.True);
+            Assert.That(new FileInfo(path).Length, Is.GreaterThan(20000));
+            Assert.That(distinctColors, Is.GreaterThan(12));
         }
 
         [UnityTest]
@@ -167,7 +288,7 @@ namespace KingdomTycoon.Tests.PlayMode
         public IEnumerator PixelArtReplacesFlatActorsMonstersEnvironmentAndKingdomBlocks()
         {
             yield return Load(); ContinuousHuntScreenPresenter screen = ContinuousHuntScreenPresenter.Install(); screen.Open(); yield return null;
-            Assert.That(screen.PixelArtSpriteCount, Is.EqualTo(21));
+            Assert.That(screen.PixelArtSpriteCount, Is.EqualTo(26));
             Image[] images = screen.GetComponentsInChildren<Image>(true);
             Image[] jobIcons = images.Where(value => value.name == "직업아이콘").ToArray();
             Assert.That(jobIcons.Length, Is.EqualTo(8)); Assert.That(jobIcons.All(value => value.sprite != null && value.sprite.texture.filterMode == FilterMode.Point), Is.True);
@@ -184,6 +305,9 @@ namespace KingdomTycoon.Tests.PlayMode
             Assert.That(screen.ExternalSpriteCount, Is.GreaterThanOrEqualTo(10));
             Assert.That(decorations.Any(value => value.sprite.name.StartsWith("CC0_NinjaAdventure_")), Is.True);
             Assert.That(images.Single(value => value.name == "왕국픽셀랜드마크").sprite, Is.Not.Null);
+            Image[] facilities = images.Where(value => value.name == "시설픽셀아트").ToArray();
+            Assert.That(facilities.Length, Is.EqualTo(5));
+            Assert.That(facilities.Select(value => value.sprite.name).Distinct().Count(), Is.EqualTo(5));
             Assert.That(screen.GetComponentsInChildren<Transform>(true).Any(value => value.name is "성채" or "상점" or "대장간"), Is.False);
 
             ContinuousHuntMemberDto member = service.GetOverview().Members.First();
