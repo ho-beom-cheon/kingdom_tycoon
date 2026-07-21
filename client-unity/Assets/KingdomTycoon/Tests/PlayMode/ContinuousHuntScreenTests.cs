@@ -167,7 +167,12 @@ namespace KingdomTycoon.Tests.PlayMode
         {
             yield return Load(); ContinuousHuntScreenPresenter screen = ContinuousHuntScreenPresenter.Install(); screen.Open(); yield return null;
             Button actor = screen.GetComponentsInChildren<Button>(true).First(value => value.name == "용병선택_0" && value.gameObject.activeInHierarchy);
-            actor.onClick.Invoke(); yield return null;
+            var pointer = new PointerEventData(EventSystem.current) { pointerId = -101, position = new Vector2(400f, 700f) };
+            ExecuteEvents.Execute(actor.gameObject, pointer, ExecuteEvents.pointerDownHandler);
+            yield return null;
+            pointer.position += new Vector2(4f, 3f);
+            ExecuteEvents.Execute(actor.gameObject, pointer, ExecuteEvents.pointerUpHandler);
+            yield return null;
             Assert.That(screen.CharacterDetailOpen, Is.True);
             Assert.That(screen.SelectedMemberInstanceId, Is.Not.Null.And.Not.Empty);
             string text = string.Join(" ", screen.GetComponentsInChildren<TMP_Text>(true).Where(value => value.gameObject.activeInHierarchy).Select(value => value.text));

@@ -9,6 +9,7 @@ using KingdomTycoon.Presentation.Navigation;
 using TMPro;
 using Unity.Profiling;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
@@ -818,6 +819,8 @@ namespace KingdomTycoon.Presentation.Combat
             badge.raycastTarget = false;
             var view = new ActorView(root, rect, button, body, label, badge, selectionOutline, index);
             button.onClick.AddListener(() => ShowCharacterDetail(view));
+            button.enabled = false;
+            hit.gameObject.AddComponent<WorldActorTapTarget>().Configure(dragSurface, rect, () => button.onClick.Invoke());
             root.SetActive(false);
             return view;
         }
@@ -1468,6 +1471,47 @@ namespace KingdomTycoon.Presentation.Combat
             public TMP_Text Text { get; }
             public Color Color { get; set; }
             public float ExpiresAt { get; set; }
+        }
+    }
+
+    internal sealed class WorldActorTapTarget : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
+    {
+        private WorldMapDragSurface dragSurface;
+        private RectTransform visualRoot;
+        private Action selected;
+        private Vector2 pointerDownPosition;
+        private int pointerId = int.MinValue;
+
+        public void Configure(WorldMapDragSurface surface, RectTransform root, Action callback)
+        {
+            dragSurface = surface;
+            visualRoot = root;
+            selected = callback;
+        }
+
+        public void OnPointerDown(PointerEventData eventData)
+        {
+            pointerId = eventData.pointerId;
+            pointerDownPosition = eventData.position;
+            if (visualRoot != null) visualRoot.localScale = new Vector3(.96f, .96f, 1f);
+        }
+
+        public void OnPointerUp(PointerEventData eventData)
+        {
+            if (visualRoot != null) visualRoot.localScale = Vector3.one;
+            bool samePointer = pointerId == eventData.pointerId;
+            pointerId = int.MinValue;
+            if (!samePointer || eventData.dragging ||
+                (eventData.position - pointerDownPosition).sqrMagnitude > WorldMapDragSurface.TapThreshold * WorldMapDragSurface.TapThreshold ||
+                dragSurface?.TapSuppressed == true)
+                return;
+            selected?.Invoke();
+        }
+
+        private void OnDisable()
+        {
+            pointerId = int.MinValue;
+            if (visualRoot != null) visualRoot.localScale = Vector3.one;
         }
     }
 }
