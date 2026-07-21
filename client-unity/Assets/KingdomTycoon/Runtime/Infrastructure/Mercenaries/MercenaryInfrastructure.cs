@@ -84,6 +84,14 @@ namespace KingdomTycoon.Infrastructure.Mercenaries
             return document["payload"]!["mercenaries"]!.Children<JObject>().Select(ReadOne).ToArray();
         }
 
+        public Mercenary ReadById(JObject document, string instanceId)
+        {
+            JObject value = document["payload"]!["mercenaries"]!.Children<JObject>()
+                .SingleOrDefault(item => item.Value<string>("instanceId") == instanceId)
+                ?? throw new MercenaryDomainException("MERCENARY_NOT_FOUND");
+            return ReadOne(value);
+        }
+
         public void SetActive(JObject document, string instanceId, bool active)
         {
             JObject value = document["payload"]!["mercenaries"]!.Children<JObject>().SingleOrDefault(item => item.Value<string>("instanceId") == instanceId)
@@ -193,7 +201,7 @@ namespace KingdomTycoon.Infrastructure.Mercenaries
         public MercenaryRosterResultDto GetRoster(MercenaryRosterQueryDto query = null)
         {
             EnsureReady();
-            JObject document = game.Snapshot();
+            JObject document = game.CurrentDocument;
             IReadOnlyList<Mercenary> values = mapper.Read(document);
             return new GetMercenaryRosterQuery().Execute(values, query, catalog, document["payload"]!["kingdom"]!.Value<int>("ownedMercenaryLimit"), document["payload"]!["kingdom"]!.Value<int>("activeMercenaryLimit"));
         }
@@ -201,7 +209,7 @@ namespace KingdomTycoon.Infrastructure.Mercenaries
         public MercenaryDetailDto GetDetail(string instanceId)
         {
             EnsureReady();
-            return new GetMercenaryDetailQuery().Execute(mapper.Read(game.Snapshot()), instanceId, catalog);
+            return new GetMercenaryDetailQuery().Execute(new[] { mapper.ReadById(game.CurrentDocument, instanceId) }, instanceId, catalog);
         }
 
         public void Reload()

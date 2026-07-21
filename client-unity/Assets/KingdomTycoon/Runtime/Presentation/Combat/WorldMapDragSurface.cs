@@ -10,6 +10,7 @@ namespace KingdomTycoon.Presentation.Combat
         public const float MaximumZoom = 1.35f;
         public const float StartingZoom = .92f;
         public const float TapThreshold = 18f;
+        public const float TapSuppressionLifetime = .08f;
         public const float DirectManipulationGain = 1.12f;
         private const float MaximumInertialSpeed = 2600f;
 
@@ -22,7 +23,7 @@ namespace KingdomTycoon.Presentation.Combat
         private Vector2 cachedMaximumOffset;
         private float zoom = 1f;
         private float canvasScale = 1f;
-        private bool suppressNextTap;
+        private float tapSuppressedUntil = -1f;
         private float previousPinchDistance;
 
         public RectTransform Viewport => viewport;
@@ -30,7 +31,7 @@ namespace KingdomTycoon.Presentation.Combat
         public bool IsDragging { get; private set; }
         public bool IsCameraMoving => IsDragging || pendingDragDelta.sqrMagnitude > .01f || velocity.sqrMagnitude >= 4f;
         public float Zoom => zoom;
-        public bool TapSuppressed => suppressNextTap;
+        public bool TapSuppressed => tapSuppressedUntil >= 0f && Time.unscaledTime <= tapSuppressedUntil;
 
         public void Configure(RectTransform viewportRect, RectTransform contentRect)
         {
@@ -48,6 +49,7 @@ namespace KingdomTycoon.Presentation.Combat
             dragDistance = Vector2.zero;
             pendingDragDelta = Vector2.zero;
             velocity = Vector2.zero;
+            tapSuppressedUntil = -1f;
         }
 
         public void OnDrag(PointerEventData eventData)
@@ -62,15 +64,16 @@ namespace KingdomTycoon.Presentation.Combat
         {
             ApplyPendingDrag();
             IsDragging = false;
-            if (dragDistance.magnitude > TapThreshold) suppressNextTap = true;
+            if (dragDistance.magnitude > TapThreshold)
+                tapSuppressedUntil = Time.unscaledTime + TapSuppressionLifetime;
         }
 
         public void OnScroll(PointerEventData eventData) => ZoomBy(eventData.scrollDelta.y * .08f);
 
         public bool ConsumeTapSuppression()
         {
-            bool value = suppressNextTap;
-            suppressNextTap = false;
+            bool value = TapSuppressed;
+            tapSuppressedUntil = -1f;
             return value;
         }
 

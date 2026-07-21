@@ -110,6 +110,26 @@ namespace KingdomTycoon.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator CameraDragDoesNotConsumeTheNextIntentionalBuildingTap()
+        {
+            yield return Load(); ContinuousHuntScreenPresenter screen = ContinuousHuntScreenPresenter.Install(); screen.Open(); yield return null;
+            var pointer = new PointerEventData(EventSystem.current) { delta = new Vector2(64f, 0f) };
+            screen.DragSurface.OnBeginDrag(pointer);
+            screen.DragSurface.OnDrag(pointer);
+            screen.DragSurface.OnEndDrag(pointer);
+            Assert.That(screen.DragSurface.TapSuppressed, Is.True);
+
+            yield return new WaitForSecondsRealtime(WorldMapDragSurface.TapSuppressionLifetime + .02f);
+            Assert.That(screen.DragSurface.TapSuppressed, Is.False);
+            Button tavern = screen.WorldContent.Find("왕국거점/시설_FAC_TAVERN").GetComponent<Button>();
+            tavern.onClick.Invoke();
+            yield return null;
+
+            Assert.That(screen.FacilityPanelOpen, Is.True);
+            Assert.That(screen.SelectedFacilityId, Is.EqualTo("FAC_TAVERN"));
+        }
+
+        [UnityTest]
         public IEnumerator HuntingGroundTapOpensAssignmentSheetAndSupportsSeveralMercenaries()
         {
             yield return Load(); ContinuousHuntScreenPresenter screen = ContinuousHuntScreenPresenter.Install(); screen.Open(); yield return null;

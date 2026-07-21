@@ -29,6 +29,7 @@ namespace KingdomTycoon.Presentation.Combat
         private static readonly ProfilerMarker RefreshMarker = new("KingdomTycoon.World.Refresh");
         private static readonly ProfilerMarker AnimationMarker = new("KingdomTycoon.World.Animation");
         private static readonly ProfilerMarker PersistenceMarker = new("KingdomTycoon.World.Persistence");
+        private static readonly ProfilerMarker InteractionMarker = new("KingdomTycoon.World.Interaction");
         private readonly List<MemberButton> memberButtons = new();
         private readonly List<ActorView> actorViews = new();
         private readonly Dictionary<string, RegionView> regionViews = new(StringComparer.Ordinal);
@@ -57,8 +58,11 @@ namespace KingdomTycoon.Presentation.Combat
         private TMP_Text facilityTitle;
         private TMP_Text facilityDescription;
         private TMP_Text facilityStatus;
+        private Image facilityIcon;
         private Button facilityPrimaryButton;
         private Button facilitySecondaryButton;
+        private TMP_Text facilityPrimaryLabel;
+        private TMP_Text facilitySecondaryLabel;
         private WorldFacilityInteractionDefinition selectedFacility;
         private TMP_Text characterTitle;
         private TMP_Text characterSubtitle;
@@ -428,8 +432,8 @@ namespace KingdomTycoon.Presentation.Combat
             Image panel = Panel("시설기능패널", parent, new Color32(13, 27, 29, 252), new Vector2(.02f, .025f), new Vector2(.98f, .355f));
             facilityPanel = panel.gameObject;
             Image iconFrame = Panel("시설초상틀", panel.transform, new Color32(37, 54, 50, 255), new Vector2(.04f, .33f), new Vector2(.28f, .91f));
-            Image icon = PixelImage("선택시설그림", iconFrame.transform, visuals.FacilitySprite("FAC_TAVERN"), new Vector2(.06f, .07f), new Vector2(.94f, .93f));
-            icon.raycastTarget = false;
+            facilityIcon = PixelImage("선택시설그림", iconFrame.transform, visuals.FacilitySprite("FAC_TAVERN"), new Vector2(.06f, .07f), new Vector2(.94f, .93f));
+            facilityIcon.raycastTarget = false;
             facilityTitle = Text("시설기능제목", panel.transform, "왕국 시설", 27, TextAlignmentOptions.Left, new Vector2(.32f, .73f), new Vector2(.78f, .94f), new Color32(248, 215, 130, 255));
             facilityDescription = Text("시설기능설명", panel.transform, string.Empty, 17, TextAlignmentOptions.Left, new Vector2(.32f, .48f), new Vector2(.95f, .74f), new Color32(213, 228, 215, 255));
             facilityStatus = Text("시설현재상태", panel.transform, string.Empty, 16, TextAlignmentOptions.Left, new Vector2(.32f, .31f), new Vector2(.95f, .49f), new Color32(145, 202, 181, 255));
@@ -437,6 +441,8 @@ namespace KingdomTycoon.Presentation.Combat
             close.onClick.AddListener(() => { MarkInteraction(); facilityPanel.SetActive(false); });
             facilityPrimaryButton = MakeButton("시설주요기능", panel.transform, "주요 기능", new Color32(173, 104, 48, 255), new Vector2(.04f, .055f), new Vector2(.49f, .27f));
             facilitySecondaryButton = MakeButton("시설보조기능", panel.transform, "보조 기능", new Color32(48, 112, 94, 255), new Vector2(.51f, .055f), new Vector2(.96f, .27f));
+            facilityPrimaryLabel = facilityPrimaryButton.GetComponentInChildren<TMP_Text>();
+            facilitySecondaryLabel = facilitySecondaryButton.GetComponentInChildren<TMP_Text>();
             facilityPrimaryButton.onClick.AddListener(() => RouteFacilityAction(selectedFacility?.PrimaryAction));
             facilitySecondaryButton.onClick.AddListener(() => RouteFacilityAction(selectedFacility?.SecondaryAction));
             facilityPanel.SetActive(false);
@@ -518,18 +524,21 @@ namespace KingdomTycoon.Presentation.Combat
 
         private void ShowFacility(string facilityId)
         {
-            if (dragSurface.ConsumeTapSuppression()) return;
-            MarkInteraction();
-            selectedFacility = WorldFacilityInteractionCatalog.Get(facilityId);
-            CloseWorldPanels();
-            facilityPanel.SetActive(true);
-            facilityTitle.text = selectedFacility.Title;
-            facilityDescription.text = selectedFacility.Description;
-            facilityPrimaryButton.GetComponentInChildren<TMP_Text>().text = selectedFacility.PrimaryLabel;
-            facilitySecondaryButton.GetComponentInChildren<TMP_Text>().text = selectedFacility.SecondaryLabel;
-            facilityPanel.transform.Find("시설초상틀/선택시설그림").GetComponent<Image>().sprite = visuals.FacilitySprite(facilityId);
-            int visitors = overview?.Members.Count(value => MobileLivingWorldLayout.FacilityForState(value.State) == facilityId) ?? 0;
-            facilityStatus.text = visitors > 0 ? $"현재 이용 중인 용병 {visitors}명" : "현재 대기 중 · 시설을 눌러 기능을 이용하세요.";
+            using (InteractionMarker.Auto())
+            {
+                if (dragSurface.ConsumeTapSuppression()) return;
+                MarkInteraction();
+                selectedFacility = WorldFacilityInteractionCatalog.Get(facilityId);
+                CloseWorldPanels();
+                SetTextIfChanged(facilityTitle, selectedFacility.Title);
+                SetTextIfChanged(facilityDescription, selectedFacility.Description);
+                SetTextIfChanged(facilityPrimaryLabel, selectedFacility.PrimaryLabel);
+                SetTextIfChanged(facilitySecondaryLabel, selectedFacility.SecondaryLabel);
+                SetSpriteIfChanged(facilityIcon, visuals.FacilitySprite(facilityId));
+                int visitors = overview?.Members.Count(value => MobileLivingWorldLayout.FacilityForState(value.State) == facilityId) ?? 0;
+                SetTextIfChanged(facilityStatus, visitors > 0 ? $"현재 이용 중인 용병 {visitors}명" : "현재 대기 중 · 시설을 눌러 기능을 이용하세요.");
+                facilityPanel.SetActive(true);
+            }
         }
 
         private void RouteFacilityAction(WorldFacilityAction? action)
@@ -551,23 +560,26 @@ namespace KingdomTycoon.Presentation.Combat
 
         private void ShowCharacterDetail(ActorView actor)
         {
-            if (actor?.Member == null || dragSurface.ConsumeTapSuppression()) return;
-            MarkInteraction();
-            try
+            using (InteractionMarker.Auto())
             {
-                mercenaryRoster ??= AppRoot.Instance?.Services.Get<MercenaryRosterService>();
-                if (mercenaryRoster == null) return;
-                CloseWorldPanels();
-                selectedMemberInstanceId = actor.Member.InstanceId;
-                selectedCharacterTab = 0;
-                characterDetailModal.SetActive(true);
-                RenderCharacterDetail();
-                ApplyResponsiveCharacterLayout();
-            }
-            catch (Exception exception)
-            {
-                Debug.LogWarning(exception);
-                ShowStatus("용병 상세 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.");
+                if (actor?.Member == null || dragSurface.ConsumeTapSuppression()) return;
+                MarkInteraction();
+                try
+                {
+                    mercenaryRoster ??= AppRoot.Instance?.Services.Get<MercenaryRosterService>();
+                    if (mercenaryRoster == null) return;
+                    CloseWorldPanels();
+                    selectedMemberInstanceId = actor.Member.InstanceId;
+                    selectedCharacterTab = 0;
+                    RenderCharacterDetail();
+                    ApplyResponsiveCharacterLayout();
+                    characterDetailModal.SetActive(true);
+                }
+                catch (Exception exception)
+                {
+                    Debug.LogWarning(exception);
+                    ShowStatus("용병 상세 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.");
+                }
             }
         }
 
@@ -583,34 +595,34 @@ namespace KingdomTycoon.Presentation.Combat
             if (mercenaryRoster == null || string.IsNullOrEmpty(selectedMemberInstanceId)) return;
             MercenaryDetailDto detail = mercenaryRoster.GetDetail(selectedMemberInstanceId);
             ContinuousHuntMemberDto live = overview?.Members.FirstOrDefault(value => value.InstanceId == selectedMemberInstanceId);
-            characterTitle.text = detail.DisplayName;
-            characterSubtitle.text = $"{detail.GradeName} · {detail.RankName} · {detail.JobName} · 레벨 {detail.Level}";
-            characterStars.text = new string('★', GradeStars(detail.GradeId));
-            characterGold.text = $"개인 골드  {detail.PersonalGold:N0}";
-            characterPortrait.sprite = visuals.JobSprite(detail.JobId);
-            characterHealthFill.rectTransform.anchorMax = new Vector2((live?.CurrentHpBps ?? 0) / 10000f, 1f);
+            SetTextIfChanged(characterTitle, detail.DisplayName);
+            SetTextIfChanged(characterSubtitle, $"{detail.GradeName} · {detail.RankName} · {detail.JobName} · 레벨 {detail.Level}");
+            SetTextIfChanged(characterStars, new string('★', GradeStars(detail.GradeId)));
+            SetTextIfChanged(characterGold, $"개인 골드  {detail.PersonalGold:N0}");
+            SetSpriteIfChanged(characterPortrait, visuals.JobSprite(detail.JobId));
+            SetAnchorMaxIfChanged(characterHealthFill.rectTransform, new Vector2((live?.CurrentHpBps ?? 0) / 10000f, 1f));
             float bagRatio = live == null || live.BagCapacity <= 0 ? 0f : live.BagFill / (float)live.BagCapacity;
-            characterBagFill.rectTransform.anchorMax = new Vector2(Mathf.Clamp01(bagRatio), 1f);
+            SetAnchorMaxIfChanged(characterBagFill.rectTransform, new Vector2(Mathf.Clamp01(bagRatio), 1f));
             float growthRatio = detail.RankMaxLevel <= 1 ? 1f : (detail.Level - 1f) / (detail.RankMaxLevel - 1f);
-            characterGrowthFill.rectTransform.anchorMax = new Vector2(Mathf.Clamp01(growthRatio), 1f);
+            SetAnchorMaxIfChanged(characterGrowthFill.rectTransform, new Vector2(Mathf.Clamp01(growthRatio), 1f));
             string[] slotIds = { "WEAPON", "ARMOR", "HELMET", "ACCESSORY" };
             string[] slotNames = { "무기", "갑옷", "투구", "장신구" };
             for (int index = 0; index < equipmentSlotTexts.Count; index++)
             {
                 bool equipped = detail.EquipmentSlots.TryGetValue(slotIds[index], out string value) && !string.IsNullOrEmpty(value);
-                equipmentSlotTexts[index].text = $"{slotNames[index]}\n{(equipped ? "장착됨" : "비어 있음")}";
+                SetTextIfChanged(equipmentSlotTexts[index], $"{slotNames[index]}\n{(equipped ? "장착됨" : "비어 있음")}");
             }
 
-            characterBody.text = selectedCharacterTab switch
+            SetTextIfChanged(characterBody, selectedCharacterTab switch
             {
                 1 => $"성격  {detail.PersonalityName}\n특성  {TraitSummary(detail)}\n스킬 합계  {live?.TotalSkillLevels ?? 0}\n최고 강화  +{live?.BestEnhancementLevel ?? 0}",
                 2 => $"장착 장비  {detail.EquipmentSlots.Count(value => !string.IsNullOrEmpty(value.Value))}/4\n보유 물약  {detail.PotionStacks.Values.Sum():N0}\n사냥 완료  {(live?.CyclesCompleted ?? 0):N0}회\n누적 수익  {(live?.EarnedGold ?? 0):N0}골드",
                 _ => $"등급  {detail.GradeName}\n랭크  {detail.RankName}\n성격  {detail.PersonalityName}\n공헌도  {detail.Contribution:N0}\n개인 골드  {detail.PersonalGold:N0}"
-            };
-            characterStats.text = live == null
+            });
+            SetTextIfChanged(characterStats, live == null
                 ? "사냥 상태를 확인할 수 없습니다."
-                : $"체력  {live.CurrentHpBps / 100f:0}%\n가방  {live.BagFill}/{live.BagCapacity}\n최근 피해  {live.LastCombatDamage:N0}\n미정산 보상  {live.PendingBountyGold:N0}골드";
-            characterActivity.text = live == null ? "현재 활동 · 왕국에서 대기" : $"현재 활동 · {State(live.State)}";
+                : $"체력  {live.CurrentHpBps / 100f:0}%\n가방  {live.BagFill}/{live.BagCapacity}\n최근 피해  {live.LastCombatDamage:N0}\n미정산 보상  {live.PendingBountyGold:N0}골드");
+            SetTextIfChanged(characterActivity, live == null ? "현재 활동 · 왕국에서 대기" : $"현재 활동 · {State(live.State)}");
         }
 
         private static string TraitSummary(MercenaryDetailDto detail) =>
